@@ -205,7 +205,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 <!-- APP PRINCIPAL -->
 <div class="app" id="app">
   <header>
-    <a href="https://diagnostika-engenharia.github.io/" style="display:flex"><img src="assets/logo-dark.png" alt="Diagnóstika"></a>
+    <img src="assets/logo-dark.png" alt="Diagnóstika" style="cursor:pointer" onclick="if(_meusCondos.length>1){voltarCondos()}" title="${'Portal do Síndico'}">
     <div class="title">
       <strong id="user-name">…</strong>
       <small id="user-role">Portal do Síndico</small>
@@ -637,34 +637,63 @@ function getVisitDates(condoId){
   return set;
 }
 function renderAgenda(){
-  const allDates=[...getVisitDates(_condoAtivo)].sort();
+  const visitDates=[...getVisitDates(_condoAtivo)].sort();
   const hoje=new Date().toISOString().slice(0,10);
-  const proximas=allDates.filter(d=>d>=hoje).slice(0,15);
-  const eventosCondo=_eventos[_condoAtivo]||[];
+  const eventosCondo=(_eventos[_condoAtivo]||[]).filter(e=>e.data>=hoje);
+
+  // Mescla TODAS as datas futuras (visitas + eventos especiais)
+  const todasDatas=new Set([...visitDates.filter(d=>d>=hoje), ...eventosCondo.map(e=>e.data)]);
+  const proximas=[...todasDatas].sort().slice(0,20);
+
   const el=document.getElementById('agenda-list');
-  if(!proximas.length){ el.innerHTML='<div class="empty">Nenhuma visita futura agendada</div>'; return; }
+  if(!proximas.length){ el.innerHTML='<div class="empty">Nenhuma visita ou evento futuro agendado</div>'; return; }
+
   const labels={padrao:'Inspeção padrão',mensal:'1ª visita do mês',trimestral:'Visita trimestral',semestral:'Visita semestral',anual:'Visita anual'};
   const corBg={padrao:'var(--gray)',mensal:'#D6EBED',trimestral:'#CCF0EE',semestral:'#EDF5D8',anual:'#F4ECF7'};
   const corTexto={padrao:'var(--text2)',mensal:'#0D3C44',trimestral:'#008A83',semestral:'#6a8a1e',anual:'#7D3C98'};
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const mesesAbr=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
   el.innerHTML=proximas.map(d=>{
     const [y,mo,da]=d.split('-').map(Number);
     const dt=new Date(y,mo-1,da);
     const dow=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()];
-    const at=atividadesDia(_condoAtivo,d,allDates);
-    const eventoNoDia=eventosCondo.find(e=>e.data===d);
-    const isCrit=at.criticos.length>0;
-    return `<div class="visit" style="align-items:flex-start;padding:12px 14px;cursor:default">
-      <div class="visit-date" style="margin-top:2px"><big>${String(da).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
-      <div class="visit-info" style="flex:1">
-        <strong>${dow}, ${da} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][mo-1]}</strong>
-        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <span style="background:${corBg[at.tipo]};color:${corTexto[at.tipo]};padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📋 ${labels[at.tipo]||'Inspeção'}</span>
-          ${isCrit?'<span style="background:#C00000;color:#fff;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' críticos</span>':''}
-        </div>
-        ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-top:6px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:2px">Itens extras desta visita:</b>'+at.extras.slice(0,5).map(e=>'· '+e).join('<br>')+(at.extras.length>5?'<br><i>(e mais '+(at.extras.length-5)+'...)</i>':'')+'</div>':''}
-        ${isCrit?'<div style="font-size:11px;color:#C00000;margin-top:5px;line-height:1.5;background:rgba(192,0,0,.05);padding:6px 10px;border-radius:6px"><b style="font-size:10.5px;display:block;margin-bottom:2px">⚠ Itens críticos a verificar:</b>'+at.criticos.slice(0,3).join(' · ')+(at.criticos.length>3?' (+'+(at.criticos.length-3)+')':'')+'</div>':''}
-        ${eventoNoDia?'<div style="margin-top:6px;background:#FFF8E1;border-left:3px solid #FBC02D;padding:7px 10px;border-radius:0 6px 6px 0"><b style="color:#A87826;font-size:11.5px">📌 '+eventoNoDia.titulo+'</b>'+(eventoNoDia.descricao?'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+eventoNoDia.descricao+'</div>':'')+'</div>':''}
+    const ehDiaVisita=visitDates.includes(d);
+    const eventosDoDia=eventosCondo.filter(e=>e.data===d);
+    const at=ehDiaVisita?atividadesDia(_condoAtivo,d,visitDates):null;
+    const isCrit=at && at.criticos.length>0;
+
+    // Cor da borda esquerda: vermelho se crítico, amarelo se só evento, turquesa se visita normal
+    const corBorda=isCrit?'#C00000':(eventosDoDia.length&&!ehDiaVisita?'#FBC02D':'var(--turq)');
+
+    return `<div style="display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--gray2);border-left:4px solid ${corBorda};background:${eventosDoDia.length?'rgba(251,192,45,.04)':'#fff'};margin-bottom:1px">
+      <div style="text-align:center;width:54px;flex-shrink:0">
+        <div style="font-size:22px;font-weight:800;color:${ehDiaVisita?'var(--teal)':'#A87826'};line-height:1">${String(da).padStart(2,'0')}</div>
+        <div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">${mesesAbr[mo-1]}</div>
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;margin-top:2px">${dow.substring(0,3)}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:5px">${dow}, ${da} de ${meses[mo-1]} de ${y}</div>
+
+        ${ehDiaVisita?`
+          <div style="margin-bottom:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+            <span style="background:${corBg[at.tipo]};color:${corTexto[at.tipo]};padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📋 ${labels[at.tipo]||'Inspeção'}</span>
+            ${isCrit?'<span style="background:#C00000;color:#fff;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' críticos</span>':''}
+          </div>
+          ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita:</b>'+at.extras.slice(0,6).map(e=>'· '+e).join('<br>')+(at.extras.length>6?'<br><i>(e mais '+(at.extras.length-6)+'...)</i>':'')+'</div>':''}
+          ${isCrit?'<div style="font-size:11px;color:#C00000;margin-bottom:5px;line-height:1.5;background:rgba(192,0,0,.06);padding:7px 10px;border-radius:6px;border-left:2px solid #C00000"><b style="font-size:10.5px;display:block;margin-bottom:3px">⚠ Itens críticos a verificar:</b>'+at.criticos.slice(0,3).join(' · ')+(at.criticos.length>3?' (+'+(at.criticos.length-3)+')':'')+'</div>':''}
+        `:''}
+
+        ${eventosDoDia.map(e=>`
+          <div style="background:#FFF8E1;border:1.5px solid #FBC02D;padding:9px 12px;border-radius:6px;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="background:#FBC02D;color:#3B2A0A;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">📌 ${e.tipo||'evento'}</span>
+              ${!ehDiaVisita?'<span style="font-size:10px;color:var(--gray4);font-style:italic">(sem visita técnica neste dia)</span>':''}
+            </div>
+            <div style="font-weight:700;color:#3B2A0A;font-size:13px;line-height:1.3">${e.titulo}</div>
+            ${e.descricao?'<div style="font-size:11.5px;color:#5A4A1A;margin-top:4px;line-height:1.5">'+e.descricao+'</div>':''}
+          </div>
+        `).join('')}
       </div>
     </div>`;
   }).join('');
