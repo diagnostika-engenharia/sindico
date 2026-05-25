@@ -759,10 +759,82 @@ async function carregarEventos(){
 // ═══════════════════════════════════════════════════════════════════════════
 // DEMANDAS
 // ═══════════════════════════════════════════════════════════════════════════
+let _historicoCache={}; // demanda_id → array de eventos
+
+async function carregarHistoricoDemanda(demandaId){
+  const {data,error}=await sb.from('demanda_historico').select('*').eq('demanda_id',demandaId).order('quando',{ascending:true});
+  if(error){ console.warn('Erro histórico:',error); return []; }
+  _historicoCache[demandaId]=data||[];
+  return data||[];
+}
+
+async function toggleHistorico(demandaId){
+  const box=document.getElementById('hist-'+demandaId);
+  if(!box) return;
+  if(box.style.display==='block'){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML='<div style="text-align:center;color:var(--text2);font-size:11px;padding:8px">⏳ Carregando histórico…</div>';
+  const eventos=await carregarHistoricoDemanda(demandaId);
+  box.innerHTML=renderTimelineHistorico(eventos);
+}
+
+function renderTimelineHistorico(eventos){
+  if(!eventos.length) return '<div style="color:var(--text2);font-size:11px;padding:6px">Nenhum registro de histórico.</div>';
+  const labels={
+    criada:'📋 Demanda aberta',
+    editada:'✏️ Editada pelo síndico',
+    respondida:'💬 Respondida pela Diagnóstika',
+    resposta_editada:'💬 Resposta atualizada',
+    status_alterado:'🔄 Status alterado'
+  };
+  const statusLabels={aberta:'Aberta',em_andamento:'Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
+  const linhas=eventos.map((e,i)=>{
+    const dt=new Date(e.quando);
+    const data=dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const tipoCor=e.quem_tipo==='equipe'?'#7D3C98':'#155B67';
+    const tipoEmoji=e.quem_tipo==='equipe'?'🛠️':'🏢';
+    let detalhe='';
+    const d=e.detalhes||{};
+    if(e.acao==='criada'){
+      detalhe='<small style="color:var(--text2)">Título: <i>"'+(d.titulo||'')+'"</i>'+(d.anexos?' · 📎 '+d.anexos+' anexo(s)':'')+'</small>';
+    } else if(e.acao==='status_alterado'){
+      detalhe='<small style="color:var(--text2)">de <b>'+(statusLabels[d.de]||d.de)+'</b> → <b>'+(statusLabels[d.para]||d.para)+'</b></small>';
+    } else if(e.acao==='editada'){
+      const partes=[];
+      if(d.titulo) partes.push('título alterado');
+      if(d.descricao_alterada) partes.push('descrição atualizada');
+      if(d.categoria) partes.push('categoria alterada');
+      if(d.urgencia) partes.push('urgência alterada');
+      if(d.anexos_depois!=null && d.anexos_antes!=null){
+        const dif=d.anexos_depois - d.anexos_antes;
+        if(dif>0) partes.push('+'+dif+' anexo(s)');
+        else if(dif<0) partes.push(Math.abs(dif)+' anexo(s) removido(s)');
+      }
+      detalhe='<small style="color:var(--text2)">'+(partes.join(' · ')||'alteração')+'</small>';
+    } else if(e.acao==='respondida' || e.acao==='resposta_editada'){
+      const txt=(d.texto||'').replace(/</g,'&lt;');
+      detalhe=txt?'<small style="color:var(--text2);font-style:italic">"'+txt.substring(0,150)+(txt.length>150?'…':'')+'"</small>':'';
+    }
+    return `<div style="display:flex;gap:10px;padding:8px 0;${i<eventos.length-1?'border-bottom:1px dashed var(--gray2)':''}">
+      <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:${tipoCor}15;border:2px solid ${tipoCor};color:${tipoCor};display:flex;align-items:center;justify-content:center;font-size:13px">${tipoEmoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">${labels[e.acao]||e.acao}</div>
+        <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${data} · por <b>${e.quem_nome||'—'}</b></div>
+        ${detalhe?'<div style="margin-top:3px;font-size:11px">'+detalhe+'</div>':''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="background:#fff;border:1px solid var(--gray2);border-radius:8px;padding:10px 14px;margin-top:8px">
+    <div style="font-size:10.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--gray2)">📜 Histórico (${eventos.length})</div>
+    ${linhas}
+  </div>`;
+}
+
 async function carregarDemandas(){
   const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).order('created_at',{ascending:false});
   if(error){ document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
   _demandas=data||[];
+  _historicoCache={}; // invalida cache ao recarregar
   const abertas=_demandas.filter(d=>d.status==='aberta'||d.status==='em_andamento').length;
   const badge=document.getElementById('dem-count');
   if(abertas>0){ badge.textContent=abertas; badge.style.display='inline-block'; } else badge.style.display='none';
@@ -841,7 +913,11 @@ function renderDemandas(){
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
       ${gridSind}
       ${(d.resposta||diagIdxs.length)?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+(d.resposta||'')+gridDiag+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
-      ${podeEditar?`<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button></div>`:''}
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        ${podeEditar?`<button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button>`:''}
+        <button onclick="toggleHistorico('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">📜 Ver histórico</button>
+      </div>
+      <div id="hist-${d.id}" style="display:none"></div>
     </div>`;
   }).join('');
 }
