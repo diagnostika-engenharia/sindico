@@ -515,16 +515,25 @@ function programacaoAnualSind(condoId, allDates){
     return allDates[slot]?[allDates[slot]]:[];
   }
 
+  function pickPorMesRotativo(idx){
+    const byMonth={};
+    allDates.forEach(d=>{ const m=d.substring(0,7); (byMonth[m]=byMonth[m]||[]).push(d); });
+    const meses=Object.keys(byMonth).sort();
+    return meses.map((m, mIdx)=>byMonth[m][(idx + mIdx) % byMonth[m].length]);
+  }
+
   condo.plano.forEach((item, idx)=>{
     if(item.critico||item.prioridade==='Crítico') return;
     const p=(item.periodicidade||'').toLowerCase();
+    // Filtro: itens condicionais (piscina interditada etc.) não entram na agenda automática
+    if(p.includes('após liberação')||p.includes('apos liberacao')||p.includes('após cada impermeabilização')||p.includes('apos cada impermeabilizacao')||p.includes('após impermeabilização')) return;
     let target=[];
     if(p.includes('semanal')) target=allDates.slice();
     else if(p.includes('quinzenal')){
       if(cadence>=14) target=allDates.slice();
       else target=allDates.filter((_,i)=>i % 2 === (idx % 2));
     }
-    else if(p.includes('mensal')) target=pickPorMes(idx);
+    else if(p.includes('mensal')) target=pickPorMesRotativo(idx);
     else if(p.includes('trimest')) target=pickPorTrimestre(idx);
     else if(p.includes('semest')) target=pickPorSemestre(idx);
     else if(p.includes('anual')) target=pickAnual(idx);
