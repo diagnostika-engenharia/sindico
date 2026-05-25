@@ -197,7 +197,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
     <div class="login-footer">
       <strong style="color:var(--text)">Diagnóstika Engenharia LTDA</strong><br>
       Não tem acesso? Solicite ao engenheiro responsável<br>
-      📞 (19) 98151-5494 · contato@diagnostikaengenharia.com.br
+      📞 (19) 97817-3686 · contato@diagnostikaengenharia.com.br
     </div>
   </div>
 </div>
@@ -377,44 +377,78 @@ let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _ev
 const PLANOS_CONDOS={
   'monte-carlo':{
     plano:[
-      {grupo:'Estrutura', nome:'Inspeção visual de fachadas', periodicidade:'Quinzenal', prioridade:'Alta'},
-      {grupo:'Estrutura', nome:'Pilares e vigas aparentes', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Estrutura', nome:'Juntas de dilatação', periodicidade:'Trimestral', prioridade:'Média'},
-      {grupo:'Impermeabilização', nome:'Coberturas — drenos e calhas', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Inspeção visual de fachadas', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Pilares e vigas aparentes', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Juntas de dilatação', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Estrutura e Fundações', nome:'Recalque e trincas', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização', nome:'Coberturas (lajes/telhados)', periodicidade:'Mensal', prioridade:'Alta'},
       {grupo:'Impermeabilização', nome:'Subsolos e garagens', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Impermeabilização', nome:'Jardineiras e floreiras', periodicidade:'Trimestral', prioridade:'Média'},
       {grupo:'Impermeabilização', nome:'Reservatórios (caixas d\'água)', periodicidade:'Semestral', prioridade:'Alta'},
-      {grupo:'Hidráulica', nome:'Rede de água fria', periodicidade:'Semestral', prioridade:'Média'},
-      {grupo:'Hidráulica', nome:'Esgoto e drenagem', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica', nome:'Iluminação de emergência', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
-      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Incêndio', nome:'Hidrantes e mangotinhos', periodicidade:'Trimestral', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Rede de água fria', periodicidade:'Semestral', prioridade:'Média'},
+      {grupo:'Hidráulica e Saneamento', nome:'Rede de esgoto e drenagem', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Calhas e condutores pluviais', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Caixa d\'água — limpeza', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'Iluminação de emergência', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'Aterramento geral', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Hidrantes e mangotinhos', periodicidade:'Trimestral', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Sinalização de emergência', periodicidade:'Mensal', prioridade:'Média'},
+      {grupo:'Sistema de Incêndio', nome:'Detector de fumaça e alarme', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'CFTV e Segurança', nome:'Câmeras de segurança', periodicidade:'Quinzenal', prioridade:'Média'},
+      {grupo:'CFTV e Segurança', nome:'Controle de acesso e interfone', periodicidade:'Mensal', prioridade:'Média'},
+      {grupo:'Cobertura e Telhado', nome:'Telhas e cumeeiras', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Cobertura e Telhado', nome:'Calha perimetral e rufos', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Revestimentos de piso', periodicidade:'Mensal', prioridade:'Alta'},
       {grupo:'Áreas Comuns', nome:'Guarda-corpos e corrimãos', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Áreas Comuns', nome:'Pisos — áreas comuns', periodicidade:'Mensal', prioridade:'Alta'},
       {grupo:'Áreas Comuns', nome:'Playground', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Gestão', nome:'ART do responsável técnico', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Garagem e acessos veiculares', periodicidade:'Mensal', prioridade:'Média'},
+      {grupo:'Gestão e Documentação', nome:'Relatório de visita', periodicidade:'Semanal (cada visita)', prioridade:'Alta'},
+      {grupo:'Gestão e Documentação', nome:'Registro fotográfico', periodicidade:'Semanal (cada visita)', prioridade:'Alta'},
+      {grupo:'Gestão e Documentação', nome:'Atualização do plano', periodicidade:'Anual', prioridade:'Média'},
+      {grupo:'Gestão e Documentação', nome:'ART do responsável técnico', periodicidade:'Anual', prioridade:'Alta'},
     ]
   },
   'morada-morumbi':{
     plano:[
-      {grupo:'⚠ Críticos LT-2025-09', nome:'Coberturas — lajes estufadas e pontas quebradas', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
-      {grupo:'⚠ Críticos LT-2025-09', nome:'Piscinas — fissuração estrutural', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
-      {grupo:'⚠ Críticos LT-2025-09', nome:'Calhas Bloco 3 — falha de vedação', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
-      {grupo:'⚠ Críticos LT-2025-09', nome:'Muros garden — ausência de impermeabilização', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
-      {grupo:'⚠ Críticos LT-2025-09', nome:'Garagens — fissuras estruturais', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
-      {grupo:'Piscinas', nome:'Inspeção visual das piscinas', periodicidade:'Quinzenal', prioridade:'Alta'},
-      {grupo:'Estrutura', nome:'Fachadas — fissuras e desplacamentos', periodicidade:'Quinzenal', prioridade:'Alta'},
-      {grupo:'Estrutura', nome:'Pilares e vigas (garagens)', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Impermeabilização', nome:'Coberturas — drenos gerais', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica', nome:'Calhas pluviais', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica', nome:'Reservatórios — limpeza semestral', periodicidade:'Semestral', prioridade:'Alta'},
-      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
-      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Incêndio', nome:'Hidrantes', periodicidade:'Trimestral', prioridade:'Alta'},
+      {grupo:'⚠ CRÍTICO — RISCO IMEDIATO (LT-2025-09)', nome:'Coberturas — lajes estufadas e pontas quebradas', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ CRÍTICO — RISCO IMEDIATO (LT-2025-09)', nome:'Piscinas — fissuração estrutural', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ CRÍTICO — RISCO IMEDIATO (LT-2025-09)', nome:'Calhas Bloco 3 — falha crítica de vedação', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ CRÍTICO — RISCO IMEDIATO (LT-2025-09)', nome:'Muros garden — ausência de impermeabilização', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ CRÍTICO — RISCO IMEDIATO (LT-2025-09)', nome:'Garagens — fissuras estruturais e infiltrações', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'Piscinas e Impermeabilização', nome:'Inspeção visual das piscinas (adulta e infantil)', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Piscinas e Impermeabilização', nome:'TESTE DE ESTANQUEIDADE — Piscina adulta', periodicidade:'Após cada impermeabilização', prioridade:'Alta'},
+      {grupo:'Piscinas e Impermeabilização', nome:'TESTE DE ESTANQUEIDADE — Piscina infantil', periodicidade:'Após cada impermeabilização', prioridade:'Alta'},
+      {grupo:'Piscinas e Impermeabilização', nome:'Motobombas e filtros de areia', periodicidade:'Quinzenal (após liberação)', prioridade:'Média'},
+      {grupo:'Piscinas e Impermeabilização', nome:'Qualidade da água', periodicidade:'Mensal (após liberação)', prioridade:'Alta'},
+      {grupo:'Piscinas e Impermeabilização', nome:'Ralos, grelhas e escadas', periodicidade:'Quinzenal (após liberação)', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Fachadas — fissuras e desplacamentos', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Pilares e vigas aparentes (garagens)', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Estrutura e Fundações', nome:'Juntas de dilatação', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Impermeabilização Geral', nome:'Coberturas — drenos e calhas gerais', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização Geral', nome:'Subsolos e garagens', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Impermeabilização Geral', nome:'Muros garden e jardineiras', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização Geral', nome:'Reservatórios (caixas d\'água)', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Rede de água fria e quente', periodicidade:'Semestral', prioridade:'Média'},
+      {grupo:'Hidráulica e Saneamento', nome:'Calhas e condutores pluviais', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica e Saneamento', nome:'Rede de esgoto e drenagem', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'Iluminação de emergência', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica e SPDA', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Hidrantes e mangotinhos', periodicidade:'Trimestral', prioridade:'Alta'},
+      {grupo:'Sistema de Incêndio', nome:'Sinalização de emergência', periodicidade:'Mensal', prioridade:'Média'},
+      {grupo:'Áreas Comuns', nome:'Revestimentos e pisos', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Guarda-corpos e corrimãos', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Playground', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Gestão e Documentação', nome:'Relatório de visita quinzenal', periodicidade:'Quinzenal (cada visita)', prioridade:'Alta'},
+      {grupo:'Gestão e Documentação', nome:'Registro fotográfico', periodicidade:'Quinzenal (cada visita)', prioridade:'Alta'},
+      {grupo:'Gestão e Documentação', nome:'Acompanhamento LT-2025-09', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'Gestão e Documentação', nome:'ART do responsável técnico', periodicidade:'Anual', prioridade:'Alta'},
     ]
   },
   'portal-primavera':{
@@ -569,7 +603,7 @@ async function mostrarApp(){
     // Não tem vínculo próprio — pode ser EQUIPE (acesso panorâmico) ou usuário sem permissão
     const {data:vincsAll}=await sb.from('user_condos').select('*');
     if(!vincsAll || !vincsAll.length){
-      document.getElementById('condos-section').innerHTML=`<div class="section"><div class="empty"><div style="font-size:36px;margin-bottom:10px">🔒</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Sua conta ainda não tem condomínio vinculado</div><div style="font-size:12px;line-height:1.5">Entre em contato com a Diagnóstika Engenharia para liberar seu acesso.<br><br>📞 (19) 98151-5494</div></div></div>`;
+      document.getElementById('condos-section').innerHTML=`<div class="section"><div class="empty"><div style="font-size:36px;margin-bottom:10px">🔒</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Sua conta ainda não tem condomínio vinculado</div><div style="font-size:12px;line-height:1.5">Entre em contato com a Diagnóstika Engenharia para liberar seu acesso.<br><br>📞 (19) 97817-3686</div></div></div>`;
       return;
     }
     // É equipe — modo panorâmico (somente leitura, sem impersonar síndico)
@@ -688,9 +722,11 @@ function getVisitDates(condoId){
   const set=new Set();
   const dateKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   if(condoId==='monte-carlo'){
-    let d=new Date(2026,2,4); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+7);}
+    // Início conforme planilha oficial: 27/05/2026 — semanal
+    let d=new Date(2026,4,27); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+7);}
   } else if(condoId==='morada-morumbi'){
-    let d=new Date(2026,2,4); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
+    // Início conforme planilha oficial: 27/05/2026 — quinzenal
+    let d=new Date(2026,4,27); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
   } else if(condoId==='residencial-santa-clara'){
     let d=new Date(2026,0,14); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
   } else if(condoId==='portal-primavera'){
