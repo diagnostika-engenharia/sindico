@@ -289,22 +289,22 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
             <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">📎 Anexar Fotos e Vídeos (opcional)</label>
             <div style="background:#fff;border:1.5px dashed var(--gray3);border-radius:8px;padding:14px;margin-bottom:10px">
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                <label style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
+                <button type="button" onclick="capturarMidia('foto')" style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-family:inherit">
                   <span style="font-size:20px">📷</span>
                   Tirar foto
-                  <input type="file" accept="image/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
-                </label>
-                <label style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,#C00000,#8B0000);color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
+                </button>
+                <button type="button" onclick="capturarMidia('video')" style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,#C00000,#8B0000);color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-family:inherit">
                   <span style="font-size:20px">🎥</span>
                   Gravar vídeo
-                  <input type="file" accept="video/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
-                </label>
+                </button>
                 <label style="cursor:pointer;padding:11px 6px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
                   <span style="font-size:20px">📁</span>
                   Da galeria
                   <input type="file" accept="image/*,video/*" multiple onchange="processarAnexos(this)" style="display:none">
                 </label>
               </div>
+              <input type="file" id="dem-capture-foto" accept="image/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
+              <input type="file" id="dem-capture-video" accept="video/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
               <div id="anexos-preview" style="display:none;margin-top:10px"></div>
               <div style="font-size:10.5px;color:var(--text2);text-align:center;margin-top:6px;line-height:1.4">Imagens são comprimidas · Vídeos até 25 MB</div>
             </div>
@@ -843,6 +843,114 @@ function lerVideo(file){
     fr.onerror=()=>reject(new Error('falha ao ler vídeo'));
     fr.readAsDataURL(file);
   });
+}
+
+// Detecta se é dispositivo móvel (touch + tamanho pequeno)
+function ehMobile(){
+  return (navigator.maxTouchPoints>0 || 'ontouchstart' in window) && window.matchMedia('(max-width:900px)').matches;
+}
+
+// Decide entre input nativo (mobile) ou webcam via getUserMedia (desktop)
+function capturarMidia(modo){
+  if(ehMobile()){
+    document.getElementById(modo==='video'?'dem-capture-video':'dem-capture-foto').click();
+    return;
+  }
+  abrirWebcam(modo);
+}
+
+let _webcamStream=null, _webcamRecorder=null, _webcamChunks=[];
+
+async function abrirWebcam(modo){
+  const ov=document.createElement('div');
+  ov.id='webcam-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center';
+  ov.innerHTML=`
+    <video id="webcam-video" autoplay playsinline muted style="max-width:100%;max-height:75vh;background:#000;border-radius:8px"></video>
+    <div style="position:absolute;top:14px;left:14px;color:#fff;font-size:14px;font-weight:700;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:6px">${modo==='video'?'🎥 Gravar Vídeo':'📷 Tirar Foto'}</div>
+    <div id="webcam-timer" style="position:absolute;top:14px;right:14px;color:#fff;font-size:14px;font-weight:700;background:rgba(192,0,0,.8);padding:6px 12px;border-radius:6px;display:none">⏺ 00:00</div>
+    <div style="position:absolute;bottom:30px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:14px">
+      <button id="webcam-cancel" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:12px 22px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">Cancelar</button>
+      ${modo==='foto'?
+        `<button id="webcam-shot" style="width:74px;height:74px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.5);cursor:pointer;font-size:28px">📷</button>`:
+        `<button id="webcam-rec" style="width:74px;height:74px;border-radius:50%;background:#C00000;border:5px solid rgba(255,255,255,.5);cursor:pointer;color:#fff;font-size:14px;font-weight:700">REC</button>`
+      }
+      <div style="width:90px"></div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const video=document.getElementById('webcam-video');
+  try{
+    const constraints=modo==='video'
+      ?{video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:true}
+      :{video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}};
+    _webcamStream=await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject=_webcamStream;
+  }catch(e){
+    alert('Não consegui acessar a câmera: '+e.message+'\n\nVerifique se permitiu o acesso no navegador.');
+    fecharWebcam();
+    return;
+  }
+
+  document.getElementById('webcam-cancel').onclick=fecharWebcam;
+
+  if(modo==='foto'){
+    document.getElementById('webcam-shot').onclick=async ()=>{
+      const c=document.createElement('canvas');
+      c.width=video.videoWidth; c.height=video.videoHeight;
+      c.getContext('2d').drawImage(video,0,0);
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.85));
+      const file=new File([blob],'foto-'+Date.now()+'.jpg',{type:'image/jpeg'});
+      fecharWebcam();
+      const item=await compressarImagem(file);
+      _anexosDem.push(item);
+      document.getElementById('anexos-preview').style.display='block';
+      renderPreviewAnexos();
+    };
+  } else {
+    const btn=document.getElementById('webcam-rec');
+    const timer=document.getElementById('webcam-timer');
+    let inicio=null, intId=null, gravando=false;
+    btn.onclick=async ()=>{
+      if(!gravando){
+        _webcamChunks=[];
+        const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':(MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')?'video/webm;codecs=vp8,opus':'video/webm');
+        _webcamRecorder=new MediaRecorder(_webcamStream,{mimeType:mime,videoBitsPerSecond:1200000});
+        _webcamRecorder.ondataavailable=ev=>{ if(ev.data.size>0) _webcamChunks.push(ev.data); };
+        _webcamRecorder.onstop=async ()=>{
+          const blob=new Blob(_webcamChunks,{type:'video/webm'});
+          const file=new File([blob],'video-'+Date.now()+'.webm',{type:'video/webm'});
+          if(file.size>25*1024*1024){ alert('Vídeo muito grande ('+Math.round(file.size/1024/1024)+'MB). Limite: 25MB. Grave um vídeo mais curto.'); fecharWebcam(); return; }
+          fecharWebcam();
+          const item=await lerVideo(file);
+          _anexosDem.push(item);
+          document.getElementById('anexos-preview').style.display='block';
+          renderPreviewAnexos();
+        };
+        _webcamRecorder.start(1000);
+        inicio=Date.now();
+        gravando=true;
+        timer.style.display='block';
+        btn.style.background='#fff'; btn.style.color='#C00000'; btn.textContent='■';
+        intId=setInterval(()=>{
+          const s=Math.floor((Date.now()-inicio)/1000);
+          timer.textContent='⏺ '+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+          if(s>=120){ btn.click(); } // auto-stop em 2 minutos
+        },500);
+      } else {
+        clearInterval(intId);
+        if(_webcamRecorder && _webcamRecorder.state!=='inactive') _webcamRecorder.stop();
+        gravando=false;
+      }
+    };
+  }
+}
+
+function fecharWebcam(){
+  if(_webcamStream){ _webcamStream.getTracks().forEach(t=>t.stop()); _webcamStream=null; }
+  _webcamRecorder=null; _webcamChunks=[];
+  const ov=document.getElementById('webcam-overlay');
+  if(ov) ov.remove();
 }
 
 async function processarAnexos(inp){
