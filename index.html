@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#155B67">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diagnóstika Síndico">
+<title>Portal do Síndico — Diagnóstika</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --teal:#155B67;--teal-dk:#0D3C44;--turq:#00B4AC;--turq-lt:#CCF0EE;
+  --lime:#8DB72A;--purple:#7D3C98;--amber:#D4A24C;
+  --red:#C00000;--red-lt:#FFEAEA;--green:#1B8A4A;--green-lt:#E8F5EE;
+  --gray:#F0F4F5;--gray2:#E0EAEC;--gray3:#A8BFC2;--gray4:#5A7A7E;
+  --white:#FFFFFF;--text:#1A2E31;--text2:#4A6568;
+  --shadow:0 2px 12px rgba(21,91,103,.12);
+}
+html,body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--gray);color:var(--text);font-size:14px;min-height:100vh;line-height:1.5}
+a{color:var(--teal);text-decoration:none}
+
+/* Login */
+.login-bg{position:fixed;inset:0;background:linear-gradient(135deg,var(--teal-dk),var(--teal) 50%,var(--turq));display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
+.login-card{background:#fff;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo img{height:72px;filter:none}
+.login-card h1{font-size:22px;color:var(--teal);margin-bottom:4px;text-align:center}
+.login-card .sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:24px}
+.login-card label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:block}
+.login-card input{width:100%;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:10px;font-size:15px;margin-bottom:14px;font-family:inherit;outline:none;transition:border-color .2s}
+.login-card input:focus{border-color:var(--teal)}
+.btn-login{width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+.btn-login:hover{background:var(--teal-dk)}
+.btn-login:disabled{opacity:.5;cursor:wait}
+.login-err{background:var(--red-lt);color:var(--red);padding:10px 12px;border-radius:8px;font-size:12.5px;margin-top:12px;border-left:3px solid var(--red);display:none}
+.login-err.show{display:block}
+.login-link{font-size:12px;text-align:center;margin-top:14px;color:var(--text2)}
+.login-link a{color:var(--teal);font-weight:600;cursor:pointer}
+.login-footer{font-size:11px;color:var(--text2);text-align:center;margin-top:18px;padding-top:18px;border-top:1px solid var(--gray2)}
+
+/* App principal */
+.app{display:none;min-height:100vh;flex-direction:column}
+.app.show{display:flex}
+header{background:var(--teal);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.15);position:sticky;top:0;z-index:10}
+header img{height:48px;filter:brightness(0) invert(1)}
+header .title{flex:1;min-width:0}
+header .title strong{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .title small{font-size:11px;opacity:.8}
+header .user-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+header .user-btn:hover{background:rgba(255,255,255,.25)}
+header .user-menu{position:absolute;top:65px;right:14px;background:#fff;color:var(--text);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:8px;min-width:200px;display:none;z-index:20}
+header .user-menu.show{display:block}
+header .user-menu .item{padding:10px 14px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
+header .user-menu .item:hover{background:var(--gray)}
+header .user-menu .item.logout{color:var(--red)}
+header .user-menu hr{border:none;border-top:1px solid var(--gray2);margin:4px 0}
+
+main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
+
+/* Cards de condomínio */
+.cond-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:24px}
+@media(min-width:700px){.cond-grid{grid-template-columns:1fr 1fr}}
+.cond-card{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow);border-top:5px solid var(--teal);cursor:pointer;transition:transform .15s}
+.cond-card:hover{transform:translateY(-2px)}
+.cond-card.c-mc{border-top-color:#155B67}
+.cond-card.c-mm{border-top-color:#00B4AC}
+.cond-card.c-pp{border-top-color:#8DB72A}
+.cond-card.c-sc{border-top-color:#7D3C98}
+.cond-card.c-jm{border-top-color:#D4A24C}
+.cond-head{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.cond-emb{width:46px;height:46px;border-radius:8px;overflow:hidden;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.cond-emb svg{width:100%;height:100%;display:block}
+.cond-name{flex:1;min-width:0}
+.cond-name h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px}
+.cond-name span{font-size:11px;color:var(--text2)}
+.cond-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.cond-stat{text-align:center;background:var(--gray);padding:8px 4px;border-radius:6px}
+.cond-stat big{display:block;font-size:18px;font-weight:800;color:var(--text)}
+.cond-stat small{font-size:9.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.cond-prox{font-size:11px;color:var(--text2);background:var(--gray);padding:8px 10px;border-radius:6px}
+.cond-prox b{color:var(--teal)}
+
+/* Tabs */
+.tabs{display:flex;background:#fff;border-radius:12px;padding:4px;margin-bottom:18px;box-shadow:var(--shadow);gap:2px;overflow-x:auto}
+.tab{flex:1;min-width:90px;padding:11px 8px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;font-family:inherit}
+.tab.active{background:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(21,91,103,.25)}
+.tab .ic{font-size:16px;line-height:1}
+.tab .badge-num{background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;margin-top:1px;line-height:1.4}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Section */
+.section{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.section h2{font-size:14px;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700}
+.section h2 button{font-size:11px;padding:5px 12px;border:none;border-radius:6px;background:var(--teal);color:#fff;cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0}
+.section h2 button:hover{background:var(--teal-dk)}
+
+/* Visit item */
+.visit{display:flex;gap:12px;padding:12px 14px;border-radius:8px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--gray2);align-items:center}
+.visit:hover{background:var(--gray)}
+.visit:last-child{border-bottom:none}
+.visit-date{text-align:center;width:48px;flex-shrink:0}
+.visit-date big{display:block;font-size:18px;font-weight:800;color:var(--teal);line-height:1}
+.visit-date small{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase}
+.visit-info{flex:1;min-width:0}
+.visit-info strong{display:block;font-size:13.5px;color:var(--text);margin-bottom:2px}
+.visit-info span{font-size:11.5px;color:var(--text2)}
+.visit-badge{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;flex-shrink:0}
+.b-ok{background:var(--green-lt);color:var(--green)}
+.b-nc{background:var(--red-lt);color:var(--red)}
+.b-future{background:var(--turq-lt);color:#008A83}
+
+/* Demandas */
+.dem-form{background:linear-gradient(135deg,rgba(21,91,103,.04),rgba(0,180,172,.02));padding:16px;border-radius:10px;margin-bottom:16px}
+.dem-form input,.dem-form select,.dem-form textarea{width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit;outline:none}
+.dem-form input:focus,.dem-form select:focus,.dem-form textarea:focus{border-color:var(--teal)}
+.dem-form textarea{min-height:80px;resize:vertical}
+.dem-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-primary{background:var(--teal);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%}
+.btn-primary:hover{background:var(--teal-dk)}
+.dem{background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.dem-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.dem-titulo{font-weight:700;font-size:14px;color:var(--text)}
+.dem-meta{font-size:11px;color:var(--text2);margin-bottom:6px}
+.dem-desc{font-size:12.5px;color:var(--text);line-height:1.5;margin-top:6px}
+.dem-status{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.s-aberta{background:#FFEBEE;color:#C00000}
+.s-em_andamento{background:#FFF3E0;color:#E65100}
+.s-resolvida{background:#E8F5EE;color:#1B8A4A}
+.s-fechada{background:var(--gray);color:var(--text2)}
+.dem-resposta{margin-top:10px;padding:10px 12px;background:rgba(21,91,103,.06);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;font-size:12px}
+.dem-resposta b{color:var(--teal);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+
+/* Eventos */
+.evt{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--gray2);align-items:center}
+.evt:last-child{border-bottom:none}
+.evt-date{text-align:center;width:50px;flex-shrink:0}
+.evt-date big{display:block;font-size:16px;font-weight:800;color:#A87826;line-height:1.1}
+.evt-date small{font-size:9px;color:var(--text2);font-weight:600;text-transform:uppercase}
+.evt-date .tipo{background:#FBC02D;color:#3B2A0A;font-size:8px;padding:1px 5px;border-radius:4px;margin-top:3px;display:inline-block;text-transform:uppercase;font-weight:700}
+.evt-info{flex:1;min-width:0}
+.evt-info strong{display:block;font-size:13px;color:var(--text);margin-bottom:2px}
+.evt-info span{font-size:11px;color:var(--text2);line-height:1.4}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:13px}
+.loading{text-align:center;padding:30px;color:var(--text2);font-size:13px}
+
+footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;padding:18px 14px;font-size:11px;margin-top:auto}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px}
+.modal{background:#fff;border-radius:14px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;position:relative}
+.modal-close{position:absolute;top:10px;right:12px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--gray4)}
+.modal h2{font-size:18px;color:var(--teal);margin-bottom:8px;padding-right:30px}
+.modal .sub{font-size:12px;color:var(--text2);margin-bottom:14px}
+.modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.modal-stat{text-align:center;padding:10px 4px;border-radius:8px;border:1.5px solid var(--gray2)}
+.modal-stat.green{border-color:var(--green);background:var(--green-lt)}
+.modal-stat.red{border-color:var(--red);background:var(--red-lt)}
+.modal-stat.gray{border-color:var(--gray3);background:var(--gray)}
+.modal-stat big{display:block;font-size:20px;font-weight:800}
+.modal-stat small{font-size:9px;text-transform:uppercase;color:var(--text2);letter-spacing:.3px}
+.modal h3{font-size:12px;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px;border-bottom:1px solid var(--gray2);padding-bottom:5px}
+.item-mod{padding:8px 10px;background:var(--gray);border-radius:6px;margin-bottom:6px;font-size:12px}
+.item-mod.nc{background:var(--red-lt);border-left:3px solid var(--red)}
+.item-mod.conf{background:var(--green-lt);border-left:3px solid var(--green)}
+.item-mod .nome{font-weight:600;font-size:12.5px}
+.item-mod .obs{font-style:italic;color:var(--text2);font-size:11.5px;margin-top:3px}
+.fotos-mod{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px;margin-top:6px}
+.fotos-mod img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:zoom-in;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+.foto-zoom{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}
+.foto-zoom img{max-width:100%;max-height:100%;object-fit:contain}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-bg" id="login">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="assets/logo.png" alt="Diagnóstika" onerror="this.src='assets/logo-dark.png';this.style.filter='invert(1)'">
+    </div>
+    <h1>Portal do Síndico</h1>
+    <p class="sub">Acesse os dados técnicos do seu condomínio</p>
+    <form onsubmit="event.preventDefault();fazerLogin()">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email" required>
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password" required>
+      <button class="btn-login" id="btn-login" type="submit">Entrar</button>
+      <div class="login-err" id="login-err"></div>
+    </form>
+    <div class="login-link"><a onclick="esqueciSenha()">Esqueci minha senha</a></div>
+    <div class="login-footer">
+      <strong style="color:var(--text)">Diagnóstika Engenharia LTDA</strong><br>
+      Não tem acesso? Solicite ao engenheiro responsável<br>
+      📞 (19) 98151-5494 · contato@diagnostikaengenharia.com.br
+    </div>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div class="app" id="app">
+  <header>
+    <a href="https://diagnostika-engenharia.github.io/" style="display:flex"><img src="assets/logo-dark.png" alt="Diagnóstika"></a>
+    <div class="title">
+      <strong id="user-name">…</strong>
+      <small id="user-role">Portal do Síndico</small>
+    </div>
+    <button class="user-btn" onclick="toggleUserMenu(event)">
+      <span>👤</span><span id="user-initial">?</span> ▼
+    </button>
+    <div class="user-menu" id="user-menu" onclick="event.stopPropagation()">
+      <div class="item" onclick="alterarSenha()">🔑 Alterar senha</div>
+      <hr>
+      <div class="item logout" onclick="fazerLogout()">🚪 Sair</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Cards dos Condomínios -->
+    <div id="condos-section">
+      <div class="loading">Carregando seus condomínios…</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="tabs-bar" style="display:none">
+      <button class="tab active" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
+      <button class="tab" data-tab="agenda" onclick="trocarTab('agenda')"><span class="ic">📅</span>Agenda</button>
+      <button class="tab" data-tab="demandas" onclick="trocarTab('demandas')"><span class="ic">💬</span>Demandas <span class="badge-num" id="dem-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="docs" onclick="trocarTab('docs')"><span class="ic">📄</span>Documentos</button>
+    </div>
+
+    <!-- Conteúdo das tabs -->
+    <div class="tab-content active" data-tab="visitas">
+      <div class="section">
+        <h2>📋 Últimas Vistorias Realizadas</h2>
+        <div id="visitas-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="agenda">
+      <div class="section">
+        <h2>📅 Próximas Visitas Agendadas</h2>
+        <div id="agenda-list"><div class="loading">Carregando…</div></div>
+      </div>
+      <div class="section">
+        <h2>📌 Eventos Especiais Agendados</h2>
+        <div id="eventos-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="demandas">
+      <div class="section">
+        <h2>💬 Nova Demanda <button onclick="toggleFormDemanda()">+ Abrir Chamado</button></h2>
+        <div id="form-demanda" style="display:none">
+          <div class="dem-form">
+            <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">Título</label>
+            <input type="text" id="dem-titulo" placeholder="Ex: Vazamento no apto 305">
+
+            <div class="row">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">Categoria</label>
+                <select id="dem-categoria">
+                  <option value="corretiva">🔧 Manutenção corretiva</option>
+                  <option value="duvida">❓ Dúvida técnica</option>
+                  <option value="reforma">🏗️ Aprovação de reforma</option>
+                  <option value="laudo">📋 Solicitação de laudo</option>
+                  <option value="emergencia">🚨 Emergência</option>
+                  <option value="documento">📄 Solicitar documento</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">Urgência</label>
+                <select id="dem-urgencia">
+                  <option value="baixa">🟢 Baixa</option>
+                  <option value="media" selected>🟡 Média</option>
+                  <option value="alta">🔴 Alta</option>
+                </select>
+              </div>
+            </div>
+
+            <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">Descrição</label>
+            <textarea id="dem-desc" placeholder="Descreva a demanda em detalhes..."></textarea>
+
+            <button class="btn-primary" onclick="criarDemanda()">📤 Enviar Demanda</button>
+          </div>
+        </div>
+        <div id="demandas-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="docs">
+      <div class="section">
+        <h2>📄 Documentos</h2>
+        <div class="empty">
+          <div style="font-size:36px;margin-bottom:10px">📂</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Em breve</div>
+          <div style="font-size:12px;line-height:1.5">Aqui você acessará: plantas, manual do proprietário, ATAs, contratos, laudos técnicos e regulamento interno.<br><br>Por enquanto, solicite na aba <b>Demandas</b>.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <strong style="color:#fff">Diagnóstika Engenharia LTDA</strong> · CNPJ 54.027.948/0001-60<br>
+    📞 (19) 98151-5494 · <a href="mailto:contato@diagnostikaengenharia.com.br" style="color:var(--turq)">contato@diagnostikaengenharia.com.br</a>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+
+const CONDOS={
+  'monte-carlo':{nome:'Monte Carlo',cls:'mc',cor:'#155B67',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#155B67"/><circle cx="32" cy="20" r="5" fill="none" stroke="#D4A24C" stroke-width="2"/><rect x="22" y="22" width="20" height="3" fill="#D4A24C"/><rect x="24" y="26" width="2" height="22" fill="#D4A24C"/><rect x="30" y="26" width="2" height="22" fill="#D4A24C"/><rect x="36" y="26" width="2" height="22" fill="#D4A24C"/><rect x="20" y="48" width="24" height="3" fill="#D4A24C"/><rect x="18" y="51" width="28" height="3" fill="#D4A24C"/></svg>'},
+  'morada-morumbi':{nome:'Morada Morumbi',cls:'mm',cor:'#00B4AC',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#00B4AC"/><path d="M16 32 L32 18 L48 32 L48 48 L16 48 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><rect x="22" y="36" width="6" height="8" fill="#fff"/><rect x="34" y="32" width="6" height="6" fill="#fff" opacity="0.85"/><rect x="42" y="32" width="3" height="6" fill="#fff" opacity="0.85"/><path d="M14 32 L32 16 L50 32" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>'},
+  'portal-primavera':{nome:'Portal Primavera',cls:'pp',cor:'#8DB72A',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#8DB72A"/><circle cx="32" cy="32" r="5" fill="#fff"/><path d="M32 14 C28 22 28 26 32 30 C36 26 36 22 32 14 Z" fill="#fff"/><path d="M32 50 C28 42 28 38 32 34 C36 38 36 42 32 50 Z" fill="#fff"/><path d="M14 32 C22 28 26 28 30 32 C26 36 22 36 14 32 Z" fill="#fff"/><path d="M50 32 C42 28 38 28 34 32 C38 36 42 36 50 32 Z" fill="#fff"/><circle cx="32" cy="32" r="3" fill="#8DB72A"/></svg>'},
+  'residencial-santa-clara':{nome:'Santa Clara',cls:'sc',cor:'#7D3C98',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#7D3C98"/><polygon points="32,12 36,24 49,24 38,32 42,45 32,37 22,45 26,32 15,24 28,24" fill="#fff"/><circle cx="32" cy="30" r="3" fill="#7D3C98"/></svg>'},
+  'jardins-do-malta':{nome:'Jardins do Malta',cls:'jm',cor:'#D4A24C',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#D4A24C"/><path d="M32 52 L32 36" stroke="#5C3A0A" stroke-width="3" stroke-linecap="round"/><path d="M32 38 C24 34 18 30 16 22 C24 22 30 26 32 34 Z" fill="#fff"/><path d="M32 38 C40 34 46 30 48 22 C40 22 34 26 32 34 Z" fill="#fff"/><path d="M32 30 C26 28 22 24 22 16 C28 18 31 22 32 28 Z" fill="#fff"/><path d="M32 30 C38 28 42 24 42 16 C36 18 33 22 32 28 Z" fill="#fff"/><rect x="22" y="50" width="20" height="4" rx="1" fill="#5C3A0A"/></svg>'}
+};
+
+let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _eventos={};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const err=document.getElementById('login-err');
+  const btn=document.getElementById('btn-login');
+  err.classList.remove('show');
+  btn.disabled=true; btn.textContent='Entrando…';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
+    if(error) throw error;
+    _user=data.user;
+    await mostrarApp();
+  }catch(e){
+    err.textContent='❌ '+(e.message==='Invalid login credentials'?'E-mail ou senha incorretos':e.message);
+    err.classList.add('show');
+  }finally{
+    btn.disabled=false; btn.textContent='Entrar';
+  }
+}
+
+async function fazerLogout(){
+  await sb.auth.signOut();
+  _user=null; _meusCondos=[]; _condoAtivo=null;
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login').style.display='flex';
+  document.getElementById('user-menu').classList.remove('show');
+}
+
+async function esqueciSenha(){
+  const email=document.getElementById('login-email').value.trim();
+  if(!email){ alert('Digite seu e-mail no campo acima primeiro'); return; }
+  try{
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+    if(error) throw error;
+    alert('✓ Enviamos um e-mail com instruções para redefinir sua senha. Verifique sua caixa de entrada (e a pasta de spam).');
+  }catch(e){ alert('Erro: '+e.message); }
+}
+
+async function alterarSenha(){
+  const nova=prompt('Digite a nova senha (mínimo 6 caracteres):','');
+  if(!nova || nova.length<6){ if(nova) alert('Senha precisa ter pelo menos 6 caracteres'); return; }
+  try{
+    const {error}=await sb.auth.updateUser({password:nova});
+    if(error) throw error;
+    alert('✓ Senha alterada com sucesso!');
+    document.getElementById('user-menu').classList.remove('show');
+  }catch(e){ alert('Erro: '+e.message); }
+}
+
+function toggleUserMenu(ev){
+  ev.stopPropagation();
+  document.getElementById('user-menu').classList.toggle('show');
+}
+document.addEventListener('click',()=>document.getElementById('user-menu').classList.remove('show'));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CARREGAMENTO INICIAL
+// ═══════════════════════════════════════════════════════════════════════════
+async function mostrarApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('show');
+  const email=_user.email||'';
+  document.getElementById('user-initial').textContent=email.charAt(0).toUpperCase();
+  document.getElementById('user-name').textContent=email.split('@')[0];
+
+  // Busca condomínios vinculados ao usuário
+  const {data:vincs,error}=await sb.from('user_condos').select('*');
+  if(error){ alert('Erro ao carregar seus condomínios: '+error.message); return; }
+  _meusCondos=vincs||[];
+  if(!_meusCondos.length){
+    document.getElementById('condos-section').innerHTML=`<div class="section"><div class="empty"><div style="font-size:36px;margin-bottom:10px">🔒</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Sua conta ainda não tem condomínio vinculado</div><div style="font-size:12px;line-height:1.5">Entre em contato com a Diagnóstika Engenharia para liberar seu acesso.<br><br>📞 (19) 98151-5494</div></div></div>`;
+    return;
+  }
+  document.getElementById('user-name').textContent=(_meusCondos[0].nome_exibicao||email.split('@')[0]);
+  document.getElementById('user-role').textContent=_meusCondos.length>1?_meusCondos.length+' condomínios':'Síndico(a) · '+(CONDOS[_meusCondos[0].condo_id]?.nome||'');
+
+  renderCondoCards();
+  _condoAtivo=_meusCondos.length===1?_meusCondos[0].condo_id:null;
+  if(_condoAtivo) await abrirCondo(_condoAtivo);
+}
+
+function renderCondoCards(){
+  const sec=document.getElementById('condos-section');
+  if(_meusCondos.length===1){ sec.innerHTML=''; return; }
+  sec.innerHTML='<h2 style="font-size:13px;color:var(--gray4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding:0 4px;font-weight:700">Seus Condomínios</h2><div class="cond-grid">'+_meusCondos.map(uc=>{
+    const c=CONDOS[uc.condo_id]||{nome:uc.condo_id,cls:'mc',emblema:'',cor:'#155B67'};
+    return `<div class="cond-card c-${c.cls}" onclick="abrirCondo('${uc.condo_id}')">
+      <div class="cond-head">
+        <div class="cond-emb">${c.emblema}</div>
+        <div class="cond-name"><h3>${c.nome}</h3><span>👤 ${uc.nome_exibicao||'Síndico(a)'}</span></div>
+      </div>
+      <div class="cond-prox">Toque para acessar o painel completo</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+async function abrirCondo(condoId){
+  _condoAtivo=condoId;
+  if(_meusCondos.length>1){
+    const sec=document.getElementById('condos-section');
+    const c=CONDOS[condoId];
+    sec.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:#fff;padding:14px;border-radius:12px;margin-bottom:14px;box-shadow:var(--shadow);border-left:4px solid '+c.cor+'"><div style="width:42px;height:42px;border-radius:6px;overflow:hidden;flex-shrink:0">'+c.emblema+'</div><div style="flex:1"><div style="font-weight:700;color:var(--text)">'+c.nome+'</div><div style="font-size:11px;color:var(--text2)">Você está visualizando este condomínio</div></div><button onclick="voltarCondos()" style="background:transparent;border:1px solid var(--gray2);color:var(--text2);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">← Trocar</button></div>';
+  }
+  document.getElementById('tabs-bar').style.display='flex';
+  await carregarTudo();
+}
+
+function voltarCondos(){ _condoAtivo=null; renderCondoCards(); document.getElementById('tabs-bar').style.display='none'; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); }
+
+async function carregarTudo(){
+  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos()]);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VISITAS
+// ═══════════════════════════════════════════════════════════════════════════
+async function carregarVisitas(){
+  const {data,error}=await sb.from('visitas').select('*').eq('condo_id',_condoAtivo).order('data',{ascending:false}).limit(100);
+  if(error){ document.getElementById('visitas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
+  _visitas=data||[];
+  renderVisitas();
+  renderAgenda();
+}
+
+function renderVisitas(){
+  const el=document.getElementById('visitas-list');
+  if(!_visitas.length){ el.innerHTML='<div class="empty">Ainda não há vistorias registradas neste condomínio.<br><small style="margin-top:6px;display:block">Quando o engenheiro fizer a primeira visita, ela aparecerá aqui automaticamente.</small></div>'; return; }
+  el.innerHTML=_visitas.map(v=>{
+    const itens=Object.values(v.itens||{});
+    const nc=itens.filter(i=>i.status==='nao_conforme').length;
+    const [y,mo,d]=v.data.split('-').map(Number);
+    const tipoTag=v.tipo==='reforma'?'<span style="font-size:9px;background:#7B1FA2;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">🏗️ Reforma</span>':'';
+    const undInfo=v.tipo==='reforma' && (v.bloco||v.apartamento||v.morador)?'<br><small style="color:#7B1FA2;font-weight:600">📍 '+[v.bloco&&'Bl '+v.bloco,v.apartamento&&'Ap '+v.apartamento,v.morador].filter(Boolean).join(' · ')+'</small>':'';
+    return `<div class="visit" onclick="verVisita('${v.id}')">
+      <div class="visit-date"><big>${String(d).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
+      <div class="visit-info">
+        <strong>${v.tipo==='reforma'?'Vistoria de Reforma':'Manutenção Preventiva'}${tipoTag}</strong>
+        <span>${v.engenheiro||'—'}${v.hora?' · '+v.hora:''}${undInfo}</span>
+      </div>
+      <span class="visit-badge ${nc>0?'b-nc':'b-ok'}">${nc>0?nc+' NC':'✓ OK'}</span>
+    </div>`;
+  }).join('');
+}
+
+async function verVisita(id){
+  const v=_visitas.find(x=>x.id===id); if(!v) return;
+  const itens=Object.entries(v.itens||{});
+  const conf=itens.filter(([_,i])=>i.status==='conforme').length;
+  const nc=itens.filter(([_,i])=>i.status==='nao_conforme').length;
+  const na=itens.filter(([_,i])=>i.status==='na').length;
+  const m=document.createElement('div'); m.className='modal-bg'; m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div class="modal">
+    <button class="modal-close" onclick="this.closest('.modal-bg').remove()">×</button>
+    <h2>${v.tipo==='reforma'?'🏗️ Vistoria de Reforma':'🛠️ Manutenção Preventiva'}</h2>
+    <div class="sub">📅 ${v.data} ${v.hora||''} · 👷 ${v.engenheiro||'—'}${v.tipo==='reforma'&&(v.bloco||v.apartamento)?'<br>📍 Unidade: '+[v.bloco&&'Bloco '+v.bloco,v.apartamento&&'Apto '+v.apartamento,v.morador&&'· '+v.morador].filter(Boolean).join(' '):''}</div>
+    <div class="modal-stats">
+      <div class="modal-stat green"><big>${conf}</big><small>Conformes</small></div>
+      <div class="modal-stat red"><big>${nc}</big><small>Não Conformes</small></div>
+      <div class="modal-stat gray"><big>${na}</big><small>N/A</small></div>
+    </div>
+    ${v.obs_geral?'<h3>Observações</h3><div style="font-size:12.5px;line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;white-space:pre-wrap">'+v.obs_geral+'</div>':''}
+    <h3>Checklist (${itens.length} itens)</h3>
+    ${itens.map(([id,i])=>{
+      const cls=i.status==='conforme'?'conf':i.status==='nao_conforme'?'nc':'';
+      const lbl=i.status==='conforme'?'✓ Conforme':i.status==='nao_conforme'?'✗ Não Conforme':i.status==='na'?'— N/A':'—';
+      const fotos=i.fotos||[];
+      return '<div class="item-mod '+cls+'"><div class="nome">'+id.toUpperCase()+' · <small style="color:var(--text2)">'+lbl+'</small></div>'+(i.obs?'<div class="obs">"'+i.obs+'"</div>':'')+(fotos.length?'<div class="fotos-mod">'+fotos.map(f=>{const u=typeof f==='string'?f:f.url;return '<img src="'+u+'" onclick="ampliar(this.src)">';}).join('')+'</div>':'')+'</div>';
+    }).join('')}
+  </div>`;
+  document.body.appendChild(m);
+}
+function ampliar(src){
+  const z=document.createElement('div'); z.className='foto-zoom'; z.onclick=()=>z.remove();
+  z.innerHTML='<img src="'+src+'">'; document.body.appendChild(z);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENDA
+// ═══════════════════════════════════════════════════════════════════════════
+function getVisitDates(condoId){
+  const set=new Set();
+  const dateKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(condoId==='monte-carlo'){
+    let d=new Date(2026,2,4); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+7);}
+  } else if(condoId==='morada-morumbi'){
+    let d=new Date(2026,2,4); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
+  } else if(condoId==='residencial-santa-clara'){
+    let d=new Date(2026,0,14); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
+  } else if(condoId==='portal-primavera'){
+    let d=new Date(2026,0,14); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
+  } else if(condoId==='jardins-do-malta'){
+    let d=new Date(2026,0,7); while(d.getFullYear()===2026){set.add(dateKey(d));d.setDate(d.getDate()+14);}
+  }
+  return set;
+}
+function renderAgenda(){
+  const datas=[...getVisitDates(_condoAtivo)].sort();
+  const hoje=new Date().toISOString().slice(0,10);
+  const proximas=datas.filter(d=>d>=hoje).slice(0,10);
+  const el=document.getElementById('agenda-list');
+  if(!proximas.length){ el.innerHTML='<div class="empty">Nenhuma visita futura agendada</div>'; return; }
+  el.innerHTML=proximas.map(d=>{
+    const [y,mo,da]=d.split('-').map(Number);
+    const dt=new Date(y,mo-1,da);
+    const dow=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()];
+    return `<div class="visit">
+      <div class="visit-date"><big>${String(da).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
+      <div class="visit-info"><strong>Vistoria técnica programada</strong><span>${dow}, ${da} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][mo-1]} de ${y}</span></div>
+      <span class="visit-badge b-future">prevista</span>
+    </div>`;
+  }).join('');
+}
+
+async function carregarEventos(){
+  const {data,error}=await sb.from('app_config').select('*').eq('key','eventos_'+_condoAtivo).maybeSingle();
+  const el=document.getElementById('eventos-list');
+  if(error || !data){ el.innerHTML='<div class="empty">Nenhum evento especial agendado</div>'; return; }
+  const eventos=(data.value||[]).sort((a,b)=>a.data.localeCompare(b.data));
+  if(!eventos.length){ el.innerHTML='<div class="empty">Nenhum evento especial agendado</div>'; return; }
+  el.innerHTML=eventos.map(e=>{
+    const [y,mo,d]=e.data.split('-').map(Number);
+    const dt=new Date(y,mo-1,d);
+    const dow=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dt.getDay()];
+    const passou=e.data<new Date().toISOString().slice(0,10);
+    return `<div class="evt" style="${passou?'opacity:.5;':''}">
+      <div class="evt-date"><big>${String(d).padStart(2,'0')}/${String(mo).padStart(2,'0')}</big><small>${dow}</small><div class="tipo">${e.tipo||'evento'}</div></div>
+      <div class="evt-info"><strong>${e.titulo}</strong>${e.descricao?'<span>'+e.descricao+'</span>':''}${passou?'<div style="color:var(--green);font-size:10px;font-weight:700;margin-top:3px">✓ Realizado</div>':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEMANDAS
+// ═══════════════════════════════════════════════════════════════════════════
+async function carregarDemandas(){
+  const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).order('created_at',{ascending:false});
+  if(error){ document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
+  _demandas=data||[];
+  const abertas=_demandas.filter(d=>d.status==='aberta'||d.status==='em_andamento').length;
+  const badge=document.getElementById('dem-count');
+  if(abertas>0){ badge.textContent=abertas; badge.style.display='inline-block'; } else badge.style.display='none';
+  renderDemandas();
+}
+function renderDemandas(){
+  const el=document.getElementById('demandas-list');
+  if(!_demandas.length){ el.innerHTML='<div class="empty">Nenhuma demanda registrada ainda<br><small>Use o botão <b>+ Abrir Chamado</b> acima para enviar uma solicitação técnica</small></div>'; return; }
+  const cats={corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida técnica',reforma:'🏗️ Aprovação de reforma',laudo:'📋 Solicitação de laudo',emergencia:'🚨 Emergência',documento:'📄 Documento'};
+  const urgs={baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
+  const status={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
+  el.innerHTML=_demandas.map(d=>{
+    const dt=new Date(d.created_at);
+    return `<div class="dem">
+      <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
+      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
+      ${d.resposta?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+d.resposta+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
+    </div>`;
+  }).join('');
+}
+function toggleFormDemanda(){
+  const f=document.getElementById('form-demanda');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+async function criarDemanda(){
+  const titulo=document.getElementById('dem-titulo').value.trim();
+  const descricao=document.getElementById('dem-desc').value.trim();
+  const categoria=document.getElementById('dem-categoria').value;
+  const urgencia=document.getElementById('dem-urgencia').value;
+  if(!titulo){ alert('Informe um título'); return; }
+  try{
+    const {error}=await sb.from('demandas').insert({condo_id:_condoAtivo,user_id:_user.id,titulo,descricao,categoria,urgencia,status:'aberta'});
+    if(error) throw error;
+    document.getElementById('dem-titulo').value='';
+    document.getElementById('dem-desc').value='';
+    toggleFormDemanda();
+    alert('✓ Demanda enviada! A equipe Diagnóstika foi notificada.');
+    carregarDemandas();
+  }catch(e){ alert('Erro: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════════════
+function trocarTab(nome){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data?.session){
+    _user=data.session.user;
+    await mostrarApp();
+  }
+})();
+
+// Realtime: atualiza ao receber mudanças
+sb.channel('sindico-realtime')
+  .on('postgres_changes',{event:'*',schema:'public',table:'visitas'},()=>{ if(_condoAtivo) carregarVisitas(); })
+  .on('postgres_changes',{event:'*',schema:'public',table:'demandas'},()=>{ if(_condoAtivo) carregarDemandas(); })
+  .subscribe();
+
+// Auto-refresh a cada 30s
+setInterval(()=>{ if(_condoAtivo){ carregarVisitas(); carregarDemandas(); carregarEventos(); }},30000);
+</script>
+</body>
+</html>
