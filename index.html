@@ -362,7 +362,8 @@ const CONDOS={
   'morada-morumbi':{nome:'Morada Morumbi',cls:'mm',cor:'#00B4AC',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#00B4AC"/><path d="M16 32 L32 18 L48 32 L48 48 L16 48 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><rect x="22" y="36" width="6" height="8" fill="#fff"/><rect x="34" y="32" width="6" height="6" fill="#fff" opacity="0.85"/><rect x="42" y="32" width="3" height="6" fill="#fff" opacity="0.85"/><path d="M14 32 L32 16 L50 32" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>'},
   'portal-primavera':{nome:'Portal Primavera',cls:'pp',cor:'#8DB72A',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#8DB72A"/><circle cx="32" cy="32" r="5" fill="#fff"/><path d="M32 14 C28 22 28 26 32 30 C36 26 36 22 32 14 Z" fill="#fff"/><path d="M32 50 C28 42 28 38 32 34 C36 38 36 42 32 50 Z" fill="#fff"/><path d="M14 32 C22 28 26 28 30 32 C26 36 22 36 14 32 Z" fill="#fff"/><path d="M50 32 C42 28 38 28 34 32 C38 36 42 36 50 32 Z" fill="#fff"/><circle cx="32" cy="32" r="3" fill="#8DB72A"/></svg>'},
   'residencial-santa-clara':{nome:'Santa Clara',cls:'sc',cor:'#7D3C98',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#7D3C98"/><polygon points="32,12 36,24 49,24 38,32 42,45 32,37 22,45 26,32 15,24 28,24" fill="#fff"/><circle cx="32" cy="30" r="3" fill="#7D3C98"/></svg>'},
-  'jardins-do-malta':{nome:'Jardins do Malta',cls:'jm',cor:'#D4A24C',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#D4A24C"/><path d="M32 52 L32 36" stroke="#5C3A0A" stroke-width="3" stroke-linecap="round"/><path d="M32 38 C24 34 18 30 16 22 C24 22 30 26 32 34 Z" fill="#fff"/><path d="M32 38 C40 34 46 30 48 22 C40 22 34 26 32 34 Z" fill="#fff"/><path d="M32 30 C26 28 22 24 22 16 C28 18 31 22 32 28 Z" fill="#fff"/><path d="M32 30 C38 28 42 24 42 16 C36 18 33 22 32 28 Z" fill="#fff"/><rect x="22" y="50" width="20" height="4" rx="1" fill="#5C3A0A"/></svg>'}
+  'jardins-do-malta':{nome:'Jardins do Malta',cls:'jm',cor:'#D4A24C',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#D4A24C"/><path d="M32 52 L32 36" stroke="#5C3A0A" stroke-width="3" stroke-linecap="round"/><path d="M32 38 C24 34 18 30 16 22 C24 22 30 26 32 34 Z" fill="#fff"/><path d="M32 38 C40 34 46 30 48 22 C40 22 34 26 32 34 Z" fill="#fff"/><path d="M32 30 C26 28 22 24 22 16 C28 18 31 22 32 28 Z" fill="#fff"/><path d="M32 30 C38 28 42 24 42 16 C36 18 33 22 32 28 Z" fill="#fff"/><rect x="22" y="50" width="20" height="4" rx="1" fill="#5C3A0A"/></svg>'},
+  'condominio-teste':{nome:'TESTE (sandbox)',cls:'tt',cor:'#5A7A7E',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#5A7A7E"/><text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff">TESTE</text><circle cx="32" cy="20" r="4" fill="#FBC02D"/></svg>'}
 };
 
 let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _eventos={};
@@ -694,17 +695,41 @@ function getVisitDates(condoId){
   }
   return set;
 }
+let _agendaModo='futuras'; // 'futuras' | 'ano' | 'passadas'
+
+function alternarModoAgenda(modo){
+  _agendaModo=modo;
+  renderAgenda();
+}
+
 function renderAgenda(){
   const visitDates=[...getVisitDates(_condoAtivo)].sort();
   const hoje=new Date().toISOString().slice(0,10);
-  const eventosCondo=(_eventos[_condoAtivo]||[]).filter(e=>e.data>=hoje);
+  const eventosCondo=(_eventos[_condoAtivo]||[]).slice();
 
-  // Mescla TODAS as datas futuras (visitas + eventos especiais)
-  const todasDatas=new Set([...visitDates.filter(d=>d>=hoje), ...eventosCondo.map(e=>e.data)]);
-  const proximas=[...todasDatas].sort().slice(0,20);
+  // Mescla TODAS as datas (visitas + eventos)
+  const todasDatas=new Set([...visitDates, ...eventosCondo.map(e=>e.data)]);
+  let datas=[...todasDatas].sort();
+
+  // Filtro por modo
+  if(_agendaModo==='futuras') datas=datas.filter(d=>d>=hoje);
+  else if(_agendaModo==='passadas') datas=datas.filter(d=>d<hoje).reverse();
+  // 'ano' mostra tudo de 2026
 
   const el=document.getElementById('agenda-list');
-  if(!proximas.length){ el.innerHTML='<div class="empty">Nenhuma visita ou evento futuro agendado</div>'; return; }
+
+  // Barra de filtros
+  const totalFut=[...todasDatas].filter(d=>d>=hoje).length;
+  const totalPass=[...todasDatas].filter(d=>d<hoje).length;
+  const filtrosHtml=`<div style="background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <button onclick="alternarModoAgenda('futuras')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='futuras'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='futuras'?'var(--teal)':'#fff'};color:${_agendaModo==='futuras'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">📅 Futuras (${totalFut})</button>
+    <button onclick="alternarModoAgenda('ano')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='ano'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='ano'?'var(--teal)':'#fff'};color:${_agendaModo==='ano'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">🗓️ Ano todo (${todasDatas.size})</button>
+    <button onclick="alternarModoAgenda('passadas')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='passadas'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='passadas'?'var(--teal)':'#fff'};color:${_agendaModo==='passadas'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Realizadas (${totalPass})</button>
+    <span style="flex:1"></span>
+    <span style="font-size:11px;color:var(--text2)">Sincronização em tempo real com a Diagnóstika</span>
+  </div>`;
+
+  if(!datas.length){ el.innerHTML=filtrosHtml+'<div class="empty">Nenhuma visita ou evento para esse filtro</div>'; return; }
 
   const labels={padrao:'Inspeção padrão',mensal:'1ª visita do mês',trimestral:'Visita trimestral',semestral:'Visita semestral',anual:'Visita anual'};
   const corBg={padrao:'var(--gray)',mensal:'#D6EBED',trimestral:'#CCF0EE',semestral:'#EDF5D8',anual:'#F4ECF7'};
@@ -712,22 +737,37 @@ function renderAgenda(){
   const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const mesesAbr=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
-  el.innerHTML=proximas.map(d=>{
+  // Agrupa por mês
+  let html=filtrosHtml;
+  let mesAtual=-1;
+  let bloco='';
+  const fechaBloco=()=>{ if(bloco){ html+='<div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:14px">'+bloco+'</div>'; bloco=''; } };
+
+  datas.forEach(d=>{
     const [y,mo,da]=d.split('-').map(Number);
     const dt=new Date(y,mo-1,da);
     const dow=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()];
     const ehDiaVisita=visitDates.includes(d);
     const eventosDoDia=eventosCondo.filter(e=>e.data===d);
     const at=ehDiaVisita?atividadesDia(_condoAtivo,d,visitDates):null;
+    const passou=d<hoje;
+    const ehHoje=d===hoje;
 
-    // Cor da borda esquerda: amarelo se só evento, turquesa se visita normal
-    const corBorda=eventosDoDia.length&&!ehDiaVisita?'#FBC02D':'var(--turq)';
+    if(mo-1!==mesAtual){
+      fechaBloco();
+      mesAtual=mo-1;
+      bloco='<div style="background:linear-gradient(135deg,var(--teal),var(--turq));color:#fff;padding:10px 14px;font-weight:800;font-size:13px;letter-spacing:.5px;text-transform:uppercase">📆 '+meses[mo-1]+' / '+y+'</div>';
+    }
 
-    return `<div style="display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--gray2);border-left:4px solid ${corBorda};background:${eventosDoDia.length?'rgba(251,192,45,.04)':'#fff'};margin-bottom:1px">
+    const corBorda=ehHoje?'#FBC02D':(eventosDoDia.length&&!ehDiaVisita?'#FBC02D':'var(--turq)');
+    const opacity=passou?'.55':'1';
+
+    bloco+=`<div style="display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--gray2);border-left:4px solid ${corBorda};background:${ehHoje?'rgba(251,192,45,.1)':(eventosDoDia.length?'rgba(251,192,45,.04)':'#fff')};opacity:${opacity}">
       <div style="text-align:center;width:54px;flex-shrink:0">
         <div style="font-size:22px;font-weight:800;color:${ehDiaVisita?'var(--teal)':'#A87826'};line-height:1">${String(da).padStart(2,'0')}</div>
         <div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">${mesesAbr[mo-1]}</div>
         <div style="font-size:9px;color:var(--text2);text-transform:uppercase;margin-top:2px">${dow.substring(0,3)}</div>
+        ${ehHoje?'<div style="font-size:8px;background:#FBC02D;color:#3B2A0A;padding:2px 4px;border-radius:4px;margin-top:3px;font-weight:800">HOJE</div>':(passou?'<div style="font-size:8px;background:var(--green);color:#fff;padding:2px 4px;border-radius:4px;margin-top:3px;font-weight:800">✓</div>':'')}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:5px">${dow}, ${da} de ${meses[mo-1]} de ${y}</div>
@@ -751,7 +791,9 @@ function renderAgenda(){
         `).join('')}
       </div>
     </div>`;
-  }).join('');
+  });
+  fechaBloco();
+  el.innerHTML=html;
 }
 
 async function carregarEventos(){
@@ -1374,6 +1416,7 @@ function trocarTab(nome){
 sb.channel('sindico-realtime')
   .on('postgres_changes',{event:'*',schema:'public',table:'visitas'},()=>{ if(_condoAtivo) carregarVisitas(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'demandas'},()=>{ if(_condoAtivo) carregarDemandas(); })
+  .on('postgres_changes',{event:'*',schema:'public',table:'app_config'},(p)=>{ if(_condoAtivo && p.new?.key==='eventos_'+_condoAtivo) carregarEventos(); })
   .subscribe();
 
 // Auto-refresh a cada 30s
