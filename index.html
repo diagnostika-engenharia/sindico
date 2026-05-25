@@ -894,8 +894,10 @@ function renderAgenda(){
         ${ehDiaVisita?`
           <div style="margin-bottom:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
             <span style="background:${corBg[at.tipo]};color:${corTexto[at.tipo]};padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📋 ${labels[at.tipo]||'Inspeção'}</span>
+            ${at.criticos&&at.criticos.length?'<span style="background:#C00000;color:#fff;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' CRÍTICOS</span>':''}
           </div>
-          ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita:</b>'+at.extras.slice(0,6).map(e=>'· '+e).join('<br>')+(at.extras.length>6?'<br><i>(e mais '+(at.extras.length-6)+'...)</i>':'')+'</div>':''}
+          ${at.criticos&&at.criticos.length?'<div style="font-size:11.5px;background:rgba(192,0,0,.06);border-left:3px solid #C00000;padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:5px;line-height:1.5"><b style="color:#C00000;font-size:10.5px;display:block;margin-bottom:3px">⚠ MONITORAMENTO CRÍTICO (LT-2025-09) — em toda visita:</b>'+at.criticos.map(e=>'· '+e).join('<br>')+'</div>':''}
+          ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita:</b>'+at.extras.slice(0,8).map(e=>'· '+e).join('<br>')+(at.extras.length>8?'<br><i>(e mais '+(at.extras.length-8)+'...)</i>':'')+'</div>':''}
         `:''}
 
         ${eventosDoDia.map(e=>`
