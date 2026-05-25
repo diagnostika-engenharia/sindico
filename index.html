@@ -487,9 +487,12 @@ const PLANOS_CONDOS={
 };
 
 // ════════════════════════════════════════════════════════════════════════
-// PROGRAMAÇÃO ANUAL (mesma lógica do PMP — distribuição uniforme pelo ano)
+// PROGRAMAÇÃO ANUAL — Load Balancing (mesma lógica do PMP)
+// Distribui cada item de forma uniforme pelo ano, sem visitas sobrecarregadas
 // ════════════════════════════════════════════════════════════════════════
 let _progCache={};
+const ITENS_INERENTES=new Set(['Relatório de visita','Registro fotográfico','Relatório de visita quinzenal']);
+
 function programacaoAnualSind(condoId, allDates){
   if(_progCache[condoId]) return _progCache[condoId];
   const condo=PLANOS_CONDOS[condoId];
@@ -499,59 +502,48 @@ function programacaoAnualSind(condoId, allDates){
   if(!allDates.length){ _progCache[condoId]=result; return result; }
   const cadence=allDates.length<2?7:Math.round((new Date(allDates[1])-new Date(allDates[0]))/86400000);
 
-  function pickPorBucket(idx, bucketFn){
-    const buckets={};
-    allDates.forEach(d=>{
-      const k=bucketFn(d);
-      (buckets[k]=buckets[k]||[]).push(d);
-    });
-    return Object.values(buckets).map(visitas=>visitas[idx % visitas.length]).filter(Boolean);
-  }
-  const pickPorMes=(idx)=>pickPorBucket(idx, d=>d.substring(0,7));
-  const pickPorTrimestre=(idx)=>pickPorBucket(idx, d=>Math.floor((parseInt(d.substring(5,7))-1)/3));
-  const pickPorSemestre=(idx)=>pickPorBucket(idx, d=>parseInt(d.substring(5,7))<=6?'S1':'S2');
-  function pickAnual(idx){
-    const slot=Math.max(0, allDates.length-1-(idx % Math.min(6, allDates.length)));
-    return allDates[slot]?[allDates[slot]]:[];
-  }
-
-  function pickPorMesRotativo(idx){
-    const byMonth={};
-    allDates.forEach(d=>{ const m=d.substring(0,7); (byMonth[m]=byMonth[m]||[]).push(d); });
-    const meses=Object.keys(byMonth).sort();
-    return meses.map((m, mIdx)=>byMonth[m][(idx + mIdx) % byMonth[m].length]);
-  }
-
-  condo.plano.forEach((item, idx)=>{
-    if(item.critico||item.prioridade==='Crítico') return;
+  function gruposCandidatos(item){
     const p=(item.periodicidade||'').toLowerCase();
-    // Filtro: itens condicionais (piscina interditada etc.) não entram na agenda automática
-    if(p.includes('após liberação')||p.includes('apos liberacao')||p.includes('após cada impermeabilização')||p.includes('apos cada impermeabilizacao')||p.includes('após impermeabilização')) return;
-    let target=[];
-    if(p.includes('semanal')) target=allDates.slice();
-    else if(p.includes('quinzenal')){
-      if(cadence>=14) target=allDates.slice();
-      else target=allDates.filter((_,i)=>i % 2 === (idx % 2));
+    if(p.includes('após liberação')||p.includes('apos liberacao')||p.includes('após cada impermeabilização')||p.includes('apos cada impermeabilizacao')||p.includes('após impermeabilização')) return [];
+    if(ITENS_INERENTES.has(item.nome)) return [];
+    let diasAlvo=0;
+    if(p.includes('semanal')) diasAlvo=7;
+    else if(p.includes('quinzenal')) diasAlvo=14;
+    else if(p.includes('mensal')) diasAlvo=30;
+    else if(p.includes('trimest')) diasAlvo=90;
+    else if(p.includes('semest')) diasAlvo=180;
+    else if(p.includes('anual')) diasAlvo=365;
+    else return [];
+    const passoVisitas=Math.max(1, Math.round(diasAlvo/cadence));
+    const grupos=[];
+    for(let i=0;i<allDates.length;i+=passoVisitas){
+      grupos.push(allDates.slice(i, i+passoVisitas));
     }
-    else if(p.includes('mensal')) target=pickPorMesRotativo(idx);
-    else if(p.includes('trimest')) target=pickPorTrimestre(idx);
-    else if(p.includes('semest')) target=pickPorSemestre(idx);
-    else if(p.includes('anual')) target=pickAnual(idx);
-    else return;
-    target.forEach(d=>{ if(result[d]) result[d].push(item.nome); });
+    return grupos;
+  }
+
+  const demandas=[];
+  condo.plano.forEach(item=>{
+    if(item.critico||item.prioridade==='Crítico') return;
+    const grupos=gruposCandidatos(item);
+    if(grupos.length) demandas.push({nome:item.nome, grupos});
   });
 
-  // CAP por visita (mesmo do PMP) — deixa folga para vistorias de reforma
-  const condoTeto={'monte-carlo':6,'morada-morumbi':9,'portal-primavera':9,'residencial-santa-clara':9,'jardins-do-malta':9};
-  const MAX=condoTeto[condoId]||8;
-  for(let i=0;i<allDates.length;i++){
-    while(result[allDates[i]].length>MAX){
-      let tIdx=-1;
-      for(let j=i+1;j<allDates.length;j++){ if(result[allDates[j]].length<MAX){ tIdx=j; break; } }
-      if(tIdx<0) break;
-      result[allDates[tIdx]].push(result[allDates[i]].pop());
-    }
-  }
+  // Ordena: itens com mais grupos (semanais primeiro) — restritivos antes para load balancing
+  demandas.sort((a,b)=>b.grupos.length-a.grupos.length);
+
+  demandas.forEach(dem=>{
+    dem.grupos.forEach(candidatos=>{
+      if(!candidatos.length) return;
+      let melhor=candidatos[0];
+      let menorCarga=result[melhor]?.length ?? Infinity;
+      for(const c of candidatos){
+        const carga=result[c]?.length ?? Infinity;
+        if(carga<menorCarga){ menorCarga=carga; melhor=c; }
+      }
+      if(result[melhor]) result[melhor].push(dem.nome);
+    });
+  });
 
   _progCache[condoId]=result;
   return result;
