@@ -539,23 +539,41 @@ document.addEventListener('click',()=>document.getElementById('user-menu').class
 // ═══════════════════════════════════════════════════════════════════════════
 // CARREGAMENTO INICIAL
 // ═══════════════════════════════════════════════════════════════════════════
+let _modoEquipe=false;
+
 async function mostrarApp(){
   document.getElementById('login').style.display='none';
   document.getElementById('app').classList.add('show');
   const email=_user.email||'';
-  document.getElementById('user-initial').textContent=email.charAt(0).toUpperCase();
-  document.getElementById('user-name').textContent=email.split('@')[0];
+  // Nome real do usuário logado — sempre da metadata, nunca de vínculo de outro
+  const nomeReal=_user.user_metadata?.nome || email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('user-initial').textContent=(nomeReal||email).charAt(0).toUpperCase();
+  document.getElementById('user-name').textContent=nomeReal;
 
-  // Busca condomínios vinculados ao usuário
-  const {data:vincs,error}=await sb.from('user_condos').select('*');
-  if(error){ alert('Erro ao carregar seus condomínios: '+error.message); return; }
-  _meusCondos=vincs||[];
-  if(!_meusCondos.length){
-    document.getElementById('condos-section').innerHTML=`<div class="section"><div class="empty"><div style="font-size:36px;margin-bottom:10px">🔒</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Sua conta ainda não tem condomínio vinculado</div><div style="font-size:12px;line-height:1.5">Entre em contato com a Diagnóstika Engenharia para liberar seu acesso.<br><br>📞 (19) 98151-5494</div></div></div>`;
-    return;
+  // 1. Tenta carregar APENAS os condomínios deste usuário
+  const {data:vincsProp,error}=await sb.from('user_condos').select('*').eq('user_id',_user.id);
+  if(error){ alert('Erro ao carregar condomínios: '+error.message); return; }
+
+  if(vincsProp && vincsProp.length){
+    // Usuário é síndico — fluxo normal
+    _modoEquipe=false;
+    _meusCondos=vincsProp;
+    document.getElementById('user-role').textContent=vincsProp.length>1?vincsProp.length+' condomínios':'Síndico(a) · '+(CONDOS[vincsProp[0].condo_id]?.nome||'');
+  } else {
+    // Não tem vínculo próprio — pode ser EQUIPE (acesso panorâmico) ou usuário sem permissão
+    const {data:vincsAll}=await sb.from('user_condos').select('*');
+    if(!vincsAll || !vincsAll.length){
+      document.getElementById('condos-section').innerHTML=`<div class="section"><div class="empty"><div style="font-size:36px;margin-bottom:10px">🔒</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Sua conta ainda não tem condomínio vinculado</div><div style="font-size:12px;line-height:1.5">Entre em contato com a Diagnóstika Engenharia para liberar seu acesso.<br><br>📞 (19) 98151-5494</div></div></div>`;
+      return;
+    }
+    // É equipe — modo panorâmico (somente leitura, sem impersonar síndico)
+    _modoEquipe=true;
+    // Lista única de condos com os síndicos de cada um
+    const porCondo={};
+    vincsAll.forEach(v=>{ if(!porCondo[v.condo_id]){ porCondo[v.condo_id]={condo_id:v.condo_id,sindicos:[]}; } porCondo[v.condo_id].sindicos.push(v.nome_exibicao||'—'); });
+    _meusCondos=Object.values(porCondo).map(c=>({condo_id:c.condo_id,nome_exibicao:c.sindicos.join(', ')}));
+    document.getElementById('user-role').innerHTML='<span style="background:#7D3C98;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px">🛠️ MODO EQUIPE</span> · '+_meusCondos.length+' condomínios (somente leitura)';
   }
-  document.getElementById('user-name').textContent=(_meusCondos[0].nome_exibicao||email.split('@')[0]);
-  document.getElementById('user-role').textContent=_meusCondos.length>1?_meusCondos.length+' condomínios':'Síndico(a) · '+(CONDOS[_meusCondos[0].condo_id]?.nome||'');
 
   renderCondoCards();
   _condoAtivo=_meusCondos.length===1?_meusCondos[0].condo_id:null;
@@ -905,7 +923,7 @@ function renderDemandas(){
     const gridSind=sindIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px">'+sindIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const proto=d.protocolo||'—';
-    const podeEditar=d.user_id===_user?.id && d.status!=='fechada';
+    const podeEditar=!_modoEquipe && d.user_id===_user?.id && d.status!=='fechada';
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
       <div style="font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;margin-bottom:6px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
@@ -938,6 +956,7 @@ function abrirAnexo(demId, idx){
   document.body.appendChild(z);
 }
 function toggleFormDemanda(){
+  if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura.\n\nPara abrir um chamado, use o Painel Admin ou faça login como síndico.'); return; }
   const f=document.getElementById('form-demanda');
   f.style.display=f.style.display==='none'?'block':'none';
 }
