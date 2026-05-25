@@ -486,33 +486,78 @@ const PLANOS_CONDOS={
   }
 };
 
-// Mesma lógica do PMP: identifica que tipo de visita é e quais atividades extras tem
+// ════════════════════════════════════════════════════════════════════════
+// ROTA DE INSPEÇÃO (sincronizada com PMP — distribuição lógica das visitas)
+// ════════════════════════════════════════════════════════════════════════
+const ROTA_INSPECAO={
+  'monte-carlo':{
+    'Estrutura e Fundações':1,'Impermeabilização':1,
+    'Hidráulica e Saneamento':2,'Cobertura e Telhado':2,
+    'Elétrica e SPDA':3,'Sistema de Incêndio':3,
+    'Áreas Comuns':4,'CFTV e Segurança':4,
+    'Gestão e Documentação':'todos'
+  },
+  'morada-morumbi':{
+    'CRÍTICO — RISCO IMEDIATO (LT-2025-09)':'todos',
+    'Estrutura e Fundações':1,'Piscinas e Impermeabilização':1,'Impermeabilização Geral':1,
+    'Hidráulica e Saneamento':2,'Elétrica e SPDA':2,'Sistema de Incêndio':2,'Áreas Comuns':2,
+    'Gestão e Documentação':'todos'
+  }
+};
+
+// Customizações vindas da equipe (PMP grava em app_config → síndico lê)
+let _customItens={};
+async function carregarCustomItens(){
+  if(!sb||!_condoAtivo) return;
+  const {data}=await sb.from('app_config').select('value').eq('key','custom_itens_'+_condoAtivo).maybeSingle();
+  _customItens=data?.value||{};
+}
+
 function atividadesDia(condoId, dateStr, allDates){
   const condo=PLANOS_CONDOS[condoId];
   if(!condo) return {tipo:'padrao',extras:[],criticos:[]};
   const dt=new Date(dateStr+'T12:00:00');
   const month=dt.getMonth()+1;
   const yearMonth=dateStr.substring(0,7);
-  const firstOfMonth=allDates.filter(d=>d.startsWith(yearMonth))[0]===dateStr;
+  const visitasDoMes=allDates.filter(d=>d.startsWith(yearMonth)).sort();
+  const visitaIdx=visitasDoMes.indexOf(dateStr)+1;
+  const totalNoMes=visitasDoMes.length;
+  const rota=ROTA_INSPECAO[condoId]||{};
 
-  const byPer=(p)=>condo.plano.filter(i=>(i.periodicidade||'').toLowerCase().includes(p));
+  const periodicidadeAtiva=(p)=>{
+    const pl=(p||'').toLowerCase();
+    if(pl.includes('semanal')||pl.includes('quinzenal')||pl.includes('mensal')) return true;
+    if(pl.includes('trimest')) return [1,4,7,10].includes(month);
+    if(pl.includes('semest')) return [1,7].includes(month);
+    if(pl.includes('anual')) return month===12;
+    return false;
+  };
+  const itemNestaVisita=(item)=>{
+    const rotaItem=rota[item.grupo];
+    if(rotaItem==='todos'||rotaItem==null) return rotaItem==='todos';
+    if(totalNoMes<=2){ return (rotaItem<=2&&visitaIdx===1)||(rotaItem>2&&visitaIdx===2); }
+    if(totalNoMes===3){ return (rotaItem<=2&&visitaIdx===1)||(rotaItem===3&&visitaIdx===2)||(rotaItem===4&&visitaIdx===3); }
+    return rotaItem===visitaIdx;
+  };
 
-  let tipo='padrao'; const extras=[];
-  if(firstOfMonth){
+  let extras=[];
+  if(_customItens && _customItens[dateStr]){
+    extras=_customItens[dateStr].slice();
+  } else {
+    condo.plano.forEach(item=>{
+      if(item.critico||item.prioridade==='Crítico') return;
+      if(!periodicidadeAtiva(item.periodicidade)) return;
+      if(!itemNestaVisita(item)) return;
+      extras.push(item.nome);
+    });
+  }
+
+  let tipo='padrao';
+  if(visitaIdx===1){
     tipo='mensal';
-    byPer('mensal').forEach(i=>extras.push(i.nome));
-    if([1,4,7,10].includes(month)){
-      tipo='trimestral';
-      byPer('trimest').forEach(i=>extras.push(i.nome));
-    }
-    if([1,7].includes(month)){
-      if(tipo!=='trimestral') tipo='semestral';
-      byPer('semest').forEach(i=>extras.push(i.nome));
-    }
-    if(month===1){
-      tipo='anual';
-      byPer('anual').forEach(i=>extras.push(i.nome));
-    }
+    if([1,4,7,10].includes(month)) tipo='trimestral';
+    if([1,7].includes(month)) tipo='semestral';
+    if(month===12) tipo='anual';
   }
   const criticos=condo.plano.filter(i=>i.critico||i.prioridade==='Crítico').map(i=>i.nome);
   return {tipo, extras, criticos};
@@ -649,7 +694,7 @@ async function abrirCondo(condoId){
 function voltarCondos(){ _condoAtivo=null; renderCondoCards(); document.getElementById('tabs-bar').style.display='none'; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); }
 
 async function carregarTudo(){
-  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos()]);
+  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos(),carregarCustomItens()]);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
