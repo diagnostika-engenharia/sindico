@@ -288,12 +288,25 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
             <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">📎 Anexar Fotos e Vídeos (opcional)</label>
             <div style="background:#fff;border:1.5px dashed var(--gray3);border-radius:8px;padding:14px;margin-bottom:10px">
-              <input type="file" id="dem-anexos" accept="image/*,video/*" multiple capture="environment" onchange="processarAnexos()" style="display:none">
-              <button type="button" onclick="document.getElementById('dem-anexos').click()" style="width:100%;padding:12px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px">
-                <span style="font-size:18px">📷🎥</span> Tirar foto, gravar vídeo ou escolher do aparelho
-              </button>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <label style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
+                  <span style="font-size:20px">📷</span>
+                  Tirar foto
+                  <input type="file" accept="image/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
+                </label>
+                <label style="cursor:pointer;padding:11px 6px;border:none;background:linear-gradient(135deg,#C00000,#8B0000);color:#fff;border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
+                  <span style="font-size:20px">🎥</span>
+                  Gravar vídeo
+                  <input type="file" accept="video/*" capture="environment" onchange="processarAnexos(this)" style="display:none">
+                </label>
+                <label style="cursor:pointer;padding:11px 6px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:6px;font-weight:700;font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center">
+                  <span style="font-size:20px">📁</span>
+                  Da galeria
+                  <input type="file" accept="image/*,video/*" multiple onchange="processarAnexos(this)" style="display:none">
+                </label>
+              </div>
               <div id="anexos-preview" style="display:none;margin-top:10px"></div>
-              <div style="font-size:10.5px;color:var(--text2);text-align:center;margin-top:6px;line-height:1.4">Limites: imagens são comprimidas automaticamente · vídeos até 25 MB</div>
+              <div style="font-size:10.5px;color:var(--text2);text-align:center;margin-top:6px;line-height:1.4">Imagens são comprimidas · Vídeos até 25 MB</div>
             </div>
 
             <button class="btn-primary" onclick="criarDemanda()" id="btn-enviar-dem">📤 Enviar Demanda</button>
@@ -816,8 +829,8 @@ function lerVideo(file){
   });
 }
 
-async function processarAnexos(){
-  const inp=document.getElementById('dem-anexos');
+async function processarAnexos(inp){
+  if(!inp) inp=document.getElementById('dem-anexos');
   const preview=document.getElementById('anexos-preview');
   const novos=[...inp.files];
   if(!novos.length) return;
@@ -834,7 +847,7 @@ async function processarAnexos(){
       }
     }catch(e){ alert('Erro com '+f.name+': '+e.message); }
   }
-  inp.value=''; // libera para adicionar mais
+  inp.value=''; // libera o input para nova captura
   renderPreviewAnexos();
 }
 
