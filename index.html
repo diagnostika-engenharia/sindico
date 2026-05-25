@@ -339,6 +339,12 @@ const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 
+function fmtBR(iso){
+  if(!iso) return '—';
+  const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:iso;
+}
+
 const CONDOS={
   'monte-carlo':{nome:'Monte Carlo',cls:'mc',cor:'#155B67',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#155B67"/><circle cx="32" cy="20" r="5" fill="none" stroke="#D4A24C" stroke-width="2"/><rect x="22" y="22" width="20" height="3" fill="#D4A24C"/><rect x="24" y="26" width="2" height="22" fill="#D4A24C"/><rect x="30" y="26" width="2" height="22" fill="#D4A24C"/><rect x="36" y="26" width="2" height="22" fill="#D4A24C"/><rect x="20" y="48" width="24" height="3" fill="#D4A24C"/><rect x="18" y="51" width="28" height="3" fill="#D4A24C"/></svg>'},
   'morada-morumbi':{nome:'Morada Morumbi',cls:'mm',cor:'#00B4AC',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#00B4AC"/><path d="M16 32 L32 18 L48 32 L48 48 L16 48 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><rect x="22" y="36" width="6" height="8" fill="#fff"/><rect x="34" y="32" width="6" height="6" fill="#fff" opacity="0.85"/><rect x="42" y="32" width="3" height="6" fill="#fff" opacity="0.85"/><path d="M14 32 L32 16 L50 32" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>'},
@@ -617,7 +623,7 @@ async function verVisita(id){
   m.innerHTML=`<div class="modal">
     <button class="modal-close" onclick="this.closest('.modal-bg').remove()">×</button>
     <h2>${v.tipo==='reforma'?'🏗️ Vistoria de Reforma':'🛠️ Manutenção Preventiva'}</h2>
-    <div class="sub">📅 ${v.data} ${v.hora||''} · 👷 ${v.engenheiro||'—'}${v.tipo==='reforma'&&(v.bloco||v.apartamento)?'<br>📍 Unidade: '+[v.bloco&&'Bloco '+v.bloco,v.apartamento&&'Apto '+v.apartamento,v.morador&&'· '+v.morador].filter(Boolean).join(' '):''}</div>
+    <div class="sub">📅 ${fmtBR(v.data)} ${v.hora||''} · 👷 ${v.engenheiro||'—'}${v.tipo==='reforma'&&(v.bloco||v.apartamento)?'<br>📍 Unidade: '+[v.bloco&&'Bloco '+v.bloco,v.apartamento&&'Apto '+v.apartamento,v.morador&&'· '+v.morador].filter(Boolean).join(' '):''}</div>
     <div class="modal-stats">
       <div class="modal-stat green"><big>${conf}</big><small>Conformes</small></div>
       <div class="modal-stat red"><big>${nc}</big><small>Não Conformes</small></div>
