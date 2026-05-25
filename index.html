@@ -715,21 +715,29 @@ function renderAgenda(){
 
   // Filtro por modo
   if(_agendaModo==='futuras') datas=datas.filter(d=>d>=hoje);
-  else if(_agendaModo==='passadas') datas=datas.filter(d=>d<hoje).reverse();
+  else if(_agendaModo==='realizadas') datas=datas.filter(d=>visitasRealizadas.has(d)).reverse();
+  else if(_agendaModo==='pendentes') datas=datas.filter(d=>d<hoje && !visitasRealizadas.has(d) && visitDates.includes(d)).reverse();
   // 'ano' mostra tudo de 2026
 
   const el=document.getElementById('agenda-list');
 
   // Barra de filtros
   const totalFut=[...todasDatas].filter(d=>d>=hoje).length;
-  const totalPass=[...todasDatas].filter(d=>d<hoje).length;
+  const totalReal=visitasRealizadas.size;
+  const totalPend=[...todasDatas].filter(d=>d<hoje && !visitasRealizadas.has(d) && visitDates.includes(d)).length;
   const filtrosHtml=`<div style="background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
     <button onclick="alternarModoAgenda('futuras')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='futuras'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='futuras'?'var(--teal)':'#fff'};color:${_agendaModo==='futuras'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">📅 Futuras (${totalFut})</button>
     <button onclick="alternarModoAgenda('ano')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='ano'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='ano'?'var(--teal)':'#fff'};color:${_agendaModo==='ano'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">🗓️ Ano todo (${todasDatas.size})</button>
-    <button onclick="alternarModoAgenda('passadas')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='passadas'?'var(--teal)':'var(--gray2)'};background:${_agendaModo==='passadas'?'var(--teal)':'#fff'};color:${_agendaModo==='passadas'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Realizadas (${totalPass})</button>
+    <button onclick="alternarModoAgenda('realizadas')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='realizadas'?'#1B8A4A':'var(--gray2)'};background:${_agendaModo==='realizadas'?'#1B8A4A':'#fff'};color:${_agendaModo==='realizadas'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓ Realizadas (${totalReal})</button>
+    <button onclick="alternarModoAgenda('pendentes')" style="padding:7px 14px;border:1.5px solid ${_agendaModo==='pendentes'?'#C00000':'var(--gray2)'};background:${_agendaModo==='pendentes'?'#C00000':'#fff'};color:${_agendaModo==='pendentes'?'#fff':'var(--text2)'};border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">⏳ Pendentes (${totalPend})</button>
     <span style="flex:1"></span>
-    <span style="font-size:11px;color:var(--text2)">Sincronização em tempo real com a Diagnóstika</span>
+    <span style="font-size:11px;color:var(--text2)">Sincronização em tempo real</span>
   </div>`;
+
+  if(_agendaModo==='realizadas' && !datas.length){
+    el.innerHTML=filtrosHtml+'<div class="empty" style="background:#fff;padding:30px;border-radius:10px;color:var(--text2)">Nenhuma visita realizada ainda neste condomínio.<br><small style="margin-top:6px;display:block">Quando a equipe Diagnóstika registrar uma visita, ela aparecerá aqui.</small></div>';
+    return;
+  }
 
   if(!datas.length){ el.innerHTML=filtrosHtml+'<div class="empty">Nenhuma visita ou evento para esse filtro</div>'; return; }
 
