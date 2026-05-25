@@ -286,7 +286,17 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
             <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">Descrição</label>
             <textarea id="dem-desc" placeholder="Descreva a demanda em detalhes..."></textarea>
 
-            <button class="btn-primary" onclick="criarDemanda()">📤 Enviar Demanda</button>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:6px">📎 Anexar Fotos e Vídeos (opcional)</label>
+            <div style="background:#fff;border:1.5px dashed var(--gray3);border-radius:8px;padding:14px;margin-bottom:10px">
+              <input type="file" id="dem-anexos" accept="image/*,video/*" multiple capture="environment" onchange="processarAnexos()" style="display:none">
+              <button type="button" onclick="document.getElementById('dem-anexos').click()" style="width:100%;padding:12px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px">
+                <span style="font-size:18px">📷🎥</span> Tirar foto, gravar vídeo ou escolher do aparelho
+              </button>
+              <div id="anexos-preview" style="display:none;margin-top:10px"></div>
+              <div style="font-size:10.5px;color:var(--text2);text-align:center;margin-top:6px;line-height:1.4">Limites: imagens são comprimidas automaticamente · vídeos até 25 MB</div>
+            </div>
+
+            <button class="btn-primary" onclick="criarDemanda()" id="btn-enviar-dem">📤 Enviar Demanda</button>
           </div>
         </div>
         <div id="demandas-list"><div class="loading">Carregando…</div></div>
@@ -735,33 +745,133 @@ function renderDemandas(){
   const status={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
   el.innerHTML=_demandas.map(d=>{
     const dt=new Date(d.created_at);
+    const fotos=d.fotos||[];
+    const anexosHtml=fotos.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px">'+fotos.map((a,i)=>{
+      if(a.tipo==='video'){
+        return '<div style="position:relative;cursor:pointer" onclick="abrirAnexo(\''+d.id+'\','+i+')"><video src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;background:#000" muted></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.8);pointer-events:none">▶</div></div>';
+      }
+      const url=typeof a==='string'?a:a.url;
+      return '<img src="'+url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:pointer" onclick="abrirAnexo(\''+d.id+'\','+i+')">';
+    }).join('')+'</div>':'';
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
-      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${fotos.length?' · 📎 '+fotos.length+' anexo(s)':''}</div>
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
+      ${anexosHtml}
       ${d.resposta?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+d.resposta+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
     </div>`;
   }).join('');
+}
+
+function abrirAnexo(demId, idx){
+  const d=_demandas.find(x=>x.id===demId);
+  if(!d || !d.fotos || !d.fotos[idx]) return;
+  const a=d.fotos[idx];
+  const url=typeof a==='string'?a:a.url;
+  const z=document.createElement('div');
+  z.className='foto-zoom';
+  z.onclick=()=>z.remove();
+  if(a.tipo==='video'){
+    z.innerHTML='<video src="'+url+'" controls autoplay style="max-width:100%;max-height:100%"></video>';
+  } else {
+    z.innerHTML='<img src="'+url+'">';
+  }
+  document.body.appendChild(z);
 }
 function toggleFormDemanda(){
   const f=document.getElementById('form-demanda');
   f.style.display=f.style.display==='none'?'block':'none';
 }
+let _anexosDem=[];
+
+function compressarImagem(file,maxW=1280,quality=0.78){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const r=Math.min(1,maxW/img.width);
+        const c=document.createElement('canvas');
+        c.width=Math.round(img.width*r); c.height=Math.round(img.height*r);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        resolve({tipo:'image', url:c.toDataURL('image/jpeg',quality), nome:file.name, tamanho:Math.round(c.width*c.height*0.3/1024)+'KB'});
+      };
+      img.onerror=()=>reject(new Error('imagem inválida'));
+      img.src=fr.result;
+    };
+    fr.onerror=()=>reject(new Error('leitura falhou'));
+    fr.readAsDataURL(file);
+  });
+}
+function lerVideo(file){
+  return new Promise((resolve,reject)=>{
+    if(file.size>25*1024*1024){
+      reject(new Error('Vídeo "'+file.name+'" tem mais de 25MB. Reduza a duração ou qualidade.'));
+      return;
+    }
+    const fr=new FileReader();
+    fr.onload=()=>resolve({tipo:'video', url:fr.result, nome:file.name, tamanho:Math.round(file.size/1024)+'KB', mimeType:file.type});
+    fr.onerror=()=>reject(new Error('falha ao ler vídeo'));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function processarAnexos(){
+  const inp=document.getElementById('dem-anexos');
+  const preview=document.getElementById('anexos-preview');
+  const novos=[...inp.files];
+  if(!novos.length) return;
+  preview.style.display='block';
+  preview.innerHTML='<div style="text-align:center;color:var(--text2);font-size:12px;padding:10px">⏳ Processando '+novos.length+' arquivo(s)…</div>';
+  for(const f of novos){
+    try{
+      if(f.type.startsWith('image/')){
+        const item=await compressarImagem(f);
+        _anexosDem.push(item);
+      } else if(f.type.startsWith('video/')){
+        const item=await lerVideo(f);
+        _anexosDem.push(item);
+      }
+    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+  }
+  inp.value=''; // libera para adicionar mais
+  renderPreviewAnexos();
+}
+
+function renderPreviewAnexos(){
+  const preview=document.getElementById('anexos-preview');
+  if(!_anexosDem.length){ preview.style.display='none'; return; }
+  preview.style.display='block';
+  preview.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+_anexosDem.map((a,i)=>{
+    const thumb=a.tipo==='image'
+      ?'<img src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;display:block">'
+      :'<div style="width:100%;aspect-ratio:1;background:#1a1a1a;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px">🎥</div>';
+    return '<div style="position:relative">'+thumb+'<button type="button" onclick="removerAnexo('+i+')" style="position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(192,0,0,.95);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">×</button><div style="font-size:9px;color:var(--text2);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(a.tipo==='video'?'🎥 ':'')+a.tamanho+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function removerAnexo(i){ _anexosDem.splice(i,1); renderPreviewAnexos(); }
+
 async function criarDemanda(){
   const titulo=document.getElementById('dem-titulo').value.trim();
   const descricao=document.getElementById('dem-desc').value.trim();
   const categoria=document.getElementById('dem-categoria').value;
   const urgencia=document.getElementById('dem-urgencia').value;
   if(!titulo){ alert('Informe um título'); return; }
+  const btn=document.getElementById('btn-enviar-dem');
+  btn.disabled=true; btn.textContent='⏳ Enviando…';
   try{
-    const {error}=await sb.from('demandas').insert({condo_id:_condoAtivo,user_id:_user.id,titulo,descricao,categoria,urgencia,status:'aberta'});
+    const {error}=await sb.from('demandas').insert({condo_id:_condoAtivo,user_id:_user.id,titulo,descricao,categoria,urgencia,status:'aberta',fotos:_anexosDem});
     if(error) throw error;
     document.getElementById('dem-titulo').value='';
     document.getElementById('dem-desc').value='';
+    _anexosDem=[];
+    renderPreviewAnexos();
     toggleFormDemanda();
     alert('✓ Demanda enviada! A equipe Diagnóstika foi notificada.');
     carregarDemandas();
   }catch(e){ alert('Erro: '+e.message); }
+  finally{ btn.disabled=false; btn.innerHTML='📤 Enviar Demanda'; }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
