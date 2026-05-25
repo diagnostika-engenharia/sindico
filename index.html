@@ -833,6 +833,7 @@ function renderDemandas(){
     const gridSind=sindIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px">'+sindIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const proto=d.protocolo||'—';
+    const podeEditar=d.user_id===_user?.id && d.status!=='fechada';
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
       <div style="font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;margin-bottom:6px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
@@ -840,6 +841,7 @@ function renderDemandas(){
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
       ${gridSind}
       ${(d.resposta||diagIdxs.length)?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+(d.resposta||'')+gridDiag+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
+      ${podeEditar?`<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -1040,6 +1042,190 @@ function renderPreviewAnexos(){
 }
 
 function removerAnexo(i){ _anexosDem.splice(i,1); renderPreviewAnexos(); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EDITAR DEMANDA (síndico adiciona info/anexos)
+// ═══════════════════════════════════════════════════════════════════════════
+let _anexosEdit=[];
+
+function editarDemanda(id){
+  const d=_demandas.find(x=>x.id===id);
+  if(!d){ alert('Demanda não encontrada'); return; }
+  _anexosEdit=[]; // novos anexos a adicionar
+
+  const cats={corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida técnica',reforma:'🏗️ Aprovação de reforma',laudo:'📋 Solicitação de laudo',emergencia:'🚨 Emergência',documento:'📄 Documento'};
+  const urgs={baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
+  const fotos=d.fotos||[];
+  const anexosSind=fotos.map((a,i)=>({a,i})).filter(x=>!x.a||typeof x.a==='string'||x.a.origem!=='diagnostika');
+
+  const ov=document.createElement('div');
+  ov.id='edit-dem-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`
+    <div style="background:#fff;border-radius:14px;max-width:620px;width:100%;padding:24px;box-shadow:0 12px 48px rgba(0,0,0,.3);position:relative;margin:auto">
+      <button onclick="document.getElementById('edit-dem-overlay').remove()" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#5A7A7E;line-height:1">×</button>
+      <h2 style="color:var(--teal);font-size:18px;margin:0 0 4px;font-weight:700">✏️ Editar Demanda</h2>
+      <div style="font-size:11px;font-weight:700;color:var(--teal);letter-spacing:.5px;font-family:'SF Mono',Menlo,Consolas,monospace;margin-bottom:14px">📋 PROTOCOLO ${d.protocolo||'—'}</div>
+
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Categoria</label>
+      <select id="edit-cat" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit;background:#fff">
+        ${Object.entries(cats).map(([k,v])=>`<option value="${k}" ${k===d.categoria?'selected':''}>${v}</option>`).join('')}
+      </select>
+
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Urgência</label>
+      <select id="edit-urg" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit;background:#fff">
+        ${Object.entries(urgs).map(([k,v])=>`<option value="${k}" ${k===d.urgencia?'selected':''}>${v}</option>`).join('')}
+      </select>
+
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Título</label>
+      <input type="text" id="edit-titulo" value="${(d.titulo||'').replace(/"/g,'&quot;')}" lang="pt-BR" spellcheck="true" autocapitalize="sentences" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;margin-bottom:10px;font-family:inherit">
+
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Descrição (adicione informações novas aqui)</label>
+      <textarea id="edit-desc" lang="pt-BR" spellcheck="true" autocapitalize="sentences" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;min-height:110px;resize:vertical;font-family:inherit;margin-bottom:14px">${d.descricao||''}</textarea>
+
+      ${anexosSind.length?`<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">📎 Anexos atuais (${anexosSind.length})</label>
+      <div id="edit-anexos-existentes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:14px">
+        ${anexosSind.map(({a,i})=>{
+          const tipo=a&&a.tipo;
+          const thumb=tipo==='video'
+            ?'<div style="width:100%;aspect-ratio:1;background:#1a1a1a;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px">🎥</div>'
+            :(tipo==='pdf'||tipo==='doc'
+              ?'<div style="width:100%;aspect-ratio:1;background:rgba(21,91,103,.1);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:22px">'+(tipo==='pdf'?'📄':'📎')+'</div>'
+              :'<img src="'+(typeof a==='string'?a:a.url)+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;display:block">');
+          return `<div style="position:relative" data-idx="${i}">
+            ${thumb}
+            <button type="button" onclick="removerAnexoExistente(${i})" title="Remover" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(192,0,0,.95);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">×</button>
+          </div>`;
+        }).join('')}
+      </div>`:''}
+
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">➕ Adicionar novos anexos</label>
+      <div style="background:#fff;border:1.5px dashed var(--gray3);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+          <button type="button" onclick="capturarMidiaEdit('foto')" style="cursor:pointer;padding:10px 4px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit"><span style="font-size:18px">📷</span>Foto</button>
+          <button type="button" onclick="capturarMidiaEdit('video')" style="cursor:pointer;padding:10px 4px;border:none;background:linear-gradient(135deg,#C00000,#8B0000);color:#fff;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit"><span style="font-size:18px">🎥</span>Vídeo</button>
+          <label style="cursor:pointer;padding:10px 4px;border:1.5px solid #C00000;background:#fff;color:#C00000;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center"><span style="font-size:18px">📄</span>PDF<input type="file" accept="application/pdf" multiple onchange="processarAnexosEdit(this)" style="display:none"></label>
+          <label style="cursor:pointer;padding:10px 4px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center"><span style="font-size:18px">📁</span>Galeria<input type="file" accept="image/*,video/*" multiple onchange="processarAnexosEdit(this)" style="display:none"></label>
+        </div>
+        <div id="edit-novos-preview" style="margin-top:10px"></div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('edit-dem-overlay').remove()" style="flex:0 0 auto;padding:11px 18px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">Cancelar</button>
+        <button id="btn-salvar-edit" onclick="salvarEdicaoDemanda('${d.id}')" style="flex:1;padding:11px;border:none;background:var(--teal);color:#fff;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">💾 Salvar alterações</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+// Marca anexos para remoção sem mexer no array até salvar
+let _anexosRemover=new Set();
+function removerAnexoExistente(idx){
+  if(!confirm('Remover este anexo?')) return;
+  _anexosRemover.add(idx);
+  const el=document.querySelector('#edit-anexos-existentes [data-idx="'+idx+'"]');
+  if(el){ el.style.opacity='0.3'; el.style.pointerEvents='none'; el.innerHTML+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(192,0,0,.7);color:#fff;font-size:11px;font-weight:700;border-radius:5px">REMOVER</div>'; }
+}
+
+function capturarMidiaEdit(modo){
+  if(ehMobile()){
+    const inp=document.createElement('input');
+    inp.type='file';
+    inp.accept=modo==='video'?'video/*':'image/*';
+    inp.capture='environment';
+    inp.onchange=e=>processarAnexosEdit(e.target);
+    inp.click();
+    return;
+  }
+  // Reusa o overlay de webcam mas redireciona pra _anexosEdit
+  abrirWebcamEdit(modo);
+}
+
+async function abrirWebcamEdit(modo){
+  const origPush=_anexosDem.push.bind(_anexosDem);
+  // Substitui temporariamente: o que iria para _anexosDem vai para _anexosEdit
+  _anexosDem.push=function(x){ _anexosEdit.push(x); renderNovosAnexosEdit(); return _anexosEdit.length; };
+  try{ await abrirWebcam(modo); }
+  finally{ setTimeout(()=>{ _anexosDem.push=origPush; },200); }
+}
+
+async function processarAnexosEdit(inp){
+  const novos=[...inp.files];
+  if(!novos.length) return;
+  const prev=document.getElementById('edit-novos-preview');
+  prev.innerHTML='<div style="text-align:center;color:var(--text2);font-size:12px;padding:8px">⏳ Processando…</div>';
+  for(const f of novos){
+    try{
+      if(f.type.startsWith('image/')) _anexosEdit.push(await compressarImagem(f));
+      else if(f.type.startsWith('video/')) _anexosEdit.push(await lerVideo(f));
+      else if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')){
+        const fr=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+        if(f.size>10*1024*1024){ alert(f.name+' tem mais de 10MB'); continue; }
+        _anexosEdit.push({tipo:'pdf',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
+      } else {
+        const fr=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+        if(f.size>10*1024*1024){ alert(f.name+' tem mais de 10MB'); continue; }
+        _anexosEdit.push({tipo:'doc',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
+      }
+    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+  }
+  inp.value='';
+  renderNovosAnexosEdit();
+}
+
+function renderNovosAnexosEdit(){
+  const prev=document.getElementById('edit-novos-preview');
+  if(!prev) return;
+  if(!_anexosEdit.length){ prev.innerHTML=''; return; }
+  prev.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">➕ '+_anexosEdit.length+' novo(s)</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:5px">'+_anexosEdit.map((a,i)=>{
+    let t;
+    if(a.tipo==='image') t='<img src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px">';
+    else if(a.tipo==='video') t='<div style="width:100%;aspect-ratio:1;background:#1a1a1a;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px">🎥</div>';
+    else if(a.tipo==='pdf') t='<div style="width:100%;aspect-ratio:1;background:#C00000;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">PDF</div>';
+    else t='<div style="width:100%;aspect-ratio:1;background:var(--gray3);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">📄</div>';
+    return '<div style="position:relative">'+t+'<button type="button" onclick="_anexosEdit.splice('+i+',1);renderNovosAnexosEdit()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(192,0,0,.95);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700;line-height:1;padding:0">×</button></div>';
+  }).join('')+'</div>';
+}
+
+async function salvarEdicaoDemanda(id){
+  const d=_demandas.find(x=>x.id===id);
+  if(!d) return;
+  const titulo=document.getElementById('edit-titulo').value.trim();
+  const descricao=document.getElementById('edit-desc').value.trim();
+  const categoria=document.getElementById('edit-cat').value;
+  const urgencia=document.getElementById('edit-urg').value;
+  if(!titulo){ alert('O título não pode ficar vazio'); return; }
+
+  const btn=document.getElementById('btn-salvar-edit');
+  btn.disabled=true; btn.textContent='⏳ Salvando…';
+
+  // Mantém anexos da Diagnóstika + síndico não-removidos + novos
+  const fotosAtuais=d.fotos||[];
+  const fotosFinais=[
+    ...fotosAtuais.filter((a,i)=>{
+      if(a && a.origem==='diagnostika') return true; // não mexer nos da equipe
+      return !_anexosRemover.has(i);
+    }),
+    ..._anexosEdit
+  ];
+
+  try{
+    const {error}=await sb.from('demandas').update({
+      titulo,descricao,categoria,urgencia,
+      fotos:fotosFinais,
+      updated_at:new Date().toISOString()
+    }).eq('id',id);
+    if(error) throw error;
+    _anexosEdit=[]; _anexosRemover.clear();
+    document.getElementById('edit-dem-overlay').remove();
+    alert('✓ Demanda atualizada!');
+    carregarDemandas();
+  }catch(e){
+    alert('Erro ao salvar: '+e.message);
+    btn.disabled=false; btn.textContent='💾 Salvar alterações';
+  }
+}
 
 async function criarDemanda(){
   const titulo=document.getElementById('dem-titulo').value.trim();
