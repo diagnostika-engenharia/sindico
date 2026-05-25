@@ -487,23 +487,54 @@ const PLANOS_CONDOS={
 };
 
 // ════════════════════════════════════════════════════════════════════════
-// ROTA DE INSPEÇÃO (sincronizada com PMP — distribuição lógica das visitas)
+// PROGRAMAÇÃO ANUAL (mesma lógica do PMP — distribuição uniforme pelo ano)
 // ════════════════════════════════════════════════════════════════════════
-const ROTA_INSPECAO={
-  'monte-carlo':{
-    'Estrutura e Fundações':1,'Impermeabilização':1,
-    'Hidráulica e Saneamento':2,'Cobertura e Telhado':2,
-    'Elétrica e SPDA':3,'Sistema de Incêndio':3,
-    'Áreas Comuns':4,'CFTV e Segurança':4,
-    'Gestão e Documentação':'todos'
-  },
-  'morada-morumbi':{
-    'CRÍTICO — RISCO IMEDIATO (LT-2025-09)':'todos',
-    'Estrutura e Fundações':1,'Piscinas e Impermeabilização':1,'Impermeabilização Geral':1,
-    'Hidráulica e Saneamento':2,'Elétrica e SPDA':2,'Sistema de Incêndio':2,'Áreas Comuns':2,
-    'Gestão e Documentação':'todos'
+let _progCache={};
+function programacaoAnualSind(condoId, allDates){
+  if(_progCache[condoId]) return _progCache[condoId];
+  const condo=PLANOS_CONDOS[condoId];
+  if(!condo||!condo.plano) return {};
+  const result={};
+  allDates.forEach(d=>result[d]=[]);
+  if(!allDates.length){ _progCache[condoId]=result; return result; }
+  const cadence=allDates.length<2?7:Math.round((new Date(allDates[1])-new Date(allDates[0]))/86400000);
+
+  function pickPorBucket(idx, bucketFn){
+    const buckets={};
+    allDates.forEach(d=>{
+      const k=bucketFn(d);
+      (buckets[k]=buckets[k]||[]).push(d);
+    });
+    return Object.values(buckets).map(visitas=>visitas[idx % visitas.length]).filter(Boolean);
   }
-};
+  const pickPorMes=(idx)=>pickPorBucket(idx, d=>d.substring(0,7));
+  const pickPorTrimestre=(idx)=>pickPorBucket(idx, d=>Math.floor((parseInt(d.substring(5,7))-1)/3));
+  const pickPorSemestre=(idx)=>pickPorBucket(idx, d=>parseInt(d.substring(5,7))<=6?'S1':'S2');
+  function pickAnual(idx){
+    const slot=Math.max(0, allDates.length-1-(idx % Math.min(6, allDates.length)));
+    return allDates[slot]?[allDates[slot]]:[];
+  }
+
+  condo.plano.forEach((item, idx)=>{
+    if(item.critico||item.prioridade==='Crítico') return;
+    const p=(item.periodicidade||'').toLowerCase();
+    let target=[];
+    if(p.includes('semanal')) target=allDates.slice();
+    else if(p.includes('quinzenal')){
+      if(cadence>=14) target=allDates.slice();
+      else target=allDates.filter((_,i)=>i % 2 === (idx % 2));
+    }
+    else if(p.includes('mensal')) target=pickPorMes(idx);
+    else if(p.includes('trimest')) target=pickPorTrimestre(idx);
+    else if(p.includes('semest')) target=pickPorSemestre(idx);
+    else if(p.includes('anual')) target=pickAnual(idx);
+    else return;
+    target.forEach(d=>{ if(result[d]) result[d].push(item.nome); });
+  });
+
+  _progCache[condoId]=result;
+  return result;
+}
 
 // Customizações vindas da equipe (PMP grava em app_config → síndico lê)
 let _customItens={};
@@ -511,54 +542,31 @@ async function carregarCustomItens(){
   if(!sb||!_condoAtivo) return;
   const {data}=await sb.from('app_config').select('value').eq('key','custom_itens_'+_condoAtivo).maybeSingle();
   _customItens=data?.value||{};
+  _progCache={}; // invalida cache para forçar recompute com customs novos
 }
 
 function atividadesDia(condoId, dateStr, allDates){
   const condo=PLANOS_CONDOS[condoId];
   if(!condo) return {tipo:'padrao',extras:[],criticos:[]};
-  const dt=new Date(dateStr+'T12:00:00');
-  const month=dt.getMonth()+1;
-  const yearMonth=dateStr.substring(0,7);
-  const visitasDoMes=allDates.filter(d=>d.startsWith(yearMonth)).sort();
-  const visitaIdx=visitasDoMes.indexOf(dateStr)+1;
-  const totalNoMes=visitasDoMes.length;
-  const rota=ROTA_INSPECAO[condoId]||{};
 
-  const periodicidadeAtiva=(p)=>{
-    const pl=(p||'').toLowerCase();
-    if(pl.includes('semanal')||pl.includes('quinzenal')||pl.includes('mensal')) return true;
-    if(pl.includes('trimest')) return [1,4,7,10].includes(month);
-    if(pl.includes('semest')) return [1,7].includes(month);
-    if(pl.includes('anual')) return month===12;
-    return false;
-  };
-  const itemNestaVisita=(item)=>{
-    const rotaItem=rota[item.grupo];
-    if(rotaItem==='todos'||rotaItem==null) return rotaItem==='todos';
-    if(totalNoMes<=2){ return (rotaItem<=2&&visitaIdx===1)||(rotaItem>2&&visitaIdx===2); }
-    if(totalNoMes===3){ return (rotaItem<=2&&visitaIdx===1)||(rotaItem===3&&visitaIdx===2)||(rotaItem===4&&visitaIdx===3); }
-    return rotaItem===visitaIdx;
-  };
-
-  let extras=[];
+  let extras;
   if(_customItens && _customItens[dateStr]){
     extras=_customItens[dateStr].slice();
   } else {
-    condo.plano.forEach(item=>{
-      if(item.critico||item.prioridade==='Crítico') return;
-      if(!periodicidadeAtiva(item.periodicidade)) return;
-      if(!itemNestaVisita(item)) return;
-      extras.push(item.nome);
-    });
+    const prog=programacaoAnualSind(condoId, allDates);
+    extras=(prog[dateStr]||[]).slice();
   }
 
+  // Tipo pela periodicidade mais alta presente
+  const itensPorNome={};
+  condo.plano.forEach(it=>itensPorNome[it.nome]=it);
+  const peris=extras.map(n=>(itensPorNome[n]?.periodicidade||'').toLowerCase());
   let tipo='padrao';
-  if(visitaIdx===1){
-    tipo='mensal';
-    if([1,4,7,10].includes(month)) tipo='trimestral';
-    if([1,7].includes(month)) tipo='semestral';
-    if(month===12) tipo='anual';
-  }
+  if(peris.some(p=>p.includes('anual'))) tipo='anual';
+  else if(peris.some(p=>p.includes('semest'))) tipo='semestral';
+  else if(peris.some(p=>p.includes('trimest'))) tipo='trimestral';
+  else if(peris.some(p=>p.includes('mensal'))) tipo='mensal';
+
   const criticos=condo.plano.filter(i=>i.critico||i.prioridade==='Crítico').map(i=>i.nome);
   return {tipo, extras, criticos};
 }
