@@ -231,6 +231,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
       <button class="tab active" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
       <button class="tab" data-tab="agenda" onclick="trocarTab('agenda')"><span class="ic">📅</span>Agenda</button>
       <button class="tab" data-tab="demandas" onclick="trocarTab('demandas')"><span class="ic">💬</span>Demandas <span class="badge-num" id="dem-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="manutencoes" onclick="trocarTab('manutencoes')"><span class="ic">🔧</span>Manutenções <span class="badge-num" id="mnt-count" style="display:none">0</span></button>
       <button class="tab" data-tab="docs" onclick="trocarTab('docs')"><span class="ic">📄</span>Documentos</button>
     </div>
 
@@ -325,6 +326,127 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
           <span id="dem-contador" style="font-size:11px;color:var(--text2);font-weight:600"></span>
         </div>
         <div id="demandas-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="manutencoes">
+      <div class="section">
+        <h2>🔧 Nova Manutenção <button onclick="toggleFormMnt()" style="background:linear-gradient(135deg,#1B8A4A,#147239);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;float:right">+ Registrar Manutenção</button></h2>
+
+        <div id="form-mnt" style="display:none;background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px">
+          <div style="font-size:11.5px;color:var(--text2);margin-bottom:14px;background:rgba(27,138,74,.08);padding:9px 12px;border-radius:6px;border-left:3px solid #1B8A4A">
+            💡 <b>Importante para a garantia do condomínio:</b> registre toda manutenção executada (preventiva, corretiva ou legal) com NF, ART e fotos. A Diagnóstika fará apenas as vistorias técnicas — as contratações e execução são responsabilidade da sindica.
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Tipo *</label>
+              <select id="mnt-tipo" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit;background:#fff">
+                <option value="preventiva">🔧 Preventiva</option>
+                <option value="corretiva">🚨 Corretiva</option>
+                <option value="inspecao_legal">📋 Inspeção Legal</option>
+                <option value="limpeza">🧹 Limpeza/Higienização</option>
+                <option value="instalacao">⚙️ Instalação Nova</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Data de execução *</label>
+              <input type="date" id="mnt-data" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+            </div>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Sistema *</label>
+          <select id="mnt-sistema" onchange="atualizarItensPlano()" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;margin-bottom:10px;font-family:inherit;background:#fff">
+            <option value="">Selecione…</option>
+          </select>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Item do Plano de Manutenção</label>
+          <select id="mnt-item" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;margin-bottom:10px;font-family:inherit;background:#fff">
+            <option value="">— (manutenção não-mapeada)</option>
+          </select>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Título *</label>
+          <input type="text" id="mnt-titulo" placeholder="Ex: Limpeza semestral da caixa d'água" lang="pt-BR" spellcheck="true" autocapitalize="sentences" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;margin-bottom:10px;font-family:inherit">
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Descrição técnica do serviço</label>
+          <textarea id="mnt-descricao" placeholder="Detalhe o que foi realizado, materiais usados, observações..." lang="pt-BR" spellcheck="true" autocapitalize="sentences" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;min-height:70px;margin-bottom:14px;font-family:inherit;resize:vertical"></textarea>
+
+          <div style="background:#F0F4F5;border-radius:8px;padding:12px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;margin-bottom:8px">🏢 Empresa executora</div>
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px">
+              <input type="text" id="mnt-empresa" placeholder="Nome / Razão Social" lang="pt-BR" spellcheck="true" autocapitalize="words" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:12.5px;font-family:inherit">
+              <input type="text" id="mnt-cnpj" placeholder="CNPJ" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:12.5px;font-family:inherit">
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+              <input type="text" id="mnt-responsavel" placeholder="Responsável técnico (nome)" lang="pt-BR" spellcheck="true" autocapitalize="words" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:12.5px;font-family:inherit">
+              <input type="text" id="mnt-doc" placeholder="ART / CREA / CRT" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:12.5px;font-family:inherit">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Valor (R$)</label>
+              <input type="number" id="mnt-valor" placeholder="0,00" step="0.01" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Garantia (dias)</label>
+              <input type="number" id="mnt-garantia" placeholder="Ex: 90" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Próxima recomendada</label>
+              <input type="date" id="mnt-proxima" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+            </div>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">📎 Anexos (NF, ART, fotos antes/depois)</label>
+          <div style="background:#fff;border:1.5px dashed var(--gray3);border-radius:8px;padding:12px;margin-bottom:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+              <button type="button" onclick="capturarMidiaMnt('foto')" style="cursor:pointer;padding:10px 4px;border:none;background:linear-gradient(135deg,var(--turq),var(--teal));color:#fff;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit"><span style="font-size:18px">📷</span>Foto</button>
+              <button type="button" onclick="capturarMidiaMnt('video')" style="cursor:pointer;padding:10px 4px;border:none;background:linear-gradient(135deg,#C00000,#8B0000);color:#fff;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit"><span style="font-size:18px">🎥</span>Vídeo</button>
+              <label style="cursor:pointer;padding:10px 4px;border:1.5px solid #C00000;background:#fff;color:#C00000;border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center"><span style="font-size:18px">📄</span>NF/ART<input type="file" accept="application/pdf,image/*" multiple onchange="processarAnexosMnt(this)" style="display:none"></label>
+              <label style="cursor:pointer;padding:10px 4px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:6px;font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center"><span style="font-size:18px">📁</span>Outros<input type="file" multiple onchange="processarAnexosMnt(this)" style="display:none"></label>
+            </div>
+            <div id="mnt-anexos-preview" style="margin-top:10px"></div>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <button onclick="toggleFormMnt()" style="flex:0 0 auto;padding:11px 18px;border:1.5px solid var(--gray3);background:#fff;color:var(--text2);border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">Cancelar</button>
+            <button id="btn-salvar-mnt" onclick="salvarManutencao()" style="flex:1;padding:11px;border:none;background:#1B8A4A;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">💾 Registrar Manutenção</button>
+          </div>
+        </div>
+
+        <div id="mnt-filtros" style="background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:none;gap:6px;flex-wrap:wrap;align-items:center">
+          <input type="search" id="mnt-busca" placeholder="🔍 Buscar protocolo, título, empresa…" oninput="renderManutencoes()" style="flex:1;min-width:200px;padding:8px 12px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+          <select id="mnt-filtro-sistema" onchange="renderManutencoes()" style="padding:8px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;background:#fff;font-family:inherit">
+            <option value="">Todos os sistemas</option>
+          </select>
+          <select id="mnt-filtro-tipo" onchange="renderManutencoes()" style="padding:8px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;background:#fff;font-family:inherit">
+            <option value="">Todos os tipos</option>
+            <option value="preventiva">🔧 Preventiva</option>
+            <option value="corretiva">🚨 Corretiva</option>
+            <option value="inspecao_legal">📋 Inspeção Legal</option>
+            <option value="limpeza">🧹 Limpeza</option>
+            <option value="instalacao">⚙️ Instalação</option>
+          </select>
+          <span id="mnt-contador" style="font-size:11px;color:var(--text2);font-weight:600"></span>
+        </div>
+
+        <div id="mnt-list"><div class="loading">Carregando…</div></div>
+      </div>
+
+      <div class="section" style="margin-top:18px">
+        <h2>📧 Notificações por E-mail</h2>
+        <div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Receba alertas quando uma manutenção estiver próxima do vencimento ou quando vencer.</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="email" id="mnt-email" placeholder="seu@email.com" lang="pt-BR" spellcheck="false" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;color:var(--text)">
+              <input type="checkbox" id="mnt-notif" checked style="width:16px;height:16px;cursor:pointer"> Quero receber alertas
+            </label>
+            <button onclick="salvarPreferenciasNotif()" style="padding:9px 16px;border:none;background:var(--teal);color:#fff;border-radius:7px;font-weight:700;cursor:pointer;font-size:12px">💾 Salvar</button>
+          </div>
+          <div id="mnt-email-status" style="font-size:11px;color:var(--text2);margin-top:8px"></div>
+        </div>
       </div>
     </div>
 
@@ -715,7 +837,7 @@ async function abrirCondo(condoId){
 function voltarCondos(){ _condoAtivo=null; renderCondoCards(); document.getElementById('tabs-bar').style.display='none'; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); }
 
 async function carregarTudo(){
-  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos(),carregarCustomItens()]);
+  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos(),carregarCustomItens(),carregarManutencoes()]);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1683,11 +1805,248 @@ async function criarDemanda(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// MANUTENÇÕES — síndica registra; equipe valida/audita
+// ═══════════════════════════════════════════════════════════════════════════
+let _manutencoes=[], _anexosMnt=[];
+
+function toggleFormMnt(){
+  if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura. A Diagnóstika faz vistorias e indica manutenções — a contratação e execução são responsabilidade da sindica.\n\nPeça à sindica para registrar.'); return; }
+  const f=document.getElementById('form-mnt');
+  const visivel=f.style.display!=='none';
+  f.style.display=visivel?'none':'block';
+  if(!visivel){
+    // Pré-popula data com hoje
+    document.getElementById('mnt-data').value=new Date().toISOString().slice(0,10);
+    popularSistemasMnt();
+    _anexosMnt=[];
+    renderAnexosMntPreview();
+  }
+}
+
+function popularSistemasMnt(){
+  const plano=PLANOS_CONDOS[_condoAtivo]?.plano||[];
+  const sistemas=[...new Set(plano.map(i=>i.grupo))].sort();
+  const sel=document.getElementById('mnt-sistema');
+  sel.innerHTML='<option value="">Selecione…</option>'+sistemas.map(s=>`<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('')+'<option value="Outro">Outro (não-mapeado)</option>';
+  // Popula também o filtro
+  const f=document.getElementById('mnt-filtro-sistema');
+  if(f) f.innerHTML='<option value="">Todos os sistemas</option>'+sistemas.map(s=>`<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
+}
+
+function atualizarItensPlano(){
+  const sistema=document.getElementById('mnt-sistema').value;
+  const plano=PLANOS_CONDOS[_condoAtivo]?.plano||[];
+  const itens=plano.filter(i=>i.grupo===sistema);
+  const sel=document.getElementById('mnt-item');
+  sel.innerHTML='<option value="">— (manutenção não-mapeada)</option>'+itens.map(i=>`<option value="${i.nome.replace(/"/g,'&quot;')}">${i.nome} (${i.periodicidade})</option>`).join('');
+}
+
+async function processarAnexosMnt(inp){
+  if(!inp.files.length) return;
+  const preview=document.getElementById('mnt-anexos-preview');
+  preview.innerHTML='<div style="text-align:center;color:var(--text2);font-size:12px;padding:8px">⏳ Processando…</div>';
+  for(const f of inp.files){
+    try{
+      if(f.type.startsWith('image/')){ _anexosMnt.push(await compressarImagem(f)); }
+      else if(f.type.startsWith('video/')){ _anexosMnt.push(await lerVideo(f)); }
+      else if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')){
+        if(f.size>10*1024*1024){ alert(f.name+' tem mais de 10MB'); continue; }
+        const fr=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+        _anexosMnt.push({tipo:'pdf',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
+      } else {
+        if(f.size>10*1024*1024){ alert(f.name+' tem mais de 10MB'); continue; }
+        const fr=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+        _anexosMnt.push({tipo:'doc',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
+      }
+    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+  }
+  inp.value='';
+  renderAnexosMntPreview();
+}
+
+function capturarMidiaMnt(modo){
+  if(ehMobile()){
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept=modo==='video'?'video/*':'image/*'; inp.capture='environment';
+    inp.onchange=e=>processarAnexosMnt(e.target); inp.click();
+    return;
+  }
+  // Reusa o overlay de webcam, redireciona pra _anexosMnt
+  const orig=_anexosDem.push.bind(_anexosDem);
+  _anexosDem.push=function(x){ _anexosMnt.push(x); renderAnexosMntPreview(); return _anexosMnt.length; };
+  abrirWebcam(modo).finally(()=>setTimeout(()=>{ _anexosDem.push=orig; },200));
+}
+
+function renderAnexosMntPreview(){
+  const prev=document.getElementById('mnt-anexos-preview');
+  if(!prev) return;
+  if(!_anexosMnt.length){ prev.innerHTML=''; return; }
+  prev.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">📎 '+_anexosMnt.length+' anexo(s)</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">'+_anexosMnt.map((a,i)=>{
+    let t;
+    if(a.tipo==='image') t='<img src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px">';
+    else if(a.tipo==='video') t='<div style="width:100%;aspect-ratio:1;background:#1a1a1a;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px">🎥</div>';
+    else if(a.tipo==='pdf') t='<div style="width:100%;aspect-ratio:1;background:#C00000;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">PDF</div>';
+    else t='<div style="width:100%;aspect-ratio:1;background:var(--gray3);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">📄</div>';
+    return '<div style="position:relative">'+t+'<button type="button" onclick="_anexosMnt.splice('+i+',1);renderAnexosMntPreview()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(192,0,0,.95);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700;line-height:1;padding:0">×</button></div>';
+  }).join('')+'</div>';
+}
+
+async function salvarManutencao(){
+  const tipo=document.getElementById('mnt-tipo').value;
+  const data_execucao=document.getElementById('mnt-data').value;
+  const sistema=document.getElementById('mnt-sistema').value;
+  const item_plano=document.getElementById('mnt-item').value;
+  const titulo=document.getElementById('mnt-titulo').value.trim();
+  const descricao=document.getElementById('mnt-descricao').value.trim();
+  const empresa_nome=document.getElementById('mnt-empresa').value.trim();
+  const empresa_cnpj=document.getElementById('mnt-cnpj').value.trim();
+  const responsavel_nome=document.getElementById('mnt-responsavel').value.trim();
+  const responsavel_doc=document.getElementById('mnt-doc').value.trim();
+  const valor=parseFloat(document.getElementById('mnt-valor').value)||null;
+  const garantia_dias=parseInt(document.getElementById('mnt-garantia').value)||null;
+  const proxima_data_recomendada=document.getElementById('mnt-proxima').value||null;
+
+  if(!data_execucao){ alert('Informe a data de execução'); return; }
+  if(!titulo){ alert('Informe o título da manutenção'); return; }
+  if(!sistema){ alert('Selecione o sistema'); return; }
+
+  const btn=document.getElementById('btn-salvar-mnt');
+  btn.disabled=true; btn.textContent='⏳ Salvando…';
+  try{
+    const {data,error}=await sb.from('manutencoes').insert({
+      condo_id:_condoAtivo, user_id:_user.id,
+      tipo, data_execucao, sistema, item_plano:item_plano||null,
+      titulo, descricao:descricao||null,
+      empresa_nome:empresa_nome||null, empresa_cnpj:empresa_cnpj||null,
+      responsavel_nome:responsavel_nome||null, responsavel_doc:responsavel_doc||null,
+      valor, garantia_dias, proxima_data_recomendada,
+      anexos:_anexosMnt
+    }).select().single();
+    if(error) throw error;
+    _anexosMnt=[];
+    document.getElementById('form-mnt').style.display='none';
+    alert('✓ Manutenção registrada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'gerado')+'\n\nDocumento adicionado ao Livro de Manutenção Predial do condomínio.');
+    carregarManutencoes();
+  }catch(e){ alert('Erro: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='💾 Registrar Manutenção'; }
+}
+
+async function carregarManutencoes(){
+  if(!_condoAtivo) return;
+  const {data,error}=await sb.from('manutencoes').select('*').eq('condo_id',_condoAtivo).order('data_execucao',{ascending:false});
+  if(error){ document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
+  _manutencoes=data||[];
+  const badge=document.getElementById('mnt-count');
+  if(_manutencoes.length>0){ badge.textContent=_manutencoes.length; badge.style.display='inline-block'; } else badge.style.display='none';
+  renderManutencoes();
+}
+
+function renderManutencoes(){
+  const el=document.getElementById('mnt-list');
+  const filtros=document.getElementById('mnt-filtros');
+  if(!_manutencoes.length){
+    filtros.style.display='none';
+    el.innerHTML='<div class="empty"><div style="font-size:36px;margin-bottom:10px">🔧</div><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Nenhuma manutenção registrada</div><div style="font-size:12px;line-height:1.5">Use o botão <b>+ Registrar Manutenção</b> acima para começar a documentar as ações executadas e proteger a garantia do condomínio.</div></div>';
+    return;
+  }
+  filtros.style.display='flex';
+  popularSistemasMnt();
+  const busca=(document.getElementById('mnt-busca')?.value||'').trim().toLowerCase();
+  const fSist=document.getElementById('mnt-filtro-sistema')?.value||'';
+  const fTipo=document.getElementById('mnt-filtro-tipo')?.value||'';
+  let lista=_manutencoes;
+  if(fSist) lista=lista.filter(m=>m.sistema===fSist);
+  if(fTipo) lista=lista.filter(m=>m.tipo===fTipo);
+  if(busca) lista=lista.filter(m=>(m.protocolo||'').toLowerCase().includes(busca)||(m.titulo||'').toLowerCase().includes(busca)||(m.empresa_nome||'').toLowerCase().includes(busca)||(m.descricao||'').toLowerCase().includes(busca));
+
+  const cont=document.getElementById('mnt-contador');
+  cont.textContent=lista.length===_manutencoes.length?_manutencoes.length+' registro(s)':lista.length+' de '+_manutencoes.length;
+
+  const tipoIcon={preventiva:'🔧',corretiva:'🚨',inspecao_legal:'📋',limpeza:'🧹',instalacao:'⚙️'};
+  const tipoLabel={preventiva:'Preventiva',corretiva:'Corretiva',inspecao_legal:'Inspeção Legal',limpeza:'Limpeza',instalacao:'Instalação'};
+  const hoje=new Date().toISOString().slice(0,10);
+
+  el.innerHTML=lista.map(m=>{
+    const protoCor='#1B8A4A';
+    const vencido=m.proxima_data_recomendada && m.proxima_data_recomendada<hoje;
+    const proximo=m.proxima_data_recomendada && !vencido && new Date(m.proxima_data_recomendada)-new Date()<=30*86400000;
+    const anexos=m.anexos||[];
+    return `<div class="dem" style="border-left:4px solid ${m.validada_pela_equipe?'#1B8A4A':'#A8BFC2'}">
+      <div style="font-size:10.5px;font-weight:700;color:${protoCor};letter-spacing:.5px;margin-bottom:4px;font-family:'SF Mono',Menlo,Consolas,monospace">📋 ${m.protocolo||'—'}${m.validada_pela_equipe?' · <span style="color:#1B8A4A">✓ VALIDADA PELA DIAGNÓSTIKA</span>':''}</div>
+      <div class="dem-head"><div class="dem-titulo">${tipoIcon[m.tipo]||'🔧'} ${m.titulo}</div><span class="dem-status" style="background:${vencido?'#C00000':proximo?'#FBC02D':'#1B8A4A'};color:#fff">${vencido?'⚠ VENCIDA':proximo?'⏳ PRÓXIMO VENC':'✓ EM DIA'}</span></div>
+      <div class="dem-meta">${tipoLabel[m.tipo]||m.tipo} · ${m.sistema||'—'}${m.item_plano?' · '+m.item_plano:''} · 📅 ${fmtBR(m.data_execucao)}</div>
+      ${m.descricao?'<div class="dem-desc">'+m.descricao+'</div>':''}
+      ${m.empresa_nome?`<div style="background:#F0F4F5;padding:8px 10px;border-radius:6px;margin-top:8px;font-size:11.5px">
+        <b style="color:var(--teal);text-transform:uppercase;font-size:10px;letter-spacing:.3px">🏢 Empresa executora</b><br>
+        ${m.empresa_nome}${m.empresa_cnpj?' · CNPJ '+m.empresa_cnpj:''}<br>
+        ${m.responsavel_nome?'<small>👤 '+m.responsavel_nome+(m.responsavel_doc?' · '+m.responsavel_doc:'')+'</small>':''}
+        ${m.valor?'<br><small>💰 R$ '+m.valor.toFixed(2).replace('.',',')+'</small>':''}
+      </div>`:''}
+      ${m.garantia_ate||m.proxima_data_recomendada?`<div style="display:flex;gap:10px;margin-top:8px;font-size:11px;color:var(--text2);flex-wrap:wrap">
+        ${m.garantia_ate?'🛡️ Garantia até: <b>'+fmtBR(m.garantia_ate)+'</b>':''}
+        ${m.proxima_data_recomendada?'🔄 Próxima: <b style="color:'+(vencido?'#C00000':proximo?'#A87826':'var(--green)')+'">'+fmtBR(m.proxima_data_recomendada)+'</b>':''}
+      </div>`:''}
+      ${anexos.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:10px">
+        ${anexos.map((a,i)=>{
+          if(a.tipo==='video') return '<div style="position:relative;cursor:pointer" onclick="abrirAnexoMnt(\\''+m.id+'\\','+i+')"><video src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;background:#000" muted></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.8)">▶</div></div>';
+          if(a.tipo==='pdf'||a.tipo==='doc'){
+            return '<a href="'+a.url+'" download="'+(a.nome||'arquivo')+'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;background:rgba(21,91,103,.08);border:1px dashed var(--teal);border-radius:5px;text-decoration:none;color:var(--teal);padding:6px;text-align:center;font-size:10px;gap:4px"><div style="font-size:24px">'+(a.tipo==='pdf'?'📄':'📎')+'</div><div style="word-break:break-all;line-height:1.1">'+(a.nome||'arquivo')+'</div></a>';
+          }
+          return '<img src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:pointer" onclick="abrirAnexoMnt(\\''+m.id+'\\','+i+')">';
+        }).join('')}
+      </div>`:''}
+      ${m.parecer_tecnico?`<div style="background:rgba(27,138,74,.08);border-left:3px solid #1B8A4A;padding:8px 10px;border-radius:0 6px 6px 0;margin-top:8px;font-size:11.5px"><b style="color:#1B8A4A;font-size:10px;text-transform:uppercase">💬 Parecer da Diagnóstika:</b><br>${m.parecer_tecnico}</div>`:''}
+      ${m.user_id===_user?.id && !_modoEquipe?'<div style="margin-top:10px;display:flex;gap:6px"><button onclick="excluirManutencao(\\''+m.id+'\\')" style="padding:6px 12px;border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗑 Excluir</button></div>':''}
+    </div>`;
+  }).join('');
+}
+
+function abrirAnexoMnt(id, idx){
+  const m=_manutencoes.find(x=>x.id===id);
+  if(!m||!m.anexos||!m.anexos[idx]) return;
+  const a=m.anexos[idx];
+  const z=document.createElement('div'); z.className='foto-zoom';
+  z.onclick=()=>z.remove();
+  if(a.tipo==='video') z.innerHTML='<video src="'+a.url+'" controls autoplay style="max-width:100%;max-height:100%"></video>';
+  else z.innerHTML='<img src="'+a.url+'">';
+  document.body.appendChild(z);
+}
+
+async function excluirManutencao(id){
+  if(!confirm('Excluir esta manutenção?\n\nAtenção: esta ação é irreversível. O registro será removido do Livro de Manutenção.')) return;
+  const {error}=await sb.from('manutencoes').delete().eq('id',id);
+  if(error){ alert('Erro: '+error.message); return; }
+  carregarManutencoes();
+}
+
+// Preferências de notificação
+async function carregarPreferenciasNotif(){
+  if(!_user||!_condoAtivo) return;
+  const {data}=await sb.from('user_condos').select('email_notificacao,notificar_vencimento').eq('user_id',_user.id).eq('condo_id',_condoAtivo).maybeSingle();
+  if(data){
+    document.getElementById('mnt-email').value=data.email_notificacao||'';
+    document.getElementById('mnt-notif').checked=data.notificar_vencimento!==false;
+  }
+}
+
+async function salvarPreferenciasNotif(){
+  const email=document.getElementById('mnt-email').value.trim();
+  const notif=document.getElementById('mnt-notif').checked;
+  const status=document.getElementById('mnt-email-status');
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ status.textContent='❌ E-mail inválido'; status.style.color='var(--red)'; return; }
+  const {error}=await sb.from('user_condos').update({email_notificacao:email||null, notificar_vencimento:notif}).eq('user_id',_user.id).eq('condo_id',_condoAtivo);
+  if(error){ status.textContent='Erro: '+error.message; status.style.color='var(--red)'; return; }
+  status.textContent='✓ Preferências salvas! '+(email?'Notificações enviadas para '+email:'(sem e-mail definido)');
+  status.style.color='var(--green)';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════════════════════════════════════
 function trocarTab(nome){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
+  if(nome==='manutencoes'){ carregarManutencoes(); carregarPreferenciasNotif(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1706,6 +2065,7 @@ sb.channel('sindico-realtime')
   .on('postgres_changes',{event:'*',schema:'public',table:'visitas'},()=>{ if(_condoAtivo) carregarVisitas(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'demandas'},()=>{ if(_condoAtivo) carregarDemandas(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'app_config'},(p)=>{ if(_condoAtivo && p.new?.key==='eventos_'+_condoAtivo) carregarEventos(); })
+  .on('postgres_changes',{event:'*',schema:'public',table:'manutencoes'},()=>{ if(_condoAtivo) carregarManutencoes(); })
   .subscribe();
 
 // Auto-refresh a cada 30s
