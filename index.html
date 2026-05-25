@@ -661,10 +661,9 @@ function renderAgenda(){
     const ehDiaVisita=visitDates.includes(d);
     const eventosDoDia=eventosCondo.filter(e=>e.data===d);
     const at=ehDiaVisita?atividadesDia(_condoAtivo,d,visitDates):null;
-    const isCrit=at && at.criticos.length>0;
 
-    // Cor da borda esquerda: vermelho se crítico, amarelo se só evento, turquesa se visita normal
-    const corBorda=isCrit?'#C00000':(eventosDoDia.length&&!ehDiaVisita?'#FBC02D':'var(--turq)');
+    // Cor da borda esquerda: amarelo se só evento, turquesa se visita normal
+    const corBorda=eventosDoDia.length&&!ehDiaVisita?'#FBC02D':'var(--turq)';
 
     return `<div style="display:flex;gap:12px;padding:14px;border-bottom:1px solid var(--gray2);border-left:4px solid ${corBorda};background:${eventosDoDia.length?'rgba(251,192,45,.04)':'#fff'};margin-bottom:1px">
       <div style="text-align:center;width:54px;flex-shrink:0">
@@ -678,10 +677,8 @@ function renderAgenda(){
         ${ehDiaVisita?`
           <div style="margin-bottom:6px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
             <span style="background:${corBg[at.tipo]};color:${corTexto[at.tipo]};padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📋 ${labels[at.tipo]||'Inspeção'}</span>
-            ${isCrit?'<span style="background:#C00000;color:#fff;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' críticos</span>':''}
           </div>
           ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita:</b>'+at.extras.slice(0,6).map(e=>'· '+e).join('<br>')+(at.extras.length>6?'<br><i>(e mais '+(at.extras.length-6)+'...)</i>':'')+'</div>':''}
-          ${isCrit?'<div style="font-size:11px;color:#C00000;margin-bottom:5px;line-height:1.5;background:rgba(192,0,0,.06);padding:7px 10px;border-radius:6px;border-left:2px solid #C00000"><b style="font-size:10.5px;display:block;margin-bottom:3px">⚠ Itens críticos a verificar:</b>'+at.criticos.slice(0,3).join(' · ')+(at.criticos.length>3?' (+'+(at.criticos.length-3)+')':'')+'</div>':''}
         `:''}
 
         ${eventosDoDia.map(e=>`
