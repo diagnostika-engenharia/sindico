@@ -541,6 +541,18 @@ function programacaoAnualSind(condoId, allDates){
     target.forEach(d=>{ if(result[d]) result[d].push(item.nome); });
   });
 
+  // CAP por visita (mesmo do PMP) — deixa folga para vistorias de reforma
+  const condoTeto={'monte-carlo':6,'morada-morumbi':9,'portal-primavera':9,'residencial-santa-clara':9,'jardins-do-malta':9};
+  const MAX=condoTeto[condoId]||8;
+  for(let i=0;i<allDates.length;i++){
+    while(result[allDates[i]].length>MAX){
+      let tIdx=-1;
+      for(let j=i+1;j<allDates.length;j++){ if(result[allDates[j]].length<MAX){ tIdx=j; break; } }
+      if(tIdx<0) break;
+      result[allDates[tIdx]].push(result[allDates[i]].pop());
+    }
+  }
+
   _progCache[condoId]=result;
   return result;
 }
