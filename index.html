@@ -327,6 +327,117 @@ const CONDOS={
 
 let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _eventos={};
 
+// Planos de manutenção por condomínio — para mostrar atividades extras de cada visita
+const PLANOS_CONDOS={
+  'monte-carlo':{
+    plano:[
+      {grupo:'Estrutura', nome:'Inspeção visual de fachadas', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura', nome:'Pilares e vigas aparentes', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Estrutura', nome:'Juntas de dilatação', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Impermeabilização', nome:'Coberturas — drenos e calhas', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização', nome:'Subsolos e garagens', periodicidade:'Trimestral', prioridade:'Média'},
+      {grupo:'Impermeabilização', nome:'Reservatórios (caixas d\'água)', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Rede de água fria', periodicidade:'Semestral', prioridade:'Média'},
+      {grupo:'Hidráulica', nome:'Esgoto e drenagem', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Iluminação de emergência', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Hidrantes e mangotinhos', periodicidade:'Trimestral', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Guarda-corpos e corrimãos', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Pisos — áreas comuns', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Áreas Comuns', nome:'Playground', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Gestão', nome:'ART do responsável técnico', periodicidade:'Anual', prioridade:'Alta'},
+    ]
+  },
+  'morada-morumbi':{
+    plano:[
+      {grupo:'⚠ Críticos LT-2025-09', nome:'Coberturas — lajes estufadas e pontas quebradas', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ Críticos LT-2025-09', nome:'Piscinas — fissuração estrutural', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ Críticos LT-2025-09', nome:'Calhas Bloco 3 — falha de vedação', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ Críticos LT-2025-09', nome:'Muros garden — ausência de impermeabilização', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'⚠ Críticos LT-2025-09', nome:'Garagens — fissuras estruturais', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'Piscinas', nome:'Inspeção visual das piscinas', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura', nome:'Fachadas — fissuras e desplacamentos', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura', nome:'Pilares e vigas (garagens)', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização', nome:'Coberturas — drenos gerais', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Calhas pluviais', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Reservatórios — limpeza semestral', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Hidrantes', periodicidade:'Trimestral', prioridade:'Alta'},
+    ]
+  },
+  'portal-primavera':{
+    plano:[
+      {grupo:'⚠ Críticos Laudo 12/2025', nome:'Caixas d\'água — monitoramento pós-laudo (BR CAMP)', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'Elevadores', nome:'Inspeção de elevadores', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Estrutura', nome:'Alvenaria estrutural — fissuras e trincas', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Reservatórios — limpeza e desinfecção', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+    ]
+  },
+  'residencial-santa-clara':{
+    plano:[
+      {grupo:'Estrutura', nome:'Fachadas — inspeção visual de fissuras', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Impermeabilização', nome:'Reservatórios — limpeza semestral', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+    ]
+  },
+  'jardins-do-malta':{
+    plano:[
+      {grupo:'⚠ Críticos Processo Judicial', nome:'Vícios construtivos — documentação fotográfica para perícia', periodicidade:'Quinzenal', prioridade:'Crítico', critico:true},
+      {grupo:'Estrutura', nome:'Inspeção visual de fachadas', periodicidade:'Quinzenal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Hidráulica', nome:'Reservatórios — limpeza semestral', periodicidade:'Semestral', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
+      {grupo:'Elétrica', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
+    ]
+  }
+};
+
+// Mesma lógica do PMP: identifica que tipo de visita é e quais atividades extras tem
+function atividadesDia(condoId, dateStr, allDates){
+  const condo=PLANOS_CONDOS[condoId];
+  if(!condo) return {tipo:'padrao',extras:[],criticos:[]};
+  const dt=new Date(dateStr+'T12:00:00');
+  const month=dt.getMonth()+1;
+  const yearMonth=dateStr.substring(0,7);
+  const firstOfMonth=allDates.filter(d=>d.startsWith(yearMonth))[0]===dateStr;
+
+  const byPer=(p)=>condo.plano.filter(i=>(i.periodicidade||'').toLowerCase().includes(p));
+
+  let tipo='padrao'; const extras=[];
+  if(firstOfMonth){
+    tipo='mensal';
+    byPer('mensal').forEach(i=>extras.push(i.nome));
+    if([1,4,7,10].includes(month)){
+      tipo='trimestral';
+      byPer('trimest').forEach(i=>extras.push(i.nome));
+    }
+    if([1,7].includes(month)){
+      if(tipo!=='trimestral') tipo='semestral';
+      byPer('semest').forEach(i=>extras.push(i.nome));
+    }
+    if(month===1){
+      tipo='anual';
+      byPer('anual').forEach(i=>extras.push(i.nome));
+    }
+  }
+  const criticos=condo.plano.filter(i=>i.critico||i.prioridade==='Crítico').map(i=>i.nome);
+  return {tipo, extras, criticos};
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════════════════════
@@ -526,19 +637,35 @@ function getVisitDates(condoId){
   return set;
 }
 function renderAgenda(){
-  const datas=[...getVisitDates(_condoAtivo)].sort();
+  const allDates=[...getVisitDates(_condoAtivo)].sort();
   const hoje=new Date().toISOString().slice(0,10);
-  const proximas=datas.filter(d=>d>=hoje).slice(0,10);
+  const proximas=allDates.filter(d=>d>=hoje).slice(0,15);
+  const eventosCondo=_eventos[_condoAtivo]||[];
   const el=document.getElementById('agenda-list');
   if(!proximas.length){ el.innerHTML='<div class="empty">Nenhuma visita futura agendada</div>'; return; }
+  const labels={padrao:'Inspeção padrão',mensal:'1ª visita do mês',trimestral:'Visita trimestral',semestral:'Visita semestral',anual:'Visita anual'};
+  const corBg={padrao:'var(--gray)',mensal:'#D6EBED',trimestral:'#CCF0EE',semestral:'#EDF5D8',anual:'#F4ECF7'};
+  const corTexto={padrao:'var(--text2)',mensal:'#0D3C44',trimestral:'#008A83',semestral:'#6a8a1e',anual:'#7D3C98'};
+
   el.innerHTML=proximas.map(d=>{
     const [y,mo,da]=d.split('-').map(Number);
     const dt=new Date(y,mo-1,da);
     const dow=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()];
-    return `<div class="visit">
-      <div class="visit-date"><big>${String(da).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
-      <div class="visit-info"><strong>Vistoria técnica programada</strong><span>${dow}, ${da} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][mo-1]} de ${y}</span></div>
-      <span class="visit-badge b-future">prevista</span>
+    const at=atividadesDia(_condoAtivo,d,allDates);
+    const eventoNoDia=eventosCondo.find(e=>e.data===d);
+    const isCrit=at.criticos.length>0;
+    return `<div class="visit" style="align-items:flex-start;padding:12px 14px;cursor:default">
+      <div class="visit-date" style="margin-top:2px"><big>${String(da).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
+      <div class="visit-info" style="flex:1">
+        <strong>${dow}, ${da} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][mo-1]}</strong>
+        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <span style="background:${corBg[at.tipo]};color:${corTexto[at.tipo]};padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📋 ${labels[at.tipo]||'Inspeção'}</span>
+          ${isCrit?'<span style="background:#C00000;color:#fff;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' críticos</span>':''}
+        </div>
+        ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-top:6px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:2px">Itens extras desta visita:</b>'+at.extras.slice(0,5).map(e=>'· '+e).join('<br>')+(at.extras.length>5?'<br><i>(e mais '+(at.extras.length-5)+'...)</i>':'')+'</div>':''}
+        ${isCrit?'<div style="font-size:11px;color:#C00000;margin-top:5px;line-height:1.5;background:rgba(192,0,0,.05);padding:6px 10px;border-radius:6px"><b style="font-size:10.5px;display:block;margin-bottom:2px">⚠ Itens críticos a verificar:</b>'+at.criticos.slice(0,3).join(' · ')+(at.criticos.length>3?' (+'+(at.criticos.length-3)+')':'')+'</div>':''}
+        ${eventoNoDia?'<div style="margin-top:6px;background:#FFF8E1;border-left:3px solid #FBC02D;padding:7px 10px;border-radius:0 6px 6px 0"><b style="color:#A87826;font-size:11.5px">📌 '+eventoNoDia.titulo+'</b>'+(eventoNoDia.descricao?'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+eventoNoDia.descricao+'</div>':'')+'</div>':''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -546,8 +673,10 @@ function renderAgenda(){
 async function carregarEventos(){
   const {data,error}=await sb.from('app_config').select('*').eq('key','eventos_'+_condoAtivo).maybeSingle();
   const el=document.getElementById('eventos-list');
-  if(error || !data){ el.innerHTML='<div class="empty">Nenhum evento especial agendado</div>'; return; }
+  if(error || !data){ _eventos[_condoAtivo]=[]; el.innerHTML='<div class="empty">Nenhum evento especial agendado</div>'; renderAgenda(); return; }
   const eventos=(data.value||[]).sort((a,b)=>a.data.localeCompare(b.data));
+  _eventos[_condoAtivo]=eventos;
+  renderAgenda(); // re-render agenda pra mostrar eventos integrados
   if(!eventos.length){ el.innerHTML='<div class="empty">Nenhum evento especial agendado</div>'; return; }
   el.innerHTML=eventos.map(e=>{
     const [y,mo,d]=e.data.split('-').map(Number);
