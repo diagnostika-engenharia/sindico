@@ -244,7 +244,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
     <div class="tab-content" data-tab="agenda">
       <div class="section">
-        <h2>📅 Próximas Visitas Agendadas</h2>
+        <h2>📅 Próximas Visitas Agendadas <button onclick="gerarAgendaCompletaSindico()" style="float:right;background:linear-gradient(135deg,#1B8A4A,#147239);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(27,138,74,.3)">📄 Imprimir / Baixar PDF</button></h2>
         <div id="agenda-list"><div class="loading">Carregando…</div></div>
       </div>
       <div class="section">
@@ -794,6 +794,174 @@ function renderAgenda(){
   });
   fechaBloco();
   el.innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// AGENDA COMPLETA — PDF profissional para o síndico
+// ════════════════════════════════════════════════════════════════════════
+function buildMonthGridSindico(year, month, visitSet, eventosSet, cor){
+  const DIAS=['D','S','T','Q','Q','S','S'];
+  const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const firstDay=new Date(year,month,1).getDay();
+  const total=new Date(year,month+1,0).getDate();
+  let cells='';
+  for(let i=0;i<firstDay;i++) cells+='<span class="cd-e"></span>';
+  for(let d=1;d<=total;d++){
+    const key=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isVisit=visitSet.has(key);
+    const isEvent=eventosSet.has(key);
+    if(isVisit && isEvent) cells+='<span class="cd-d cd-both"><b>'+d+'</b><div class="cd-pips"><span class="cd-pip-v" style="background:'+cor+'"></span><span class="cd-pip-e"></span></div></span>';
+    else if(isVisit) cells+='<span class="cd-d cd-visit" style="background:'+cor+';color:#fff"><b>'+d+'</b></span>';
+    else if(isEvent) cells+='<span class="cd-d cd-event"><b>'+d+'</b><div class="cd-pip-e-only"></div></span>';
+    else cells+='<span class="cd-d"><b>'+d+'</b></span>';
+  }
+  return '<div class="cd-month"><div class="cd-month-h">'+MESES[month]+'</div><div class="cd-row cd-row-h">'+DIAS.map(x=>'<span class="cd-dh">'+x+'</span>').join('')+'</div><div class="cd-row">'+cells+'</div></div>';
+}
+
+function gerarAgendaCompletaSindico(){
+  if(!_condoAtivo){ alert('Selecione um condomínio primeiro'); return; }
+  const condo=CONDOS[_condoAtivo]||{nome:_condoAtivo,cor:'#155B67',emblema:''};
+  const plano=(PLANOS_CONDOS[_condoAtivo]?.plano)||[];
+  const visitDates=getVisitDates(_condoAtivo);
+  const allDates=[...visitDates].sort();
+  const eventos=(_eventos[_condoAtivo]||[]).slice().sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+  const eventosSet=new Set(eventos.map(e=>e.data));
+  const hoje=new Date();
+
+  const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DOW=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+
+  // Calendário visual
+  let calHtml='';
+  for(let m=0;m<12;m++) calHtml+=buildMonthGridSindico(2026,m,visitDates,eventosSet,condo.cor);
+
+  // Cronograma visita-a-visita
+  const labelsTipo={padrao:'Inspeção Padrão',mensal:'1ª Visita do Mês',trimestral:'Visita Trimestral',semestral:'Visita Semestral',anual:'Visita Anual'};
+  const corTipo={padrao:'#E0EAEC',mensal:'#D6EBED',trimestral:'#00B4AC',semestral:'#8DB72A',anual:'#7B1FA2'};
+  let cronograma='';
+  let mesAtual=-1;
+  allDates.forEach(dateStr=>{
+    const [y,mo,d]=dateStr.split('-').map(Number);
+    const dt=new Date(y,mo-1,d);
+    const at=atividadesDia(_condoAtivo,dateStr,allDates);
+    const eventoDoDia=eventos.find(e=>e.data===dateStr);
+    if(mo-1!==mesAtual){
+      mesAtual=mo-1;
+      cronograma+='<tr><td colspan="3" style="background:'+condo.cor+';color:#fff;padding:5pt 8pt;font-weight:700;font-size:9pt;letter-spacing:.4pt;text-transform:uppercase">'+MESES[mo-1]+' 2026</td></tr>';
+    }
+    const isCrit=at && at.criticos && at.criticos.length>0;
+    cronograma+='<tr style="'+(isCrit?'background:#FFF5F5;':'')+'border-bottom:.5pt solid #E0EAEC">'+
+      '<td style="padding:6pt 8pt;white-space:nowrap;vertical-align:top;width:80pt">'+
+        '<div style="font-weight:700;font-size:10pt;color:'+condo.cor+'">'+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'</div>'+
+        '<div style="font-size:7.5pt;color:#5A7A7E;text-transform:capitalize">'+DOW[dt.getDay()]+'</div>'+
+      '</td>'+
+      '<td style="padding:6pt 8pt;vertical-align:top;width:90pt">'+
+        '<span style="background:'+corTipo[at.tipo]+';color:'+(at.tipo==='trimestral'||at.tipo==='semestral'||at.tipo==='anual'?'#fff':'#0D3C44')+';padding:2pt 7pt;border-radius:3pt;font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.3pt">'+(labelsTipo[at.tipo]||'Inspeção')+'</span>'+
+      '</td>'+
+      '<td style="padding:6pt 8pt;vertical-align:top;font-size:8.5pt;line-height:1.55">'+
+        (at.tipo==='padrao'?'Inspeção rotineira dos itens semanais/quinzenais do plano (estrutura aparente, calhas, bomba de recalque, áreas comuns, playground).':'')+
+        (at.extras&&at.extras.length?'<b>Atividades extras desta data:</b><ul style="margin:3pt 0 0 14pt;padding:0">'+at.extras.map(e=>'<li style="margin-bottom:2pt">'+e+'</li>').join('')+'</ul>':'')+
+        (eventoDoDia?'<div style="margin-top:5pt;background:#FFF8E1;border-left:3pt solid #FBC02D;padding:6pt 8pt;border-radius:0 3pt 3pt 0"><b style="color:#A87826;font-size:8.5pt">📌 '+eventoDoDia.titulo+'</b>'+(eventoDoDia.descricao?'<div style="font-size:8pt;color:#5A7A7E;margin-top:2pt">'+eventoDoDia.descricao+'</div>':'')+'</div>':'')+
+      '</td>'+
+    '</tr>';
+  });
+
+  // Eventos fora dos dias de visita
+  const eventosForaDeVisita=eventos.filter(e=>!visitDates.has(e.data));
+  eventosForaDeVisita.forEach(e=>{
+    const [y,mo,d]=e.data.split('-').map(Number);
+    const dt=new Date(y,mo-1,d);
+    cronograma+='<tr style="background:#FFF8E1;border-bottom:.5pt solid #E0EAEC">'+
+      '<td style="padding:6pt 8pt;white-space:nowrap;vertical-align:top">'+
+        '<div style="font-weight:700;font-size:10pt;color:#A87826">'+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'</div>'+
+        '<div style="font-size:7.5pt;color:#5A7A7E;text-transform:capitalize">'+DOW[dt.getDay()]+'</div>'+
+      '</td>'+
+      '<td style="padding:6pt 8pt;vertical-align:top"><span style="background:#FBC02D;color:#3B2A0A;padding:2pt 7pt;border-radius:3pt;font-size:7.5pt;font-weight:700;text-transform:uppercase">📌 EVENTO ESPECIAL</span></td>'+
+      '<td style="padding:6pt 8pt;vertical-align:top;font-size:8.5pt;line-height:1.55"><b>'+e.titulo+'</b>'+(e.descricao?'<div style="font-size:8pt;color:#5A7A7E;margin-top:2pt">'+e.descricao+'</div>':'')+'</td>'+
+    '</tr>';
+  });
+
+  // Determina o nome do(a) síndico(a) — pega da metadata ou de qualquer vínculo do condo
+  const meuVinc=_meusCondos.find(uc=>uc.condo_id===_condoAtivo);
+  const sindicoNome=meuVinc?.nome_exibicao || _user?.user_metadata?.nome || '—';
+
+  const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Agenda Anual 2026 — '+condo.nome+'</title><style>'+
+    '@page{size:A4;margin:14mm 12mm}'+
+    '*{box-sizing:border-box;margin:0;padding:0}'+
+    'body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:#1A2E31;font-size:9pt;line-height:1.5;background:#fff}'+
+    '.toolbar{position:sticky;top:0;background:#155B67;color:#fff;padding:10px 16px;text-align:center;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2)}'+
+    '.toolbar button{background:#fff;color:#155B67;border:none;padding:8px 18px;border-radius:6px;font-weight:700;cursor:pointer;margin:0 4px}'+
+    '@media print{.toolbar{display:none}}'+
+    '.page{max-width:190mm;margin:14mm auto;padding:0 4mm}'+
+    '.print-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10pt;border-bottom:1.5pt solid #155B67;margin-bottom:14pt}'+
+    '.print-header img{height:36pt}'+
+    '.print-title{font-size:14pt;font-weight:700;color:#155B67}'+
+    '.print-header-right{text-align:right;font-size:8.5pt;color:#5A7A7E}'+
+    '.cd-month{display:inline-block;width:31%;margin:0 1% 10pt 0;vertical-align:top;border:.5pt solid #E0EAEC;border-radius:4pt;padding:5pt;page-break-inside:avoid}'+
+    '.cd-month-h{background:'+condo.cor+';color:#fff;text-align:center;font-weight:700;font-size:9pt;padding:3pt;border-radius:2pt;margin-bottom:4pt}'+
+    '.cd-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1pt}'+
+    '.cd-row-h{margin-bottom:2pt}'+
+    '.cd-dh{text-align:center;font-size:7pt;color:#5A7A7E;font-weight:700;padding:2pt}'+
+    '.cd-d,.cd-e{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:7.5pt;border-radius:2pt;color:#1A2E31;position:relative}'+
+    '.cd-e{background:transparent}'+
+    '.cd-d{background:#F0F4F5}'+
+    '.cd-d b{font-weight:600}'+
+    '.cd-visit b{font-weight:800;color:#fff}'+
+    '.cd-event{background:#FFF8E1!important;border:.5pt solid #FBC02D}'+
+    '.cd-pip-e-only,.cd-pip-e{width:4pt;height:4pt;background:#FBC02D;border-radius:50%;margin-top:1pt;display:inline-block}'+
+    '.cd-pip-v{width:4pt;height:4pt;border-radius:50%;display:inline-block;margin-right:2pt}'+
+    '.cd-pips{display:flex;align-items:center;justify-content:center;gap:1pt;margin-top:1pt}'+
+    '.cd-both{background:linear-gradient(135deg,'+condo.cor+'88,#FFF8E1)}'+
+    'table{width:100%;border-collapse:collapse}'+
+    'h1,h2,h3{color:#155B67}'+
+    '</style></head><body>'+
+    '<div class="toolbar">'+
+      '<button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>'+
+      '<button onclick="window.close()">✖ Fechar</button>'+
+    '</div>'+
+    '<div class="page">'+
+    // CAPA
+    '<div class="print-header">'+
+      '<div class="print-title" style="font-size:18pt">Programação Anual de Manutenção</div>'+
+      '<div class="print-header-right"><b>Diagnóstika Engenharia</b><br>Plano 2026<br>Emitido em: '+hoje.toLocaleDateString('pt-BR')+'</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:14pt;align-items:center;padding:14pt;margin-bottom:14pt;background:'+condo.cor+'11;border-left:4pt solid '+condo.cor+';border-radius:5pt">'+
+      (condo.emblema?'<div style="width:60pt;height:60pt;flex-shrink:0;border-radius:6pt;overflow:hidden">'+condo.emblema+'</div>':'')+
+      '<div style="flex:1">'+
+        '<div style="font-size:14pt;font-weight:700;color:'+condo.cor+'">'+condo.nome+'</div>'+
+        '<div style="font-size:9.5pt;color:#1A2E31;margin-top:3pt"><b>Síndico(a):</b> '+sindicoNome+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="background:#F0F4F5;padding:12pt 14pt;border-radius:5pt;margin-bottom:14pt">'+
+      '<div style="font-size:10pt;font-weight:700;color:#155B67;margin-bottom:6pt">📋 RESUMO EXECUTIVO</div>'+
+      '<div style="font-size:9pt;line-height:1.7">'+
+        'Este documento apresenta a <b>programação completa de manutenção preventiva</b> do condomínio para o ano de 2026, conforme contrato firmado com a <b>Diagnóstika Engenharia</b>. O cronograma a seguir foi elaborado com base nas <b>normas técnicas brasileiras aplicáveis</b> (NBR 5674, 6118, 9575, 10339, 5419, 12962, 13714, 5410, NBR 16401, Portaria GM/MS 888/2021 e demais correlatas), nas <b>particularidades construtivas</b> do empreendimento e nos <b>laudos técnicos prévios</b> existentes.<br><br>'+
+        'O presente plano visa: (1) o cumprimento das obrigações legais e contratuais do condomínio, (2) a preservação da vida útil das edificações, (3) a antecipação de riscos com identificação precoce de patologias, (4) a documentação técnica completa de cada inspeção realizada.'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8pt;margin-bottom:14pt">'+
+      '<div style="background:#fff;border:1pt solid '+condo.cor+';border-radius:5pt;padding:10pt;text-align:center"><div style="font-size:22pt;font-weight:800;color:'+condo.cor+'">'+visitDates.size+'</div><div style="font-size:8pt;color:#5A7A7E;text-transform:uppercase;letter-spacing:.3pt;margin-top:3pt;font-weight:700">Visitas Programadas</div></div>'+
+      '<div style="background:#fff;border:1pt solid #FBC02D;border-radius:5pt;padding:10pt;text-align:center"><div style="font-size:22pt;font-weight:800;color:#A87826">'+eventos.length+'</div><div style="font-size:8pt;color:#5A7A7E;text-transform:uppercase;letter-spacing:.3pt;margin-top:3pt;font-weight:700">Eventos Especiais</div></div>'+
+      '<div style="background:#fff;border:1pt solid #1B8A4A;border-radius:5pt;padding:10pt;text-align:center"><div style="font-size:22pt;font-weight:800;color:#1B8A4A">'+plano.length+'</div><div style="font-size:8pt;color:#5A7A7E;text-transform:uppercase;letter-spacing:.3pt;margin-top:3pt;font-weight:700">Itens do Plano</div></div>'+
+    '</div>'+
+    // CALENDÁRIO VISUAL
+    '<div style="page-break-before:always"></div>'+
+    '<div class="print-header"><div class="print-title" style="font-size:13pt">Calendário Visual 2026</div><div class="print-header-right">'+condo.nome+'</div></div>'+
+    '<div>'+calHtml+'</div>'+
+    '<div style="font-size:9pt;color:#5A7A7E;margin-top:10pt;padding:6pt;background:#F0F4F5;border-radius:4pt"><span style="display:inline-block;width:10pt;height:10pt;background:'+condo.cor+';border-radius:2pt;vertical-align:middle;margin-right:4pt"></span>Visita técnica · <span style="display:inline-block;width:10pt;height:10pt;background:#FFF8E1;border:.5pt solid #FBC02D;border-radius:2pt;vertical-align:middle;margin:0 4pt 0 10pt"></span>Evento especial · Total no ano: <b>'+visitDates.size+'</b> visitas + <b>'+eventos.length+'</b> eventos</div>'+
+    (eventos.length?'<div style="background:#FFF8E1;border-left:4pt solid #FBC02D;padding:12pt 14pt;border-radius:0 5pt 5pt 0;margin-top:14pt"><div style="font-size:11pt;font-weight:700;color:#A87826;margin-bottom:8pt">📌 EVENTOS ESPECIAIS AGENDADOS</div><table style="font-size:9pt">'+eventos.map(e=>{const [y,mo,d]=e.data.split('-').map(Number);return '<tr style="border-bottom:.5pt solid #E0EAEC"><td style="padding:5pt 4pt;width:65pt;font-weight:700;color:'+condo.cor+'">'+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'/'+y+'</td><td style="padding:5pt 4pt;width:50pt"><span style="background:'+condo.cor+';color:#fff;font-size:7pt;padding:2pt 5pt;border-radius:3pt;text-transform:uppercase;font-weight:700">'+(e.tipo||'evento')+'</span></td><td style="padding:5pt 4pt"><b>'+e.titulo+'</b>'+(e.descricao?'<br><span style="font-size:8.5pt;color:#5A7A7E">'+e.descricao+'</span>':'')+'</td></tr>';}).join('')+'</table></div>':'')+
+    // CRONOGRAMA
+    '<div style="page-break-before:always"></div>'+
+    '<div class="print-header"><div class="print-title" style="font-size:13pt">Cronograma Detalhado por Visita</div><div class="print-header-right">'+condo.nome+' · '+visitDates.size+' visitas previstas</div></div>'+
+    '<div style="font-size:9pt;color:#5A7A7E;line-height:1.6;background:#F0F4F5;padding:8pt 10pt;border-radius:4pt;margin-bottom:10pt">📌 <b>Como ler:</b> cada linha representa uma visita técnica do engenheiro responsável. As <b>atividades extras</b> indicam itens adicionais àquela rotina (1ª visita do mês, trimestral, semestral).</div>'+
+    '<table style="border:.5pt solid #E0EAEC"><thead><tr style="background:'+condo.cor+';color:#fff"><th style="padding:6pt 8pt;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.4pt">Data</th><th style="padding:6pt 8pt;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.4pt">Tipo</th><th style="padding:6pt 8pt;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.4pt">Atividades / Foco</th></tr></thead><tbody>'+cronograma+'</tbody></table>'+
+    '<div style="margin-top:20pt;padding-top:10pt;border-top:1pt solid #155B67;font-size:8pt;color:#5A7A7E;line-height:1.6;text-align:center"><b>Diagnóstika Engenharia LTDA</b> · CNPJ 54.027.948/0001-60<br>Eng. Civil Claudemir Scaranello · CREA/SP 50.707.124-26<br>📧 contato@diagnostikaengenharia.com.br · 📞 (19) 98151-5494<br><i style="font-size:7pt;color:#888">Documento elaborado em '+hoje.toLocaleDateString('pt-BR')+' · válido para o exercício 2026</i></div>'+
+    '</div></body></html>';
+
+  const w=window.open('','_blank','width=900,height=900');
+  if(!w){ alert('Pop-up bloqueado pelo navegador. Permita pop-ups para gerar a agenda em PDF.'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 async function carregarEventos(){
