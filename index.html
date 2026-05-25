@@ -205,7 +205,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 <!-- APP PRINCIPAL -->
 <div class="app" id="app">
   <header>
-    <img src="assets/logo-dark.png" alt="Diagnóstika" style="cursor:pointer" onclick="if(_meusCondos.length>1){voltarCondos()}" title="${'Portal do Síndico'}">
+    <img src="assets/logo-dark.png" alt="Diagnóstika" style="cursor:pointer" onclick="cliqueLogo()" title="Diagnóstika">
     <div class="title">
       <strong id="user-name">…</strong>
       <small id="user-role">Portal do Síndico</small>
@@ -955,6 +955,12 @@ function abrirAnexo(demId, idx){
   }
   document.body.appendChild(z);
 }
+function cliqueLogo(){
+  // Equipe: volta ao portal central. Síndico: navega entre condos se tiver mais de um.
+  if(_modoEquipe){ window.location.href='/'; return; }
+  if(_meusCondos.length>1) voltarCondos();
+}
+
 function toggleFormDemanda(){
   if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura.\n\nPara abrir um chamado, use o Painel Admin ou faça login como síndico.'); return; }
   const f=document.getElementById('form-demanda');
