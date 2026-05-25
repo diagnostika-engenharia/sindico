@@ -312,6 +312,18 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
             <button class="btn-primary" onclick="criarDemanda()" id="btn-enviar-dem">📤 Enviar Demanda</button>
           </div>
         </div>
+        <div id="demandas-filtros" style="background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:none;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="search" id="dem-busca" placeholder="🔍 Buscar por protocolo, título ou descrição…" oninput="renderDemandas()" lang="pt-BR" spellcheck="false" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+          <select id="dem-status-filtro" onchange="renderDemandas()" style="padding:9px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;background:#fff;font-family:inherit;cursor:pointer">
+            <option value="">Todos os status</option>
+            <option value="aberta">🆕 Abertas</option>
+            <option value="em_andamento">⏳ Em andamento</option>
+            <option value="resolvida">✅ Resolvidas</option>
+            <option value="fechada">🔒 Fechadas</option>
+          </select>
+          <button onclick="limparFiltrosDem()" style="padding:9px 14px;border:1.5px solid var(--gray2);background:#fff;color:var(--text2);border-radius:7px;font-size:12px;cursor:pointer;font-weight:600">Limpar</button>
+          <span id="dem-contador" style="font-size:11px;color:var(--text2);font-weight:600"></span>
+        </div>
         <div id="demandas-list"><div class="loading">Carregando…</div></div>
       </div>
     </div>
@@ -756,13 +768,51 @@ async function carregarDemandas(){
   if(abertas>0){ badge.textContent=abertas; badge.style.display='inline-block'; } else badge.style.display='none';
   renderDemandas();
 }
+async function copiarProtocolo(proto){
+  if(!proto || proto==='—') return;
+  try{ await navigator.clipboard.writeText(proto); alert('Protocolo '+proto+' copiado!'); }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=proto; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); alert('Protocolo '+proto+' copiado!'); }catch(_){ alert('Protocolo: '+proto); }
+    ta.remove();
+  }
+}
+
+function limparFiltrosDem(){
+  document.getElementById('dem-busca').value='';
+  document.getElementById('dem-status-filtro').value='';
+  renderDemandas();
+}
+
 function renderDemandas(){
   const el=document.getElementById('demandas-list');
-  if(!_demandas.length){ el.innerHTML='<div class="empty">Nenhuma demanda registrada ainda<br><small>Use o botão <b>+ Abrir Chamado</b> acima para enviar uma solicitação técnica</small></div>'; return; }
+  const filtros=document.getElementById('demandas-filtros');
+  if(!_demandas.length){
+    filtros.style.display='none';
+    el.innerHTML='<div class="empty">Nenhuma demanda registrada ainda<br><small>Use o botão <b>+ Abrir Chamado</b> acima para enviar uma solicitação técnica</small></div>';
+    return;
+  }
+  filtros.style.display='flex';
+  const busca=(document.getElementById('dem-busca')?.value||'').trim().toLowerCase();
+  const fStatus=document.getElementById('dem-status-filtro')?.value||'';
+  let lista=_demandas;
+  if(fStatus) lista=lista.filter(d=>d.status===fStatus);
+  if(busca) lista=lista.filter(d=>{
+    return (d.protocolo||'').toLowerCase().includes(busca)
+        || (d.titulo||'').toLowerCase().includes(busca)
+        || (d.descricao||'').toLowerCase().includes(busca);
+  });
+  const contador=document.getElementById('dem-contador');
+  contador.textContent=lista.length===_demandas.length?_demandas.length+' demanda(s)':lista.length+' de '+_demandas.length;
+  if(!lista.length){
+    el.innerHTML='<div class="empty">Nenhuma demanda encontrada com os filtros atuais<br><small>Tente limpar os filtros ou alterar a busca</small></div>';
+    return;
+  }
   const cats={corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida técnica',reforma:'🏗️ Aprovação de reforma',laudo:'📋 Solicitação de laudo',emergencia:'🚨 Emergência',documento:'📄 Documento'};
   const urgs={baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
   const status={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
-  el.innerHTML=_demandas.map(d=>{
+  el.innerHTML=lista.map(d=>{
     const dt=new Date(d.created_at);
     const fotos=d.fotos||[];
     const renderAnexo=(a,i)=>{
@@ -782,8 +832,10 @@ function renderDemandas(){
     const diagIdxs=idxs.filter(i=>fotos[i] && fotos[i].origem==='diagnostika');
     const gridSind=sindIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:10px">'+sindIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
+    const proto=d.protocolo||'—';
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
+      <div style="font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;margin-bottom:6px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
       <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
       ${gridSind}
@@ -998,14 +1050,15 @@ async function criarDemanda(){
   const btn=document.getElementById('btn-enviar-dem');
   btn.disabled=true; btn.textContent='⏳ Enviando…';
   try{
-    const {error}=await sb.from('demandas').insert({condo_id:_condoAtivo,user_id:_user.id,titulo,descricao,categoria,urgencia,status:'aberta',fotos:_anexosDem});
+    const {data:novo,error}=await sb.from('demandas').insert({condo_id:_condoAtivo,user_id:_user.id,titulo,descricao,categoria,urgencia,status:'aberta',fotos:_anexosDem}).select().single();
     if(error) throw error;
     document.getElementById('dem-titulo').value='';
     document.getElementById('dem-desc').value='';
     _anexosDem=[];
     renderPreviewAnexos();
     toggleFormDemanda();
-    alert('✓ Demanda enviada! A equipe Diagnóstika foi notificada.');
+    const proto=novo?.protocolo||'gerado automaticamente';
+    alert('✓ Demanda enviada!\n\n📋 PROTOCOLO: '+proto+'\n\nA equipe Diagnóstika foi notificada. Use este protocolo para acompanhar.');
     carregarDemandas();
   }catch(e){ alert('Erro: '+e.message); }
   finally{ btn.disabled=false; btn.innerHTML='📤 Enviar Demanda'; }
