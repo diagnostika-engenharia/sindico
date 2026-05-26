@@ -942,9 +942,11 @@ function renderAgenda(){
   const eventosCondo=(_eventos[_condoAtivo]||[]).slice();
   // Conjunto de datas com visita realmente realizada (registrada no banco)
   const visitasRealizadas=new Set((_visitas||[]).map(v=>v.data));
+  // Demandas programadas pela equipe (data_programada)
+  const demandasProgramadas=(_demandas||[]).filter(d=>d.data_programada);
 
-  // Mescla TODAS as datas (visitas + eventos)
-  const todasDatas=new Set([...visitDates, ...eventosCondo.map(e=>e.data)]);
+  // Mescla TODAS as datas (visitas + eventos + demandas programadas)
+  const todasDatas=new Set([...visitDates, ...eventosCondo.map(e=>e.data), ...demandasProgramadas.map(d=>d.data_programada)]);
   let datas=[...todasDatas].sort();
 
   // Filtro por modo
@@ -993,6 +995,7 @@ function renderAgenda(){
     const dow=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()];
     const ehDiaVisita=visitDates.includes(d);
     const eventosDoDia=eventosCondo.filter(e=>e.data===d);
+    const demandasDoDia=demandasProgramadas.filter(dm=>dm.data_programada===d);
     const at=ehDiaVisita?atividadesDia(_condoAtivo,d,visitDates):null;
     const passou=d<hoje;
     const ehHoje=d===hoje;
@@ -1035,6 +1038,18 @@ function renderAgenda(){
             </div>
             <div style="font-weight:700;color:#3B2A0A;font-size:13px;line-height:1.3">${e.titulo}</div>
             ${e.descricao?'<div style="font-size:11.5px;color:#5A4A1A;margin-top:4px;line-height:1.5">'+e.descricao+'</div>':''}
+          </div>
+        `).join('')}
+
+        ${demandasDoDia.map(dm=>`
+          <div style="background:rgba(13,60,68,.08);border:1.5px solid #0D3C44;padding:9px 12px;border-radius:6px;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+              <span style="background:#0D3C44;color:#fff;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px">📅 DEMANDA PROGRAMADA</span>
+              <span style="font-size:10.5px;color:var(--text2);font-family:'SF Mono',Menlo,Consolas,monospace">${dm.protocolo||''}</span>
+              ${dm.hora_programada?'<span style="font-size:10.5px;color:#0D3C44;font-weight:700">⏰ '+dm.hora_programada.substring(0,5)+'</span>':''}
+            </div>
+            <div style="font-weight:700;color:#0D3C44;font-size:13px;line-height:1.3">${dm.tipo_programado||'Visita'}: ${dm.titulo}</div>
+            ${dm.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.5">'+dm.descricao_programada+'</div>':''}
           </div>
         `).join('')}
       </div>
