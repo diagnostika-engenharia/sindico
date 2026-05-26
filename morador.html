@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#155B67">
+<title>Solicitação Técnica — Diagnóstika Engenharia</title>
+<link rel="icon" type="image/png" href="assets/icon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#155B67;--teal-dk:#0D3C44;--turq:#00B4AC;--lime:#8DB72A;--purple:#7D3C98;--text:#1A2E31;--text2:#4A6568;--gray:#F0F4F5;--gray2:#E0EAEC;--gray3:#A8BFC2;--gray4:#5A7A7E;--red:#C00000;--green:#1B8A4A;--amber:#D4A24C}
+html,body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0D3C44 0%,#155B67 50%,#00B4AC 100%);min-height:100vh;color:var(--text);font-size:15px;line-height:1.5}
+.wrap{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+.card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.brand{text-align:center;margin-bottom:14px}
+.brand img{height:54px;filter:brightness(0) invert(1);margin-bottom:6px}
+.brand-sub{color:#fff;font-size:11.5px;opacity:.85;letter-spacing:.5px;text-transform:uppercase;font-weight:600}
+h1{color:var(--teal);font-size:20px;font-weight:700;margin-bottom:4px}
+.condo-name{font-size:13.5px;color:var(--text2);margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--gray)}
+.condo-name b{color:var(--teal)}
+label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 5px}
+input[type=text],input[type=tel],textarea,select{width:100%;padding:11px 13px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--text)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(21,91,103,.12)}
+textarea{resize:vertical;min-height:90px}
+.pin-input{text-align:center;font-size:22px;font-weight:800;letter-spacing:6px;font-family:'SF Mono',Menlo,Consolas,monospace;text-transform:uppercase}
+.cats{display:grid;grid-template-columns:1fr;gap:8px;margin-top:5px}
+.cat{display:flex;align-items:center;gap:11px;padding:13px;border:2px solid var(--gray2);border-radius:10px;cursor:pointer;font-size:14px;transition:all .15s}
+.cat:hover{border-color:var(--gray3);background:var(--gray)}
+.cat input{width:18px;height:18px;accent-color:var(--teal);cursor:pointer}
+.cat.sel{border-color:var(--teal);background:rgba(21,91,103,.06)}
+.cat .ico{font-size:20px}
+.cat .lbl b{display:block;font-weight:700;color:var(--text)}
+.cat .lbl small{font-size:11.5px;color:var(--text2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:380px){.row2{grid-template-columns:1fr}}
+.fotos-area{border:2px dashed var(--gray2);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:var(--gray);margin-top:5px}
+.fotos-area:hover{border-color:var(--teal);background:rgba(21,91,103,.04)}
+.fotos-area input{display:none}
+.fotos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:8px}
+.foto-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:#000}
+.foto-thumb img{width:100%;height:100%;object-fit:cover}
+.foto-rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.btn-send{width:100%;margin-top:18px;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-send:hover{background:var(--teal-dk)}
+.btn-send:disabled{opacity:.6;cursor:not-allowed}
+.msg{padding:11px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-top:12px;display:none}
+.msg.err{background:rgba(192,0,0,.08);color:var(--red);border-left:3px solid var(--red);display:block}
+.msg.ok{background:rgba(27,138,74,.08);color:var(--green);border-left:3px solid var(--green);display:block}
+.foot{text-align:center;color:#fff;font-size:11px;margin-top:18px;opacity:.85;line-height:1.6}
+.foot a{color:#fff;text-decoration:underline}
+.lgpd{font-size:11px;color:var(--text2);background:var(--gray);padding:10px 12px;border-radius:8px;margin-top:14px;line-height:1.5}
+
+.ok-screen{text-align:center;padding:20px 10px}
+.ok-icon{font-size:54px;margin-bottom:8px}
+.ok-proto{display:inline-block;background:var(--teal);color:#fff;padding:10px 18px;border-radius:10px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:18px;font-weight:800;letter-spacing:1px;margin:8px 0 14px}
+.ok-link-box{background:var(--gray);padding:14px;border-radius:10px;margin:14px 0;text-align:left}
+.ok-link-box b{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.ok-link-box input{font-size:11.5px;font-family:'SF Mono',Menlo,Consolas,monospace;padding:8px;background:#fff;border:1px solid var(--gray2);border-radius:6px;width:100%}
+.btn-copy{background:var(--turq);color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;margin-top:8px;width:100%}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">
+    <img id="logo" src="assets/logo-dark.png" alt="Diagnóstika Engenharia" onerror="this.style.display='none'">
+    <div class="brand-sub">Engenharia Diagnóstica</div>
+  </div>
+
+  <div class="card">
+    <div id="screen-form">
+      <h1>📋 Solicitação Técnica</h1>
+      <div class="condo-name">Para o condomínio <b id="condo-label">—</b></div>
+
+      <div id="msg" class="msg"></div>
+
+      <label for="pin">PIN do condomínio</label>
+      <input type="text" id="pin" class="pin-input" maxlength="10" placeholder="••••" autocomplete="off">
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">Está no mural / quadro de avisos do prédio</div>
+
+      <label>Tipo de solicitação</label>
+      <div class="cats">
+        <label class="cat" data-cat="reforma">
+          <input type="radio" name="cat" value="reforma">
+          <span class="ico">🏗️</span>
+          <span class="lbl"><b>Reforma na minha unidade</b><small>Aprovação NBR 16280, ART, projeto</small></span>
+        </label>
+        <label class="cat" data-cat="duvida">
+          <input type="radio" name="cat" value="duvida">
+          <span class="ico">❓</span>
+          <span class="lbl"><b>Dúvida técnica</b><small>Consulta sobre obras, normas, segurança</small></span>
+        </label>
+        <label class="cat" data-cat="corretiva">
+          <input type="radio" name="cat" value="corretiva">
+          <span class="ico">🔧</span>
+          <span class="lbl"><b>Problema na minha unidade</b><small>Vazamento, trinca, infiltração, patologia</small></span>
+        </label>
+      </div>
+
+      <label for="nome">Seu nome completo</label>
+      <input type="text" id="nome" maxlength="80" autocomplete="name">
+
+      <div class="row2">
+        <div>
+          <label for="apto">Unidade (Bloco/Apto)</label>
+          <input type="text" id="apto" maxlength="20" placeholder="Ex: Bloco A · 304">
+        </div>
+        <div>
+          <label for="tel">WhatsApp</label>
+          <input type="tel" id="tel" maxlength="20" placeholder="(11) 99999-9999" autocomplete="tel">
+        </div>
+      </div>
+
+      <label for="titulo">Assunto (resumo)</label>
+      <input type="text" id="titulo" maxlength="100" placeholder="Ex: Reforma do banheiro social">
+
+      <label for="desc">Descrição detalhada</label>
+      <textarea id="desc" maxlength="2000" placeholder="Descreva com detalhes o que está acontecendo, há quanto tempo, observações relevantes..."></textarea>
+
+      <label>Fotos (opcional, até 5)</label>
+      <label class="fotos-area" id="drop">
+        <input type="file" id="file-input" accept="image/*" multiple>
+        <div style="font-size:32px;line-height:1">📷</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:5px">Toque para anexar fotos</div>
+        <div style="font-size:11px;color:var(--gray4);margin-top:3px">JPG ou PNG · serão otimizadas</div>
+      </label>
+      <div id="fotos-grid" class="fotos-grid"></div>
+
+      <div class="lgpd">
+        🔒 Seus dados (nome, apto, WhatsApp) serão usados apenas para o atendimento deste chamado pela Diagnóstika Engenharia e pela administração do condomínio. Nada é compartilhado com terceiros.
+      </div>
+
+      <button class="btn-send" id="btn-send" onclick="enviar()">
+        <span id="btn-txt">📤 Enviar solicitação</span>
+      </button>
+    </div>
+
+    <div id="screen-ok" class="ok-screen" style="display:none">
+      <div class="ok-icon">✅</div>
+      <h1 style="color:var(--green);margin-bottom:5px">Solicitação enviada!</h1>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">Seu chamado foi recebido pela Diagnóstika Engenharia. Em breve entraremos em contato pelo WhatsApp informado.</div>
+      <div class="ok-proto" id="ok-proto">—</div>
+
+      <div class="ok-link-box">
+        <b>📌 Link de acompanhamento</b>
+        <input type="text" id="ok-link" readonly onclick="this.select()">
+        <button class="btn-copy" onclick="copiarLink()">📋 Copiar link</button>
+        <div style="font-size:11px;color:var(--text2);margin-top:8px;line-height:1.5">Salve este link para acompanhar o status, ver a resposta da engenharia e a data agendada. Você também pode anotar o protocolo acima.</div>
+      </div>
+
+      <button class="btn-copy" style="background:var(--teal);margin-top:6px" onclick="location.reload()">↻ Enviar outra solicitação</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    Diagnóstika Engenharia · Eng. Civil Claudemir Scaranello · CREA/SP 50.707.124-26<br>
+    <a href="https://diagnostika-engenharia.github.io/">diagnostika-engenharia.github.io</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const CONDOS = {
+  'monte-carlo':'Edifício Monte Carlo',
+  'morada-morumbi':'Morada do Morumbi',
+  'portal-primavera':'Portal Primavera',
+  'residencial-santa-clara':'Residencial Santa Clara',
+  'jardins-do-malta':'Jardins do Malta',
+  'condominio-teste':'Condomínio TESTE (sandbox)'
+};
+
+const params = new URLSearchParams(location.search);
+const condoId = params.get('condo') || '';
+const condoLabel = CONDOS[condoId] || '⚠ Condomínio inválido — confira o link com o síndico';
+document.getElementById('condo-label').textContent = condoLabel;
+if(!CONDOS[condoId]){
+  document.querySelector('.btn-send').disabled = true;
+  document.getElementById('msg').className='msg err';
+  document.getElementById('msg').textContent='Link incompleto. Solicite o link correto ao(à) síndico(a).';
+}
+
+// PIN auto-uppercase
+document.getElementById('pin').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+
+// Visual cat selecionada
+document.querySelectorAll('input[name=cat]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    document.querySelectorAll('.cat').forEach(c=>c.classList.remove('sel'));
+    r.closest('.cat').classList.add('sel');
+  });
+});
+
+// Máscara telefone simples
+document.getElementById('tel').addEventListener('input', e=>{
+  let v=e.target.value.replace(/\D/g,'').substring(0,11);
+  if(v.length>10) v=v.replace(/^(\d{2})(\d{5})(\d{4}).*/,'($1) $2-$3');
+  else if(v.length>6) v=v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/,'($1) $2-$3');
+  else if(v.length>2) v=v.replace(/^(\d{2})(\d{0,5}).*/,'($1) $2');
+  e.target.value=v;
+});
+
+// Fotos — redimensiona e comprime antes
+let _fotos=[];
+document.getElementById('file-input').addEventListener('change', async e=>{
+  const files=[...e.target.files].slice(0, 5-_fotos.length);
+  for(const f of files){
+    if(!f.type.startsWith('image/')) continue;
+    try{
+      const dataUrl = await comprimirFoto(f);
+      _fotos.push({url:dataUrl, tipo:'foto', origem:'morador'});
+    }catch(err){ console.warn('Erro comprimir:', err); }
+  }
+  e.target.value='';
+  renderFotos();
+});
+
+function comprimirFoto(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=1280;
+        const ratio=Math.min(1, maxW/img.width);
+        const w=Math.round(img.width*ratio), h=Math.round(img.height*ratio);
+        const cv=document.createElement('canvas');
+        cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(cv.toDataURL('image/jpeg', 0.78));
+      };
+      img.onerror=reject;
+      img.src=r.result;
+    };
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function renderFotos(){
+  const g=document.getElementById('fotos-grid');
+  g.innerHTML=_fotos.map((f,i)=>`<div class="foto-thumb"><img src="${f.url}"><button type="button" class="foto-rm" onclick="rmFoto(${i})">×</button></div>`).join('');
+}
+function rmFoto(i){ _fotos.splice(i,1); renderFotos(); }
+
+function setMsg(tipo, txt){
+  const el=document.getElementById('msg');
+  if(!tipo){ el.className='msg'; el.style.display='none'; return; }
+  el.className='msg '+tipo;
+  el.textContent=txt;
+  el.scrollIntoView({block:'center',behavior:'smooth'});
+}
+
+async function enviar(){
+  setMsg(null);
+  const pin=document.getElementById('pin').value.trim().toUpperCase();
+  const cat=document.querySelector('input[name=cat]:checked')?.value;
+  const nome=document.getElementById('nome').value.trim();
+  const apto=document.getElementById('apto').value.trim();
+  const tel=document.getElementById('tel').value.trim();
+  const titulo=document.getElementById('titulo').value.trim();
+  const desc=document.getElementById('desc').value.trim();
+
+  if(!CONDOS[condoId]){ setMsg('err','Link inválido. Solicite o link correto ao(à) síndico(a).'); return; }
+  if(!pin){ setMsg('err','Informe o PIN do condomínio'); return; }
+  if(!cat){ setMsg('err','Selecione o tipo de solicitação'); return; }
+  if(!nome){ setMsg('err','Informe seu nome completo'); return; }
+  if(!apto){ setMsg('err','Informe sua unidade (bloco/apto)'); return; }
+  if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD'); return; }
+  if(!titulo){ setMsg('err','Informe o assunto'); return; }
+  if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres)'); return; }
+
+  const btn=document.getElementById('btn-send');
+  const btnTxt=document.getElementById('btn-txt');
+  btn.disabled=true; btnTxt.textContent='⏳ Enviando...';
+
+  try{
+    const {data,error} = await sb.rpc('criar_chamado_morador',{
+      p_pin:pin, p_condo_id:condoId, p_nome:nome, p_apto:apto, p_telefone:tel,
+      p_categoria:cat, p_titulo:titulo, p_descricao:desc, p_fotos:_fotos
+    });
+    if(error) throw error;
+    if(!data || data.ok===false){ throw new Error(data?.erro || 'Erro desconhecido'); }
+
+    // Sucesso
+    document.getElementById('screen-form').style.display='none';
+    document.getElementById('screen-ok').style.display='block';
+    document.getElementById('ok-proto').textContent='📋 ' + (data.protocolo||'—');
+    const link = location.origin + location.pathname.replace('morador.html','acompanhar.html') + '?id=' + data.id;
+    document.getElementById('ok-link').value = link;
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){
+    setMsg('err', e.message || 'Falha ao enviar. Tente novamente.');
+    btn.disabled=false; btnTxt.textContent='📤 Enviar solicitação';
+  }
+}
+
+function copiarLink(){
+  const inp=document.getElementById('ok-link');
+  inp.select();
+  navigator.clipboard?.writeText(inp.value);
+  const b=event.target;
+  const old=b.textContent;
+  b.textContent='✓ Copiado!';
+  setTimeout(()=>b.textContent=old, 1600);
+}
+</script>
+</body>
+</html>

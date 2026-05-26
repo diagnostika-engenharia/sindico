@@ -274,6 +274,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
       <button class="tab active" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
       <button class="tab" data-tab="agenda" onclick="trocarTab('agenda')"><span class="ic">📅</span>Agenda</button>
       <button class="tab" data-tab="demandas" onclick="trocarTab('demandas')"><span class="ic">💬</span>Demandas <span class="badge-num" id="dem-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="moradores" onclick="trocarTab('moradores')"><span class="ic">🏠</span>Moradores <span class="badge-num" id="mor-count" style="display:none">0</span></button>
       <button class="tab" data-tab="manutencoes" onclick="trocarTab('manutencoes')"><span class="ic">🔧</span>Manutenções <span class="badge-num" id="mnt-count" style="display:none">0</span></button>
       <button class="tab" data-tab="docs" onclick="trocarTab('docs')"><span class="ic">📄</span>Documentos</button>
     </div>
@@ -369,6 +370,18 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
           <span id="dem-contador" style="font-size:11px;color:var(--text2);font-weight:600"></span>
         </div>
         <div id="demandas-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="moradores">
+      <div class="section">
+        <h2>🏠 Chamados dos Moradores
+          <button onclick="abrirCompartilharMorador()" style="float:right;background:#7D3C98;color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📲 Link / QR para divulgar</button>
+        </h2>
+        <div style="background:rgba(125,60,152,.06);border-left:3px solid #7D3C98;padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;margin:10px 0;color:var(--text)">
+          <b style="color:#7D3C98">ℹ Como funciona:</b> seus moradores podem abrir chamados técnicos (reforma, dúvida ou problema na unidade) direto pela Diagnóstika, escaneando um QR Code ou acessando o link com o PIN do prédio. Aqui você acompanha tudo em modo leitura — a engenharia que atende. Você é notificado(a) sempre que algo for resolvido.
+        </div>
+        <div id="moradores-list"><div class="loading">Carregando…</div></div>
       </div>
     </div>
 
@@ -1379,12 +1392,101 @@ function renderTimelineHistorico(eventos){
 async function carregarDemandas(){
   const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).is('deletada_em',null).order('created_at',{ascending:false});
   if(error){ document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
-  _demandas=data||[];
-  _historicoCache={}; // invalida cache ao recarregar
+  const todas=data||[];
+  _demandas = todas.filter(d=>(d.origem||'sindico')!=='morador');
+  _moradores = todas.filter(d=>d.origem==='morador');
+  _historicoCache={};
   const abertas=_demandas.filter(d=>d.status==='aberta'||d.status==='em_andamento').length;
   const badge=document.getElementById('dem-count');
   if(abertas>0){ badge.textContent=abertas; badge.style.display='inline-block'; } else badge.style.display='none';
+  const abertosMor=_moradores.filter(d=>d.status==='aberta'||d.status==='em_andamento').length;
+  const bmor=document.getElementById('mor-count');
+  if(bmor){ if(abertosMor>0){ bmor.textContent=abertosMor; bmor.style.display='inline-block'; } else bmor.style.display='none'; }
   renderDemandas();
+  renderMoradoresList();
+}
+
+let _moradores=[];
+function renderMoradoresList(){
+  const el=document.getElementById('moradores-list');
+  if(!el) return;
+  if(!_moradores.length){
+    el.innerHTML='<div class="empty">Nenhum chamado de morador ainda<br><small>Divulgue o QR Code/link para os moradores começarem a usar.</small></div>';
+    return;
+  }
+  const cats={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade'};
+  const statusLbl={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
+  el.innerHTML = _moradores.map(d=>{
+    const dt=new Date(d.created_at);
+    const fotos=Array.isArray(d.fotos)?d.fotos:[];
+    return `<div class="dem" data-dem-id="${d.id}" style="border-left:4px solid #7D3C98;background:linear-gradient(to right,rgba(125,60,152,.04),#fff 60%)">
+      <div class="dem-row1">
+        <div class="dem-row1-left">
+          <div class="dem-protocolo" onclick="copiarProtocolo('${d.protocolo||'—'}')" title="Copiar">📋 ${d.protocolo||'—'}</div>
+          <div class="dem-titulo">${d.titulo}</div>
+          <div class="dem-meta">🏠 <b>${d.morador_nome||'—'}</b> · Unidade ${d.morador_apto||'—'} · ${cats[d.categoria]||d.categoria}${fotos.length?' · 📎 '+fotos.length+' anexo(s)':''}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px">${dt.toLocaleString('pt-BR')}${d.morador_telefone?' · 📱 '+d.morador_telefone:''}</div>
+        </div>
+        <span class="dem-status s-${d.status}">${statusLbl[d.status]||d.status}</span>
+      </div>
+      ${d.descricao?'<div class="dem-desc truncavel">'+d.descricao.replace(/</g,'&lt;')+'<span class="ver-mais"></span></div>':''}
+      ${d.data_programada?`<div class="dem-banner"><span class="label">📅 Programado pela Diagnóstika</span><div class="data">${d.tipo_programado||'Visita'} em ${(d.data_programada.split('-').reverse().join('/'))}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>${d.descricao_programada?'<div style="font-size:11.5px;margin-top:4px">'+d.descricao_programada+'</div>':''}</div>`:''}
+      ${d.resposta?`<div class="dem-resposta truncavel"><b class="label">💬 Resposta Diagnóstika</b>${d.resposta.replace(/</g,'&lt;')}${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+'</div>':''}<span class="ver-mais"></span></div>`:''}
+      <div class="dem-acoes">
+        <button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
+        <div style="margin-left:auto;font-size:11px;color:var(--text2);align-self:center"><i>🔒 Modo acompanhamento — atendido pela engenharia</i></div>
+      </div>
+      <div id="hist-${d.id}" style="display:none"></div>
+    </div>`;
+  }).join('');
+  setTimeout(detectarTruncamento, 50);
+}
+
+function abrirCompartilharMorador(){
+  const condo = CONDOS[_condoAtivo];
+  if(!condo){ alert('Selecione um condomínio primeiro'); return; }
+  const pin = ({'monte-carlo':'MC2026','morada-morumbi':'MM2026','portal-primavera':'PP2026','residencial-santa-clara':'SC2026','jardins-do-malta':'JM2026','condominio-teste':'TT2026'})[_condoAtivo] || '—';
+  const link = `https://diagnostika-engenharia.github.io/sindico/morador.html?condo=${_condoAtivo}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=0&data=${encodeURIComponent(link)}`;
+
+  const ov=document.createElement('div');
+  ov.id='share-morador-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`
+    <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:24px;box-shadow:0 12px 48px rgba(0,0,0,.35);position:relative;margin:auto">
+      <button onclick="document.getElementById('share-morador-ov').remove()" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#5A7A7E">×</button>
+      <h2 style="color:#7D3C98;font-size:18px;font-weight:700;margin-bottom:4px">📲 Cartaz para Moradores</h2>
+      <div style="font-size:12.5px;color:var(--text2);margin-bottom:14px">Imprima e fixe no quadro de avisos / hall / elevador. Ou compartilhe o link no grupo do WhatsApp.</div>
+
+      <div style="border:2px solid #7D3C98;border-radius:12px;padding:18px;text-align:center;background:#fff" id="cartaz-imprimir">
+        <div style="font-size:11px;font-weight:700;color:#7D3C98;letter-spacing:.5px;text-transform:uppercase">Solicitação Técnica</div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin:4px 0">${condo.nome}</div>
+        <img src="${qrUrl}" alt="QR Code" style="width:240px;height:240px;margin:10px auto;display:block;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1)">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Escaneie o QR ou acesse:</div>
+        <div style="font-size:12px;font-family:'SF Mono',Menlo,Consolas,monospace;color:var(--teal);font-weight:700;word-break:break-all;margin:4px 0 10px">${link.replace('https://','')}</div>
+        <div style="background:#7D3C98;color:#fff;border-radius:10px;padding:8px 14px;display:inline-block;margin-top:4px">
+          <div style="font-size:10px;letter-spacing:.5px;opacity:.9">PIN DO CONDOMÍNIO</div>
+          <div style="font-size:24px;font-weight:800;letter-spacing:4px;font-family:'SF Mono',Menlo,Consolas,monospace">${pin}</div>
+        </div>
+        <div style="font-size:10.5px;color:var(--text2);margin-top:10px;line-height:1.5">Atendimento técnico exclusivo:<br><b style="color:var(--text)">Reformas · Dúvidas técnicas · Problemas na unidade</b><br><span style="font-size:9.5px">Diagnóstika Engenharia · CREA/SP 50.707.124-26</span></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button onclick="imprimirCartaz()" style="flex:1;min-width:120px;background:var(--teal);color:#fff;border:none;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">🖨 Imprimir cartaz</button>
+        <button onclick="navigator.clipboard.writeText('${link}');this.textContent='✓ Copiado!'" style="flex:1;min-width:120px;background:#fff;color:var(--teal);border:1.5px solid var(--teal);padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">📋 Copiar link</button>
+        <a href="https://wa.me/?text=${encodeURIComponent(`📋 ${condo.nome} — Solicitação técnica direta com a Diagnóstika Engenharia.\n\nPara reformas, dúvidas técnicas ou problemas na sua unidade:\n${link}\n\nPIN do condomínio: ${pin}`)}" target="_blank" style="flex:1;min-width:120px;background:#25D366;color:#fff;text-align:center;text-decoration:none;padding:10px;border-radius:8px;font-weight:700;font-size:13px">📱 Enviar no WhatsApp</a>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function imprimirCartaz(){
+  const html = document.getElementById('cartaz-imprimir').outerHTML;
+  const w=window.open('','_blank','width=600,height=800');
+  w.document.write(`<html><head><title>Cartaz Moradores</title><style>body{margin:0;padding:30px;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}@media print{body{padding:0}}</style></head><body>${html}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
 }
 async function copiarProtocolo(proto){
   if(!proto || proto==='—') return;
