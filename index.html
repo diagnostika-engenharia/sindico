@@ -126,6 +126,10 @@ main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
 .dem-meta{font-size:11px;color:var(--text2);margin-bottom:6px}
 .dem-desc{font-size:12.5px;color:var(--text);line-height:1.5;margin-top:6px}
 .dem-status{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.dem-body{display:flex;gap:12px;align-items:flex-start}
+.dem-body-left{flex:1;min-width:0}
+.dem-body-right{flex:0 0 240px;max-width:240px}
+@media(max-width:700px){.dem-body{flex-direction:column} .dem-body-right{flex:1 1 auto;max-width:100%}}
 .s-aberta{background:#FFEBEE;color:#C00000}
 .s-em_andamento{background:#FFF3E0;color:#E65100}
 .s-resolvida{background:#E8F5EE;color:#1B8A4A}
@@ -1406,18 +1410,23 @@ function renderDemandas(){
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const proto=d.protocolo||'—';
     const podeEditar=!_modoEquipe && d.user_id===_user?.id && d.status!=='fechada';
+    const bannerProgramado=d.data_programada?`<div style="padding:10px 12px;background:rgba(13,60,68,.08);border-left:3px solid #0D3C44;border-radius:0 6px 6px 0;font-size:12px">
+      <b style="color:#0D3C44;font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">📅 Programado pela Diagnóstika</b>
+      <div style="font-size:13px;font-weight:700;color:#0D3C44;line-height:1.3">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
+      ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.4">'+d.descricao_programada+'</div>':''}
+      ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
+    </div>`:'';
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
       <div style="font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;margin-bottom:6px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
-      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
-      ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
-      ${gridSind}
-      ${d.data_programada?`<div style="margin-top:10px;padding:10px 12px;background:rgba(13,60,68,.08);border-left:3px solid #0D3C44;border-radius:0 6px 6px 0;font-size:12px">
-        <b style="color:#0D3C44;font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">📅 Programado pela Diagnóstika</b>
-        <div style="font-size:13px;font-weight:700;color:#0D3C44">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
-        ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px">'+d.descricao_programada+'</div>':''}
-        ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
-      </div>`:''}
+      <div class="dem-body">
+        <div class="dem-body-left">
+          <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
+          ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
+          ${gridSind}
+        </div>
+        ${bannerProgramado?`<div class="dem-body-right">${bannerProgramado}</div>`:''}
+      </div>
       ${(d.resposta||diagIdxs.length)?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+(d.resposta||'')+gridDiag+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
         ${podeEditar?`<button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button>`:''}
