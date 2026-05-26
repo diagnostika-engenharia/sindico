@@ -120,96 +120,53 @@ main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
 .dem-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn-primary{background:var(--teal);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%}
 .btn-primary:hover{background:var(--teal-dk)}
-/* ═══ Card de Demanda — layout posicionado por dispositivo (do editor visual) ═══ */
-.dem{position:relative;background:#fff;border:1px solid var(--gray2);border-radius:10px;margin-bottom:10px;overflow:visible}
-.dem-block{position:absolute;overflow:hidden}
-.dem-block.expandido{overflow:visible;height:auto!important;z-index:50}
-.dem-titulo{font-weight:700;font-size:14px;color:var(--text);padding:4px 0}
-.dem-status{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:inline-block;height:auto!important;width:auto!important}
-.dem-status.s-aberta{background:#FFEBEE;color:#C00000}
-.dem-status.s-em_andamento{background:#FFF3E0;color:#E65100}
-.dem-status.s-resolvida{background:#E8F5EE;color:#1B8A4A}
-.dem-status.s-fechada{background:var(--gray);color:var(--gray4)}
-.dem-protocolo{font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;font-family:'SF Mono',Menlo,Consolas,monospace;padding:2px 0;cursor:pointer}
-.dem-meta{font-size:11px;color:var(--text2);padding:2px 0}
-.dem-desc{font-size:12.5px;color:var(--text);line-height:1.5;background:var(--gray);padding:8px 10px;border-radius:6px}
-.dem-anexos{padding:2px 0}
+/* ═══ Card de Demanda — layout FLUIDO (adapta ao conteúdo) ═══ */
+.dem{background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr;gap:8px}
+.dem-row1{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.dem-row1-left{flex:1;min-width:0}
+.dem-titulo{font-weight:700;font-size:15px;color:var(--text);line-height:1.3;margin-bottom:4px}
+.dem-protocolo{font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer}
+.dem-status{font-size:10px;padding:4px 10px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:inline-block;flex-shrink:0;white-space:nowrap;align-self:flex-start}
+.s-aberta{background:#FFEBEE;color:#C00000}
+.s-em_andamento{background:#FFF3E0;color:#E65100}
+.s-resolvida{background:#E8F5EE;color:#1B8A4A}
+.s-fechada{background:var(--gray);color:var(--gray4)}
+.dem-meta{font-size:11.5px;color:var(--text2)}
+
+/* Conteúdo principal em 2 colunas: descrição+anexos à esquerda, banner+resposta à direita */
+.dem-content{display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start}
+@media(max-width:760px){.dem-content{grid-template-columns:1fr}}
+
+.dem-content-main{display:flex;flex-direction:column;gap:8px;min-width:0}
+.dem-content-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+
+.dem-desc{font-size:12.5px;color:var(--text);line-height:1.55;background:var(--gray);padding:10px 12px;border-radius:6px}
+.dem-anexos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+
 .dem-banner{background:rgba(13,60,68,.08);border-left:3px solid var(--teal-dk);border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px}
 .dem-banner .label{color:var(--teal-dk);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;font-weight:700}
-.dem-banner .data{font-size:13px;font-weight:700;color:var(--teal-dk)}
+.dem-banner .data{font-size:13px;font-weight:700;color:var(--teal-dk);line-height:1.3}
 .dem-banner .ts{font-size:10px;color:var(--text2);margin-top:5px}
-.dem-resposta{background:rgba(21,91,103,.06);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;cursor:pointer}
-.dem-resposta b{color:var(--teal);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
-.dem-btn1, .dem-btn2{display:flex;align-items:center}
-.dem-btn1 button, .dem-btn2 button{width:100%;height:100%;padding:0 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:#fff}
-.dem-btn1 button{border:1.5px solid var(--teal);color:var(--teal)}
-.dem-btn2 button{border:1.5px solid var(--gray3);color:var(--text2)}
 
-/* "Ver mais/menos" — clica em qualquer ponto do bloco */
-.dem-block.truncavel{cursor:pointer}
-.dem-block.truncavel .ver-mais{display:none;position:absolute;bottom:4px;right:8px;color:var(--teal);font-weight:700;font-size:11px;background:linear-gradient(to right, transparent, #fff 30%);padding:2px 4px 2px 20px;pointer-events:none}
-.dem-block.truncavel.com-overflow .ver-mais{display:block}
-.dem-block.truncavel.com-overflow.expandido .ver-mais::before{content:"ver menos ▲"}
-.dem-block.truncavel.com-overflow:not(.expandido) .ver-mais::before{content:"ver mais ▼"}
-.dem-block.truncavel.expandido{height:auto!important;min-height:initial;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.dem-resposta{background:rgba(21,91,103,.06);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px}
+.dem-resposta b.label{color:var(--teal);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;font-weight:700}
 
-/* ═══ POSICIONAMENTO POR DISPOSITIVO (do seu editor visual) ═══ */
-/* MOBILE */
-@media(max-width:480px){
-  .dem{min-height:564px}
-  .dem-titulo{left:0;top:10px;width:240px;height:34px}
-  .dem-status{left:246px;top:18px}
-  .dem-protocolo{left:10px;top:65px;width:300px;height:16px}
-  .dem-meta{left:10px;top:87px;width:360px;height:32px}
-  .dem-desc{left:10px;top:125px;width:360px;height:90px}
-  .dem-anexos{left:10px;top:221px;width:200px;height:32px}
-  .dem-btn1{left:10px;top:259px;width:232px;height:36px}
-  .dem-banner{left:10px;top:301px;width:360px;height:100px}
-  .dem-resposta{left:10px;top:407px;width:360px;height:110px}
-  .dem-btn2{left:10px;top:523px;width:360px;height:36px}
-}
-/* TABLET */
-@media(min-width:481px) and (max-width:768px){
-  .dem{min-height:473px}
-  .dem-titulo{left:14px;top:14px;width:280px;height:24px}
-  .dem-status{left:371px;top:20px}
-  .dem-protocolo{left:154px;top:48px;width:300px;height:18px}
-  .dem-meta{left:14px;top:72px;width:400px;height:18px}
-  .dem-desc{left:14px;top:96px;width:572px;height:63px}
-  .dem-anexos{left:4px;top:165px;width:200px;height:20px}
-  .dem-btn1{left:14px;top:191px;width:200px;height:32px}
-  .dem-banner{left:14px;top:229px;width:572px;height:90px}
-  .dem-resposta{left:14px;top:325px;width:572px;height:100px}
-  .dem-btn2{left:14px;top:431px;width:160px;height:32px}
-}
-/* DESKTOP */
-@media(min-width:769px) and (max-width:1100px){
-  .dem{min-height:241px}
-  .dem-titulo{left:14px;top:7px;width:300px;height:24px}
-  .dem-status{left:352px;top:15px;font-size:10px}
-  .dem-protocolo{left:158px;top:37px;width:210px;height:32px}
-  .dem-meta{left:14px;top:75px;width:314px;height:37px;font-size:11.5px;font-weight:500}
-  .dem-desc{left:14px;top:118px;width:468px;height:75px}
-  .dem-anexos{left:5px;top:199px;width:102px;height:31px}
-  .dem-btn1{left:128px;top:199px;width:200px;height:32px}
-  .dem-btn2{left:334px;top:199px;width:160px;height:32px}
-  .dem-banner{left:520px;top:16px;width:355px;height:81px;color:#272625}
-  .dem-resposta{left:520px;top:112px;width:355px;height:94px}
-}
-/* WIDE */
-@media(min-width:1101px){
-  .dem{min-height:260px}
-  .dem-titulo{left:14px;top:14px;width:400px;height:24px}
-  .dem-status{left:420px;top:23px;font-size:11px}
-  .dem-protocolo{left:169px;top:44px;width:215px;height:28px}
-  .dem-meta{left:14px;top:78px;width:500px;height:37px}
-  .dem-desc{left:14px;top:121px;width:700px;height:60px}
-  .dem-anexos{left:6px;top:187px;width:300px;height:20px}
-  .dem-btn1{left:114px;top:213px;width:200px;height:32px}
-  .dem-btn2{left:330px;top:213px;width:160px;height:32px}
-  .dem-banner{left:702px;top:14px;width:452px;height:83px;font-size:12.5px;font-weight:400}
-  .dem-resposta{left:702px;top:112px;width:452px;height:128px}
-}
+.dem-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.dem-acoes button{padding:8px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;font-family:inherit}
+.dem-acoes .btn-pri{border:1.5px solid var(--teal);color:var(--teal)}
+.dem-acoes .btn-sec{border:1.5px solid var(--gray3);color:var(--text2)}
+
+/* "Ver mais/menos" — clica em qualquer ponto do bloco truncável */
+.truncavel{cursor:pointer;position:relative;max-height:5.5em;overflow:hidden;transition:max-height .25s}
+.truncavel.com-overflow::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(to bottom, transparent, var(--gray));pointer-events:none}
+.dem-banner.truncavel.com-overflow::after{background:linear-gradient(to bottom, transparent, rgba(13,60,68,.18))}
+.dem-resposta.truncavel.com-overflow::after{background:linear-gradient(to bottom, transparent, rgba(21,91,103,.16))}
+.truncavel.com-overflow .ver-mais{display:inline-block;position:absolute;bottom:2px;right:8px;color:var(--teal);font-weight:700;font-size:11px;pointer-events:none;z-index:1}
+.truncavel:not(.com-overflow) .ver-mais{display:none}
+.truncavel.com-overflow:not(.expandido) .ver-mais::before{content:"ver mais ▼"}
+.truncavel.expandido{max-height:none}
+.truncavel.expandido::after{display:none}
+.truncavel.expandido .ver-mais::before{content:"ver menos ▲"}
 .s-aberta{background:#FFEBEE;color:#C00000}
 .s-em_andamento{background:#FFF3E0;color:#E65100}
 .s-resolvida{background:#E8F5EE;color:#1B8A4A}
@@ -1490,31 +1447,43 @@ function renderDemandas(){
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const proto=d.protocolo||'—';
     const podeEditar=!_modoEquipe && d.user_id===_user?.id && d.status!=='fechada';
-    const descricaoHtml=d.descricao?`<div class="dem-block dem-desc truncavel">${d.descricao}<span class="ver-mais"></span></div>`:'';
-    const bannerHtml=d.data_programada?`<div class="dem-block dem-banner truncavel">
+    const bannerHtml=d.data_programada?`<div class="dem-banner truncavel">
       <span class="label">📅 Programado pela Diagnóstika</span>
       <div class="data">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
-      ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px">'+d.descricao_programada+'</div>':''}
+      ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.4">'+d.descricao_programada+'</div>':''}
       ${d.programado_em?'<div class="ts">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
       <span class="ver-mais"></span>
     </div>`:'';
-    const respostaHtml=(d.resposta||diagIdxs.length)?`<div class="dem-block dem-resposta truncavel">
-      <b>💬 Resposta Diagnóstika:</b>${d.resposta||''}${gridDiag}
+    const respostaHtml=(d.resposta||diagIdxs.length)?`<div class="dem-resposta truncavel">
+      <b class="label">💬 Resposta Diagnóstika</b>${d.resposta||''}${gridDiag}
       ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':''}
       <span class="ver-mais"></span>
     </div>`:'';
+    const temSide=bannerHtml||respostaHtml;
     return `<div class="dem" data-dem-id="${d.id}">
-      <div class="dem-block dem-titulo">${d.titulo}</div>
-      <div class="dem-block dem-status s-${d.status}">${status[d.status]||d.status}</div>
-      <div class="dem-block dem-protocolo" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
-      <div class="dem-block dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
-      ${descricaoHtml}
-      ${sindIdxs.length?`<div class="dem-block dem-anexos">${gridSind}</div>`:''}
-      ${bannerHtml}
-      ${respostaHtml}
-      ${podeEditar?`<div class="dem-block dem-btn1"><button onclick="editarDemanda('${d.id}')">✏️ Editar / Adicionar info</button></div>`:''}
-      <div class="dem-block dem-btn2"><button onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button></div>
-      <div id="hist-${d.id}" style="position:relative;clear:both"></div>
+      <div class="dem-row1">
+        <div class="dem-row1-left">
+          <div class="dem-titulo">${d.titulo}</div>
+          <div class="dem-protocolo" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
+        </div>
+        <span class="dem-status s-${d.status}">${status[d.status]||d.status}</span>
+      </div>
+      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
+      <div class="dem-content"${!temSide?' style="grid-template-columns:1fr"':''}>
+        <div class="dem-content-main">
+          ${d.descricao?'<div class="dem-desc truncavel">'+d.descricao+'<span class="ver-mais"></span></div>':''}
+          ${sindIdxs.length?`<div class="dem-anexos-grid">${gridSind}</div>`:''}
+        </div>
+        ${temSide?`<div class="dem-content-side">
+          ${bannerHtml}
+          ${respostaHtml}
+        </div>`:''}
+      </div>
+      <div class="dem-acoes">
+        ${podeEditar?`<button class="btn-pri" onclick="editarDemanda('${d.id}')">✏️ Editar / Adicionar info</button>`:''}
+        <button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
+      </div>
+      <div id="hist-${d.id}" style="display:none"></div>
     </div>`;
   }).join('');
   // Pós-render: detecta truncamento e ativa ver mais
@@ -1522,16 +1491,14 @@ function renderDemandas(){
 }
 
 function detectarTruncamento(){
-  document.querySelectorAll('.dem-block.truncavel').forEach(el=>{
-    if(el.classList.contains('expandido')) return;
+  document.querySelectorAll('.truncavel').forEach(el=>{
+    if(el.classList.contains('expandido')){ el.classList.add('com-overflow'); return; }
     // Compara conteúdo vs caixa
     if(el.scrollHeight > el.clientHeight + 4){
       el.classList.add('com-overflow');
-      // Click anywhere expands
       if(!el.dataset.bound){
         el.dataset.bound='1';
         el.addEventListener('click', e=>{
-          // Ignora clicks em links/botões/imagens dentro
           if(e.target.closest('button,a,img,video')) return;
           el.classList.toggle('expandido');
         });
