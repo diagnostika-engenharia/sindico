@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#155B67">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Diagnóstika Síndico">
-<title>Portal do Síndico — Diagnóstika</title>
+<meta name="apple-mobile-web-app-title" content="Diagnóstika Síndico(a)">
+<title>Portal do Síndico(a) — Diagnóstika</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -155,6 +155,8 @@ main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
 .dem-acoes button{padding:8px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;font-family:inherit}
 .dem-acoes .btn-pri{border:1.5px solid var(--teal);color:var(--teal)}
 .dem-acoes .btn-sec{border:1.5px solid var(--gray3);color:var(--text2)}
+.dem-acoes .btn-del{border:1.5px solid var(--red);color:var(--red);background:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.dem-acoes .btn-del:hover{background:rgba(192,0,0,.06)}
 
 /* "Ver mais/menos" — clica em qualquer ponto do bloco truncável */
 .truncavel{cursor:pointer;position:relative;max-height:5.5em;overflow:hidden;transition:max-height .25s}
@@ -224,7 +226,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
     <div class="login-logo">
       <img src="assets/logo.png" alt="Diagnóstika" onerror="this.src='assets/logo-dark.png';this.style.filter='invert(1)'">
     </div>
-    <h1>Portal do Síndico</h1>
+    <h1>Portal do Síndico(a)</h1>
     <p class="sub">Acesse os dados técnicos do seu condomínio</p>
     <form onsubmit="event.preventDefault();fazerLogin()">
       <label>E-mail</label>
@@ -249,7 +251,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
     <img src="assets/logo-dark.png" alt="Diagnóstika" style="cursor:pointer" onclick="cliqueLogo()" title="Diagnóstika">
     <div class="title">
       <strong id="user-name">…</strong>
-      <small id="user-role">Portal do Síndico</small>
+      <small id="user-role">Portal do Síndico(a)</small>
     </div>
     <button class="user-btn" onclick="toggleUserMenu(event)">
       <span>👤</span><span id="user-initial">?</span> ▼
@@ -1314,7 +1316,8 @@ function renderTimelineHistorico(eventos){
   if(!eventos.length) return '<div style="color:var(--text2);font-size:11px;padding:6px">Nenhum registro de histórico.</div>';
   const labels={
     criada:'📋 Demanda aberta',
-    editada:'✏️ Editada pelo síndico',
+    editada:'✏️ Editada pelo(a) síndico(a)',
+    excluida:'🗑 Excluída pelo(a) síndico(a)',
     respondida:'💬 Respondida pela Diagnóstika',
     resposta_editada:'💬 Resposta atualizada',
     status_alterado:'🔄 Status alterado',
@@ -1355,6 +1358,8 @@ function renderTimelineHistorico(eventos){
       detalhe='<small style="color:var(--text2)">de <b>'+(d.de?d.de.split('-').reverse().join('/'):'—')+'</b> → <b>'+(d.para?d.para.split('-').reverse().join('/'):'—')+'</b>'+(d.motivo?'<br><i>Motivo: "'+d.motivo+'"</i>':'')+'</small>';
     } else if(e.acao==='desprogramada'){
       detalhe='<small style="color:var(--text2)">Programação cancelada (era '+(d.era?d.era.split('-').reverse().join('/'):'—')+')</small>';
+    } else if(e.acao==='excluida'){
+      detalhe='<small style="color:var(--red)">'+(d.motivo?'Motivo: <i>"'+d.motivo+'"</i>':'<i>(sem motivo informado)</i>')+'</small>';
     }
     return `<div style="display:flex;gap:10px;padding:8px 0;${i<eventos.length-1?'border-bottom:1px dashed var(--gray2)':''}">
       <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:${tipoCor}15;border:2px solid ${tipoCor};color:${tipoCor};display:flex;align-items:center;justify-content:center;font-size:13px">${tipoEmoji}</div>
@@ -1372,7 +1377,7 @@ function renderTimelineHistorico(eventos){
 }
 
 async function carregarDemandas(){
-  const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).order('created_at',{ascending:false});
+  const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).is('deletada_em',null).order('created_at',{ascending:false});
   if(error){ document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
   _demandas=data||[];
   _historicoCache={}; // invalida cache ao recarregar
@@ -1481,6 +1486,7 @@ function renderDemandas(){
       <div class="dem-acoes">
         ${podeEditar?`<button class="btn-pri" onclick="editarDemanda('${d.id}')">✏️ Editar / Adicionar info</button>`:''}
         <button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
+        ${podeEditar?`<button class="btn-del" onclick="excluirDemandaSindico('${d.id}')" title="Excluir esta demanda">🗑 Excluir</button>`:''}
       </div>
       <div id="hist-${d.id}" style="display:none"></div>
     </div>`;
@@ -1530,7 +1536,7 @@ function cliqueLogo(){
 }
 
 function toggleFormDemanda(){
-  if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura.\n\nPara abrir um chamado, use o Painel Admin ou faça login como síndico.'); return; }
+  if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura.\n\nPara abrir um chamado, use o Painel Admin ou faça login como síndico(a).'); return; }
   const f=document.getElementById('form-demanda');
   f.style.display=f.style.display==='none'?'block':'none';
 }
@@ -1893,6 +1899,29 @@ async function salvarEdicaoDemanda(id){
   }catch(e){
     alert('Erro ao salvar: '+e.message);
     btn.disabled=false; btn.textContent='💾 Salvar alterações';
+  }
+}
+
+async function excluirDemandaSindico(id){
+  const d=_demandas.find(x=>x.id===id);
+  if(!d){ alert('Demanda não encontrada'); return; }
+  const motivo=prompt('🗑 Excluir esta demanda?\n\n"'+(d.titulo||'')+'"\n(Protocolo '+(d.protocolo||'—')+')\n\nA demanda ficará registrada no histórico para fins de auditoria.\n\nMotivo (opcional):');
+  if(motivo===null) return;
+  try{
+    const meuVinc=_meusCondos?.find(c=>c.condo_id===d.condo_id);
+    const nomeSind=meuVinc?.nome_exibicao || _user?.user_metadata?.nome || _user?.email || 'Síndico(a)';
+    const {error}=await sb.from('demandas').update({
+      deletada_em:new Date().toISOString(),
+      deletada_por_nome:nomeSind,
+      deletada_por_tipo:'sindico',
+      deletada_motivo:motivo||null,
+      updated_at:new Date().toISOString()
+    }).eq('id',id);
+    if(error) throw error;
+    alert('✓ Demanda excluída.\nRegistro mantido no histórico para auditoria.');
+    carregarDemandas();
+  }catch(e){
+    alert('Erro ao excluir: '+e.message);
   }
 }
 
