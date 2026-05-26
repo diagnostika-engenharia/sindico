@@ -44,7 +44,7 @@ h2{font-size:18px;color:var(--text);margin:14px 0 4px}
   <div class="card" id="content">
     <div class="loading">⏳ Carregando…</div>
   </div>
-  <div class="foot">Diagnóstika Engenharia · CREA/SP 50.707.124-26</div>
+  <div class="foot">Diagnóstika Engenharia · CREA/SP</div>
 </div>
 
 <div class="lightbox" id="lb" onclick="this.classList.remove('open')"><img id="lb-img" src=""></div>
@@ -59,7 +59,8 @@ const CONDOS = {
   'monte-carlo':'Edifício Monte Carlo','morada-morumbi':'Morada do Morumbi','portal-primavera':'Portal Primavera',
   'residencial-santa-clara':'Residencial Santa Clara','jardins-do-malta':'Jardins do Malta','condominio-teste':'Condomínio TESTE'
 };
-const cats={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade'};
+const cats={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade',laudo:'📜 Solicitação de ART'};
+const subtipos={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade',art:'📜 Solicitação de ART à Diagnóstika'};
 const statusLbl={aberta:'Aberta',em_andamento:'Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
 
 const id = new URLSearchParams(location.search).get('id');
@@ -85,16 +86,17 @@ function fmtBR(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}
 
 function renderizar(d){
   const fotos=Array.isArray(d.fotos)?d.fotos:[];
-  const fotosMorador=fotos.filter(a=>!a || typeof a==='string' || a.origem!=='diagnostika');
-  const fotosDiag=fotos.filter(a=>a && typeof a==='object' && a.origem==='diagnostika');
+  const fotosMorador=fotos.filter(a=>(!a||typeof a==='string'||a.origem!=='diagnostika') && (!a || typeof a==='string' || a.tipo!=='documento'));
+  const docsMorador=fotos.filter(a=>a && typeof a==='object' && a.tipo==='documento' && a.origem!=='diagnostika');
+  const fotosDiag=fotos.filter(a=>a && typeof a==='object' && a.origem==='diagnostika' && a.tipo!=='documento');
   const html = `
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
       <span class="proto">📋 ${d.protocolo||'—'}</span>
       <span class="status s-${d.status}">${statusLbl[d.status]||d.status}</span>
     </div>
     <h2>${d.titulo||'—'}</h2>
-    <div class="meta">${CONDOS[d.condo_id]||d.condo_id} · ${cats[d.categoria]||d.categoria} · enviado em ${fmtDt(d.created_at)}</div>
-    <div class="meta">Por <b>${d.morador_nome||'—'}</b> · Unidade ${d.morador_apto||'—'}</div>
+    <div class="meta">${CONDOS[d.condo_id]||d.condo_id} · ${subtipos[d.detalhes?.subtipo_morador]||cats[d.categoria]||d.categoria} · enviado em ${fmtDt(d.created_at)}</div>
+    <div class="meta">Por <b>${d.morador_nome||'—'}</b> · ${d.morador_apto||'—'}</div>
 
     ${d.deletada_em?`<div class="bloco del" style="margin-top:14px"><b>🗑 Este chamado foi cancelado/encerrado.</b></div>`:''}
 
@@ -103,6 +105,9 @@ function renderizar(d){
 
     ${fotosMorador.length?`<div class="section-lbl">📷 Fotos enviadas por você</div>
       <div class="fotos">${fotosMorador.map(a=>{const u=typeof a==='string'?a:a.url;return `<img src="${u}" onclick="lb('${u}')">`;}).join('')}</div>`:''}
+
+    ${docsMorador.length?`<div class="section-lbl">📎 Documentos enviados por você</div>
+      <div style="background:var(--gray);border-radius:8px;padding:8px 10px">${docsMorador.map(doc=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;font-size:13px"><span>📄</span><a href="${doc.url}" download="${(doc.nome||'documento').replace(/"/g,'&quot;')}" target="_blank" style="color:var(--teal);text-decoration:none;font-weight:600;flex:1;word-break:break-word">${(doc.nome||'arquivo').replace(/</g,'&lt;')}</a></div>`).join('')}</div>`:''}
 
     ${d.data_programada?`
       <div class="section-lbl">📅 Programado pela Diagnóstika</div>
