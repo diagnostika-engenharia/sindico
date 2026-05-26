@@ -1261,7 +1261,10 @@ function renderTimelineHistorico(eventos){
     editada:'✏️ Editada pelo síndico',
     respondida:'💬 Respondida pela Diagnóstika',
     resposta_editada:'💬 Resposta atualizada',
-    status_alterado:'🔄 Status alterado'
+    status_alterado:'🔄 Status alterado',
+    programada:'📅 Programada pela equipe',
+    reagendada:'⏳ Reagendada pela equipe',
+    desprogramada:'❌ Programação cancelada'
   };
   const statusLabels={aberta:'Aberta',em_andamento:'Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
   const linhas=eventos.map((e,i)=>{
@@ -1290,6 +1293,12 @@ function renderTimelineHistorico(eventos){
     } else if(e.acao==='respondida' || e.acao==='resposta_editada'){
       const txt=(d.texto||'').replace(/</g,'&lt;');
       detalhe=txt?'<small style="color:var(--text2);font-style:italic">"'+txt.substring(0,150)+(txt.length>150?'…':'')+'"</small>':'';
+    } else if(e.acao==='programada'){
+      detalhe='<small style="color:var(--text2)"><b>'+(d.tipo||'Visita')+'</b> em <b>'+(d.data?d.data.split('-').reverse().join('/'):'—')+'</b>'+(d.hora?' às '+d.hora.substring(0,5):'')+(d.descricao?'<br><i>"'+d.descricao+'"</i>':'')+'</small>';
+    } else if(e.acao==='reagendada'){
+      detalhe='<small style="color:var(--text2)">de <b>'+(d.de?d.de.split('-').reverse().join('/'):'—')+'</b> → <b>'+(d.para?d.para.split('-').reverse().join('/'):'—')+'</b>'+(d.motivo?'<br><i>Motivo: "'+d.motivo+'"</i>':'')+'</small>';
+    } else if(e.acao==='desprogramada'){
+      detalhe='<small style="color:var(--text2)">Programação cancelada (era '+(d.era?d.era.split('-').reverse().join('/'):'—')+')</small>';
     }
     return `<div style="display:flex;gap:10px;padding:8px 0;${i<eventos.length-1?'border-bottom:1px dashed var(--gray2)':''}">
       <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:${tipoCor}15;border:2px solid ${tipoCor};color:${tipoCor};display:flex;align-items:center;justify-content:center;font-size:13px">${tipoEmoji}</div>
@@ -1388,6 +1397,12 @@ function renderDemandas(){
       <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
       ${gridSind}
+      ${d.data_programada?`<div style="margin-top:10px;padding:10px 12px;background:rgba(13,60,68,.08);border-left:3px solid #0D3C44;border-radius:0 6px 6px 0;font-size:12px">
+        <b style="color:#0D3C44;font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">📅 Programado pela Diagnóstika</b>
+        <div style="font-size:13px;font-weight:700;color:#0D3C44">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
+        ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px">'+d.descricao_programada+'</div>':''}
+        ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
+      </div>`:''}
       ${(d.resposta||diagIdxs.length)?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+(d.resposta||'')+gridDiag+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
         ${podeEditar?`<button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button>`:''}
