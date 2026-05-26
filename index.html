@@ -1409,15 +1409,14 @@ function renderDemandas(){
     return `<div class="dem">
       <div class="dem-head"><div class="dem-titulo">${d.titulo}</div><span class="dem-status s-${d.status}">${status[d.status]||d.status}</span></div>
       <div style="font-size:10.5px;font-weight:700;color:var(--teal);letter-spacing:.5px;margin-bottom:6px;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
+      ${d.data_programada?`<div style="background:rgba(13,60,68,.08);border-left:3px solid #0D3C44;padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:8px;font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" title="${(d.descricao_programada||'').replace(/"/g,'&quot;')}">
+        <b style="color:#0D3C44">📅 Programado:</b>
+        <span style="font-weight:700;color:#0D3C44">${d.tipo_programado||'Visita'} · ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</span>
+        ${d.programado_por?'<span style="color:var(--text2);font-size:11px">por '+d.programado_por+'</span>':''}
+      </div>`:''}
       <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
       ${d.descricao?'<div class="dem-desc">'+d.descricao+'</div>':''}
       ${gridSind}
-      ${d.data_programada?`<div style="margin-top:10px;padding:10px 12px;background:rgba(13,60,68,.08);border-left:3px solid #0D3C44;border-radius:0 6px 6px 0;font-size:12px">
-        <b style="color:#0D3C44;font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">📅 Programado pela Diagnóstika</b>
-        <div style="font-size:13px;font-weight:700;color:#0D3C44">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
-        ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px">'+d.descricao_programada+'</div>':''}
-        ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
-      </div>`:''}
       ${(d.resposta||diagIdxs.length)?'<div class="dem-resposta"><b>💬 Resposta Diagnóstika:</b>'+(d.resposta||'')+gridDiag+(d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':'')+'</div>':''}
       <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
         ${podeEditar?`<button onclick="editarDemanda('${d.id}')" style="padding:7px 14px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✏️ Editar / Adicionar info</button>`:''}
