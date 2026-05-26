@@ -1447,12 +1447,11 @@ function renderDemandas(){
     const gridDiag=diagIdxs.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>':'';
     const proto=d.protocolo||'—';
     const podeEditar=!_modoEquipe && d.user_id===_user?.id && d.status!=='fechada';
-    const bannerHtml=d.data_programada?`<div class="dem-banner truncavel">
+    const bannerHtml=d.data_programada?`<div class="dem-banner">
       <span class="label">📅 Programado pela Diagnóstika</span>
       <div class="data">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
       ${d.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.4">'+d.descricao_programada+'</div>':''}
       ${d.programado_em?'<div class="ts">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
-      <span class="ver-mais"></span>
     </div>`:'';
     const respostaHtml=(d.resposta||diagIdxs.length)?`<div class="dem-resposta truncavel">
       <b class="label">💬 Resposta Diagnóstika</b>${d.resposta||''}${gridDiag}
