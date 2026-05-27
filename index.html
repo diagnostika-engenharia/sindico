@@ -277,6 +277,26 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
 .foto-zoom{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}
 .foto-zoom img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* Fase 1.6 — Badges responsável, chip pg manual, ícone obs e modal de detalhes do item */
+.resp-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;white-space:nowrap;display:inline-block}
+.resp-condominio{background:#E3F2FD;color:#1565C0}
+.resp-empresa{background:#FFF3E0;color:#E65100}
+.resp-local{background:#ECEFF1;color:#455A64}
+.resp-sindico{background:#F3E5F5;color:#6A1B9A}
+.resp-diagnostika{background:rgba(21,91,103,.12);color:#155B67}
+.pg-chip{display:inline-flex;align-items:center;font-size:10.5px;color:#4A6568;background:#F0F4F5;padding:2px 6px;border-radius:4px;font-weight:500;cursor:default}
+.plano-bullet{cursor:pointer;padding:2px 4px;margin:1px -4px;border-radius:4px;transition:background .15s}
+.plano-bullet:hover{background:rgba(21,91,103,.08)}
+.plano-bullet .ag-icons{margin-left:6px;opacity:.85;font-size:10.5px}
+.obs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px}
+.obs-modal{background:#fff;border-radius:12px;max-width:440px;width:100%;padding:20px 22px;box-shadow:0 12px 48px rgba(0,0,0,.3);position:relative}
+.obs-modal h3{font-size:14px;color:var(--teal);margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:6px}
+.obs-modal .obs-body{font-size:13px;line-height:1.55;color:#1A2E31;white-space:pre-wrap}
+.obs-modal .obs-detail-row{display:flex;gap:8px;font-size:12.5px;margin-bottom:6px;color:#1A2E31;align-items:center;flex-wrap:wrap}
+.obs-modal .obs-detail-row b{color:#4A6568;font-weight:600;min-width:90px;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.obs-modal .obs-close{margin-top:14px;width:100%;background:var(--teal);color:#fff;border:none;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
+.obs-modal .obs-close:hover{background:var(--teal-dk)}
 </style>
 </head>
 <body>
@@ -620,40 +640,36 @@ let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _ev
 // Planos de manutenção por condomínio — para mostrar atividades extras de cada visita
 const PLANOS_CONDOS={
   'monte-carlo':{
+    // Plano enxuto — base: Manual Planalto 53pg, SOMENTE áreas comuns (28 itens)
     plano:[
-      {grupo:'Estrutura e Fundações', nome:'Inspeção visual de fachadas', periodicidade:'Quinzenal', prioridade:'Alta'},
-      {grupo:'Estrutura e Fundações', nome:'Pilares e vigas aparentes', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Estrutura e Fundações', nome:'Juntas de dilatação', periodicidade:'Trimestral', prioridade:'Média'},
-      {grupo:'Estrutura e Fundações', nome:'Recalque e trincas', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Impermeabilização', nome:'Coberturas (lajes/telhados)', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Impermeabilização', nome:'Subsolos e garagens', periodicidade:'Trimestral', prioridade:'Média'},
-      {grupo:'Impermeabilização', nome:'Jardineiras e floreiras', periodicidade:'Trimestral', prioridade:'Média'},
-      {grupo:'Impermeabilização', nome:'Reservatórios (caixas d\'água)', periodicidade:'Semestral', prioridade:'Alta'},
-      {grupo:'Hidráulica e Saneamento', nome:'Rede de água fria', periodicidade:'Semestral', prioridade:'Média'},
-      {grupo:'Hidráulica e Saneamento', nome:'Rede de esgoto e drenagem', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica e Saneamento', nome:'Calhas e condutores pluviais', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica e Saneamento', nome:'Bomba de recalque', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Hidráulica e Saneamento', nome:'Caixa d\'água — limpeza', periodicidade:'Semestral', prioridade:'Alta'},
-      {grupo:'Elétrica e SPDA', nome:'Quadros de distribuição', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica e SPDA', nome:'Iluminação de emergência', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Elétrica e SPDA', nome:'SPDA (para-raios)', periodicidade:'Anual', prioridade:'Alta'},
-      {grupo:'Elétrica e SPDA', nome:'Aterramento geral', periodicidade:'Anual', prioridade:'Alta'},
-      {grupo:'Sistema de Incêndio', nome:'Extintores', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Sistema de Incêndio', nome:'Hidrantes e mangotinhos', periodicidade:'Trimestral', prioridade:'Alta'},
-      {grupo:'Sistema de Incêndio', nome:'Sinalização de emergência', periodicidade:'Mensal', prioridade:'Média'},
-      {grupo:'Sistema de Incêndio', nome:'Detector de fumaça e alarme', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'CFTV e Segurança', nome:'Câmeras de segurança', periodicidade:'Quinzenal', prioridade:'Média'},
-      {grupo:'CFTV e Segurança', nome:'Controle de acesso e interfone', periodicidade:'Mensal', prioridade:'Média'},
-      {grupo:'Cobertura e Telhado', nome:'Telhas e cumeeiras', periodicidade:'Trimestral', prioridade:'Média'},
-      {grupo:'Cobertura e Telhado', nome:'Calha perimetral e rufos', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Áreas Comuns', nome:'Revestimentos de piso', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Áreas Comuns', nome:'Guarda-corpos e corrimãos', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Áreas Comuns', nome:'Playground', periodicidade:'Mensal', prioridade:'Alta'},
-      {grupo:'Áreas Comuns', nome:'Garagem e acessos veiculares', periodicidade:'Mensal', prioridade:'Média'},
-      {grupo:'Gestão e Documentação', nome:'Relatório de visita', periodicidade:'Semanal (cada visita)', prioridade:'Alta'},
-      {grupo:'Gestão e Documentação', nome:'Registro fotográfico', periodicidade:'Semanal (cada visita)', prioridade:'Alta'},
-      {grupo:'Gestão e Documentação', nome:'Atualização do plano', periodicidade:'Anual', prioridade:'Média'},
-      {grupo:'Gestão e Documentação', nome:'ART do responsável técnico', periodicidade:'Anual', prioridade:'Alta'},
+      {grupo:'Hidrossanitário', nome:'Reservatórios (caixa d\'água) — limpeza e desinfecção', periodicidade:'Semestral', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:40, obs:'Manual Planalto pg.40 indica anual; adotamos semestral pela Portaria MS 888/2021 e NBR 5626 (norma sanitária).'},
+      {grupo:'Elétrica', nome:'Testar disjuntor DR — quadros gerais de áreas comuns', periodicidade:'Semestral', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:19},
+      {grupo:'Elétrica', nome:'Quadros gerais de distribuição — reaperto de conexões', periodicidade:'Anual', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:19},
+      {grupo:'Elétrica', nome:'Tomadas, interruptores e pontos de luz em áreas comuns — reaperto', periodicidade:'Bienal', intervalo_anos:2, ano_base:2026, prioridade:'Média', responsavel:'empresa especializada', pagina_manual:19},
+      {grupo:'Elétrica', nome:'Isolamento das emendas de fios (circuitos de áreas comuns)', periodicidade:'Anual', prioridade:'Média', responsavel:'empresa especializada', pagina_manual:19},
+      {grupo:'SPDA', nome:'SPDA — inspeção das estruturas expostas', periodicidade:'Anual', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'SPDA', nome:'SPDA — inspeção completa do sistema', periodicidade:'Quinquenal', intervalo_anos:5, ano_base:2026, prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'Revestimento Cerâmico', nome:'Rejuntes cerâmicos em áreas comuns — verificar e reconstituir', periodicidade:'Anual', prioridade:'Média', responsavel:'empresa especializada', pagina_manual:26},
+      {grupo:'Revestimento Cerâmico', nome:'Lavagem de fachadas e paredes externas', periodicidade:'Trienal', intervalo_anos:3, ano_base:2026, prioridade:'Média', responsavel:'empresa especializada', pagina_manual:26},
+      {grupo:'Pintura', nome:'Repintura — paredes e tetos áreas secas internas comuns (hall, escada)', periodicidade:'Trienal', intervalo_anos:3, ano_base:2026, prioridade:'Média', responsavel:'empresa especializada', pagina_manual:32},
+      {grupo:'Pintura', nome:'Repintura de fachadas e áreas externas', periodicidade:'Trienal', intervalo_anos:3, ano_base:2026, prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:32, obs:'Vinculado à garantia de fachada de 5 anos (NBR 15575).'},
+      {grupo:'Pintura', nome:'Repintura de forros — banheiros e áreas úmidas comuns', periodicidade:'Anual', prioridade:'Média', responsavel:'empresa especializada', pagina_manual:26},
+      {grupo:'Pintura', nome:'Revisão da pintura — áreas secas comuns', periodicidade:'Bienal', intervalo_anos:2, ano_base:2026, prioridade:'Média', responsavel:'empresa especializada', pagina_manual:26},
+      {grupo:'Gás', nome:'Teste de estanqueidade da prumada/rede de gás (GLP) do prédio', periodicidade:'Anual', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'Impermeabilização', nome:'Rejuntes da impermeabilização — verificar e reconstituir', periodicidade:'Anual', prioridade:'Média', responsavel:'empresa especializada', pagina_manual:24},
+      {grupo:'Impermeabilização', nome:'Juntas de dilatação — reconstituição de selantes', periodicidade:'Anual', prioridade:'Média', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'Impermeabilização', nome:'Caixa d\'água — integridade da impermeabilização interna', periodicidade:'Quinquenal', intervalo_anos:5, ano_base:2026, prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'Cobertura', nome:'Calhas e telhas — integridade, limpar, reparar', periodicidade:'Semestral', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:38, obs:'Manual indica também inspeção SEMANAL em períodos de chuva intensa — síndico deve acionar inspeção extra nessa condição.'},
+      {grupo:'Cobertura', nome:'Estrutura dos componentes da cobertura — integridade', periodicidade:'Anual', prioridade:'Alta', responsavel:'empresa especializada', pagina_manual:41},
+      {grupo:'Sistema de Incêndio', nome:'Iluminação de emergência — teste de funcionamento (1h autonomia)', periodicidade:'Mensal', prioridade:'Alta', responsavel:'condomínio', pagina_manual:37},
+      {grupo:'Sistema de Incêndio', nome:'Portas corta-fogo — regulagem das dobradiças com mola', periodicidade:'Anual', prioridade:'Alta', responsavel:'condomínio', pagina_manual:36},
+      {grupo:'Sistema de Incêndio', nome:'Extintores — recarga', periodicidade:'Anual', prioridade:'Alta', responsavel:'condomínio', pagina_manual:36},
+      {grupo:'Sistema de Incêndio', nome:'Hidrantes — teste de pressão das mangueiras', periodicidade:'Anual', prioridade:'Alta', responsavel:'condomínio', pagina_manual:36},
+      {grupo:'Sistema de Incêndio', nome:'Extintores — teste hidrostático dos cilindros', periodicidade:'Quinquenal', intervalo_anos:5, ano_base:2026, prioridade:'Alta', responsavel:'condomínio', pagina_manual:36},
+      {grupo:'Forros Gesso', nome:'Forros gesso áreas comuns — calafetação de rufos, para-raios, antenas, elementos decorativos', periodicidade:'Trienal', intervalo_anos:3, ano_base:2026, prioridade:'Média', responsavel:'empresa especializada', pagina_manual:26},
+      {grupo:'Gestão', nome:'Atualização do programa de manutenção', periodicidade:'Anual', prioridade:'Média', responsavel:'síndico', pagina_manual:39},
+      {grupo:'Gestão Diagnóstika', nome:'Relatório de visita', periodicidade:'Semanal (cada visita)', prioridade:'Alta', responsavel:'Diagnóstika'},
+      {grupo:'Gestão Diagnóstika', nome:'Registro fotográfico', periodicidade:'Semanal (cada visita)', prioridade:'Alta', responsavel:'Diagnóstika'},
     ]
   },
   'morada-morumbi':{
@@ -735,6 +751,9 @@ const PLANOS_CONDOS={
 // Distribui cada item de forma uniforme pelo ano, sem visitas sobrecarregadas
 // ════════════════════════════════════════════════════════════════════════
 let _progCache={};
+// TODO: hardcode por NOME quebra se outro condomínio renomear o item. Quando auditar
+// demais condôminios, migrar para flag explícita no item (item.inerente:true) e remover
+// este Set. Espelhado com PMP — manter os 2 lados sincronizados.
 const ITENS_INERENTES=new Set(['Relatório de visita','Registro fotográfico','Relatório de visita quinzenal']);
 
 function programacaoAnualSind(condoId, allDates){
@@ -750,13 +769,26 @@ function programacaoAnualSind(condoId, allDates){
     const p=(item.periodicidade||'').toLowerCase();
     if(p.includes('após liberação')||p.includes('apos liberacao')||p.includes('após cada impermeabilização')||p.includes('apos cada impermeabilizacao')||p.includes('após impermeabilização')) return [];
     if(ITENS_INERENTES.has(item.nome)) return [];
+    // Ciclos plurianuais (Bienal/Trienal/Quinquenal) — pula se ano corrente fora do ciclo
+    const anoCorr=new Date().getFullYear();
+    const anoBase=item.ano_base||2026;
+    let intervaloAnos=item.intervalo_anos||0;
+    if(!intervaloAnos){
+      if(p.includes('bienal')) intervaloAnos=2;
+      else if(p.includes('trienal')) intervaloAnos=3;
+      else if(p.includes('quinquenal')) intervaloAnos=5;
+    }
+    if(intervaloAnos){
+      if(anoCorr<anoBase||((anoCorr-anoBase)%intervaloAnos)!==0) return [];
+    }
     let diasAlvo=0;
     if(p.includes('semanal')) diasAlvo=7;
     else if(p.includes('quinzenal')) diasAlvo=14;
     else if(p.includes('mensal')) diasAlvo=30;
+    else if(p.includes('bimest')) diasAlvo=60;
     else if(p.includes('trimest')) diasAlvo=90;
     else if(p.includes('semest')) diasAlvo=180;
-    else if(p.includes('anual')) diasAlvo=365;
+    else if(p.includes('anual')||intervaloAnos) diasAlvo=365;
     else return [];
     const passoVisitas=Math.max(1, Math.round(diasAlvo/cadence));
     const grupos=[];
@@ -1144,7 +1176,7 @@ function renderAgenda(){
             ${at.criticos&&at.criticos.length?'<span style="background:#C00000;color:#fff;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">⚠ '+at.criticos.length+' CRÍTICOS</span>':''}
           </div>
           ${at.criticos&&at.criticos.length?'<div style="font-size:11.5px;background:rgba(192,0,0,.06);border-left:3px solid #C00000;padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:5px;line-height:1.5"><b style="color:#C00000;font-size:10.5px;display:block;margin-bottom:3px">⚠ MONITORAMENTO CRÍTICO (LT-2025-09) — em toda visita:</b>'+at.criticos.map(e=>'· '+e).join('<br>')+'</div>':''}
-          ${at.extras.length?'<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita:</b>'+at.extras.slice(0,8).map(e=>'· '+e).join('<br>')+(at.extras.length>8?'<br><i>(e mais '+(at.extras.length-8)+'...)</i>':'')+'</div>':''}
+          ${at.extras.length?`<div style="font-size:11.5px;color:var(--text);margin-bottom:5px;background:var(--gray);padding:7px 10px;border-radius:6px;line-height:1.5"><b style="color:var(--teal);font-size:10.5px;display:block;margin-bottom:3px">📌 Itens extras desta visita: <span style="font-weight:500;color:var(--text2);font-size:9.5px">(toque pra detalhes)</span></b>${at.extras.slice(0,8).map(e=>{const it=findItemByNome(_condoAtivo,e);const m=respMeta(it&&it.responsavel);const icons=(m?' '+m.icon:'')+(it&&it.pagina_manual?` <span class="pg-chip" style="font-size:9.5px;padding:1px 4px">pg.${esc(it.pagina_manual)}</span>`:'')+(it&&it.obs?' <span style="color:var(--turq);font-weight:700" title="Tem observação">ⓘ</span>':'');return `<div class="plano-bullet" data-nome="${esc(e)}" onclick="abrirDetalhePorNome('${_condoAtivo}', this.dataset.nome)">· ${esc(e)}<span class="ag-icons">${icons}</span></div>`;}).join('')}${at.extras.length>8?`<div style="font-size:10px;color:var(--text2);font-style:italic;margin-top:4px">(e mais ${at.extras.length-8}...)</div>`:''}</div>`:''}
         `:''}
 
         ${eventosDoDia.map(e=>`
@@ -1588,6 +1620,61 @@ function esc(s){
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ─── Fase 1.6 — Helpers para campos novos do plano (espelhado com PMP) ────
+const RESP_META={
+  'condomínio':{cls:'resp-condominio',icon:'🏢',label:'Condomínio'},
+  'condominio':{cls:'resp-condominio',icon:'🏢',label:'Condomínio'},
+  'empresa especializada':{cls:'resp-empresa',icon:'🔧',label:'Empresa especializada'},
+  'equipe local':{cls:'resp-local',icon:'👷',label:'Equipe local'},
+  'síndico':{cls:'resp-sindico',icon:'📋',label:'Síndico'},
+  'sindico':{cls:'resp-sindico',icon:'📋',label:'Síndico'},
+  'diagnóstika':{cls:'resp-diagnostika',icon:'🛠️',label:'Diagnóstika'},
+  'diagnostika':{cls:'resp-diagnostika',icon:'🛠️',label:'Diagnóstika'}
+};
+function respMeta(r){ return r ? RESP_META[(''+r).toLowerCase().trim()] : null; }
+function respBadgeHTML(item, compact){
+  const m=respMeta(item&&item.responsavel); if(!m) return '';
+  return compact
+    ? `<span class="resp-badge ${m.cls}" title="${m.label}">${m.icon}</span>`
+    : `<span class="resp-badge ${m.cls}">${m.icon} ${m.label}</span>`;
+}
+// Resolve item completo por nome (Síndico monta extras como strings → procura no plano)
+function findItemByNome(condoId, nome){
+  const condo=PLANOS_CONDOS[condoId]; if(!condo||!condo.plano) return null;
+  return condo.plano.find(it=>it.nome===nome) || null;
+}
+function abrirDetalheItem(item){
+  if(typeof item==='string'){ try{ item=JSON.parse(item); }catch(e){ return; } }
+  if(!item) return;
+  const m=respMeta(item.responsavel);
+  const ov=document.createElement('div');
+  ov.className='obs-overlay';
+  ov.onclick=e=>{ if(e.target===ov) fecharDetalheItem(); };
+  ov.innerHTML=`<div class="obs-modal" role="dialog" aria-modal="true">
+    <h3>ℹ️ ${esc(item.nome||'Detalhes')}</h3>
+    ${item.grupo?`<div class="obs-detail-row"><b>Grupo</b><span>${esc(item.grupo)}</span></div>`:''}
+    ${item.periodicidade?`<div class="obs-detail-row"><b>Periodicidade</b><span>${esc(item.periodicidade)}${item.intervalo_anos?` (a cada ${item.intervalo_anos} anos${item.ano_base?', base '+item.ano_base:''})`:''}</span></div>`:''}
+    ${item.norma?`<div class="obs-detail-row"><b>Norma</b><span>${esc(item.norma)}</span></div>`:''}
+    ${m?`<div class="obs-detail-row"><b>Responsável</b><span class="resp-badge ${m.cls}">${m.icon} ${m.label}</span></div>`:''}
+    ${item.pagina_manual?`<div class="obs-detail-row"><b>Manual</b><span class="pg-chip">📄 pg.${esc(item.pagina_manual)}</span></div>`:''}
+    ${item.prioridade?`<div class="obs-detail-row"><b>Prioridade</b><span>${esc(item.prioridade)}</span></div>`:''}
+    ${item.obs?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid #E0EAEC"><b style="font-size:11px;color:#4A6568;text-transform:uppercase;letter-spacing:.3px">Observação</b><div class="obs-body" style="margin-top:6px">${esc(item.obs)}</div></div>`:''}
+    <button class="obs-close" type="button" onclick="fecharDetalheItem()">Fechar</button>
+  </div>`;
+  document.body.appendChild(ov);
+  document.addEventListener('keydown', _obsEsc);
+}
+function fecharDetalheItem(){
+  document.querySelectorAll('.obs-overlay').forEach(o=>o.remove());
+  document.removeEventListener('keydown', _obsEsc);
+}
+function _obsEsc(e){ if(e.key==='Escape') fecharDetalheItem(); }
+// Wrapper para o onclick do bullet — busca o item pelo nome no plano do condomínio atual
+function abrirDetalhePorNome(condoId, nome){
+  const it=findItemByNome(condoId, nome);
+  if(it) abrirDetalheItem(it); else abrirDetalheItem({nome});
 }
 
 // Helper: monta URL pública para fotos de moradores (Storage) com fallback p/ base64 antigo
