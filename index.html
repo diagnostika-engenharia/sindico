@@ -1428,7 +1428,7 @@ function renderTimelineHistorico(eventos){
       }
       detalhe='<small style="color:var(--text2)">'+(partes.join(' · ')||'alteração')+'</small>';
     } else if(e.acao==='respondida' || e.acao==='resposta_editada'){
-      const txt=(d.texto||'').replace(/</g,'&lt;');
+      const txt=esc(d.texto||'');
       detalhe=txt?'<small style="color:var(--text2);font-style:italic">"'+txt.substring(0,150)+(txt.length>150?'…':'')+'"</small>':'';
     } else if(e.acao==='programada'){
       detalhe='<small style="color:var(--text2)"><b>'+(d.tipo||'Visita')+'</b> em <b>'+(d.data?d.data.split('-').reverse().join('/'):'—')+'</b>'+(d.hora?' às '+d.hora.substring(0,5):'')+(d.descricao?'<br><i>"'+d.descricao+'"</i>':'')+'</small>';
@@ -1514,7 +1514,7 @@ function renderTileMorador(d){
         <span class="tile-status st-${d.status}">${STATUS_SIND[d.status]||d.status}</span>
       </div>
     </div>
-    <div class="tile-titulo">${(d.titulo||'').replace(/</g,'&lt;')}</div>
+    <div class="tile-titulo">${esc(d.titulo||'')}</div>
     <div class="tile-meta">${subLbl?`<span>${subLbl}</span>`:''}</div>
     ${unidadeHtml}
     ${progHtml}
@@ -1566,9 +1566,9 @@ function _renderMoradoresLegacy(){ return; /*
         </div>
         <span class="dem-status s-${d.status}">${statusLbl[d.status]||d.status}</span>
       </div>
-      ${d.descricao?'<div class="dem-desc truncavel">'+d.descricao.replace(/</g,'&lt;')+'<span class="ver-mais"></span></div>':''}
+      ${d.descricao?'<div class="dem-desc truncavel">'+esc(d.descricao)+'<span class="ver-mais"></span></div>':''}
       ${d.data_programada?`<div class="dem-banner"><span class="label">📅 Programado pela Diagnóstika</span><div class="data">${d.tipo_programado||'Visita'} em ${(d.data_programada.split('-').reverse().join('/'))}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>${d.descricao_programada?'<div style="font-size:11.5px;margin-top:4px">'+d.descricao_programada+'</div>':''}</div>`:''}
-      ${d.resposta?`<div class="dem-resposta truncavel"><b class="label">💬 Resposta Diagnóstika</b>${d.resposta.replace(/</g,'&lt;')}${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+'</div>':''}<span class="ver-mais"></span></div>`:''}
+      ${d.resposta?`<div class="dem-resposta truncavel"><b class="label">💬 Resposta Diagnóstika</b>${esc(d.resposta)}${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+'</div>':''}<span class="ver-mais"></span></div>`:''}
       <div class="dem-acoes">
         <button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
         <div style="margin-left:auto;font-size:11px;color:var(--text2);align-self:center"><i>🔒 Modo acompanhamento — atendido pela engenharia</i></div>
@@ -1578,6 +1578,17 @@ function _renderMoradoresLegacy(){ return; /*
   }).join('');
   setTimeout(detectarTruncamento, 50);
 */ }
+
+// Escapa HTML especial — usar em TODA interpolação de dados em template literals
+function esc(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Helper: monta URL pública para fotos de moradores (Storage) com fallback p/ base64 antigo
 function getFotoUrl(a){
@@ -1697,7 +1708,7 @@ function renderTileSindico(d){
       <span class="tile-proto">📋 ${d.protocolo||'—'}</span>
       <span class="tile-status st-${d.status}">${STATUS_SIND[d.status]||d.status}</span>
     </div>
-    <div class="tile-titulo">${(d.titulo||'').replace(/</g,'&lt;')}</div>
+    <div class="tile-titulo">${esc(d.titulo||'')}</div>
     <div class="tile-meta">${metaExtra}</div>
     ${progHtml}
     <div class="tile-info-row">
@@ -1888,7 +1899,7 @@ function abrirDetalheDemandaSindico(id){
       <div class="dem-modal-head">
         <div style="flex:1;min-width:0">
           <div class="h-proto" onclick="copiarProtocolo('${d.protocolo||'—'}')" title="Clique para copiar">📋 ${d.protocolo||'—'}</div>
-          <h2>${(d.titulo||'').replace(/</g,'&lt;')}</h2>
+          <h2>${esc(d.titulo||'')}</h2>
           <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
             ${isMorador?'<span style="background:rgba(255,255,255,.22);padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🏠 MORADOR</span>':''}
             <span class="tile-status st-${d.status}" style="font-size:10px">${STATUS_SIND[d.status]||d.status}</span>

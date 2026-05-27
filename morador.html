@@ -423,6 +423,17 @@ var MAX_DOCS = 6;
 var MAX_DOC_BYTES = 10 * 1024 * 1024;  // 10 MB (alinha com bucket policy)
 var MIMES_OK = ['image/jpeg','image/png','image/webp','application/pdf'];
 
+// Escapa HTML especial — usar em TODA interpolação de dados em template literals
+function esc(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function uuid4(){
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
     var r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
@@ -534,12 +545,13 @@ async function adicionarDocs(filesList){
 function renderDocs(){
   $('thumbs-docs').innerHTML = _docs.map(function(d, i){
     var ehImg = d.mime && d.mime.indexOf && d.mime.startsWith('image/');
-    var nome = (d.nome||'arquivo').replace(/[<>&]/g,'_');
+    var nomeRaw = d.nome || 'arquivo';
+    var nomeCurto = nomeRaw.length > 22 ? nomeRaw.substring(0,22)+'…' : nomeRaw;
     var url = d.storage_path ? urlPublicaStorage(d.storage_path) : '';
     var loading = d._uploading ? '<div class="thumb-loading">⏳</div>' : '';
     var inner = ehImg && url
-      ? '<img src="'+url+'" alt="doc">'+loading+'<span class="thumb-size">'+fmtSize(d.tamanho||0)+'</span>'
-      : '<div class="doc-icon">'+(d._uploading?'⏳':'📄')+'</div><div>'+(nome.length>22?nome.substring(0,22)+'…':nome)+'</div><span class="thumb-size">'+fmtSize(d.tamanho||0)+'</span>';
+      ? '<img src="'+esc(url)+'" alt="doc">'+loading+'<span class="thumb-size">'+fmtSize(d.tamanho||0)+'</span>'
+      : '<div class="doc-icon">'+(d._uploading?'⏳':'📄')+'</div><div>'+esc(nomeCurto)+'</div><span class="thumb-size">'+fmtSize(d.tamanho||0)+'</span>';
     return '<div class="thumb '+(ehImg?'':'doc')+(d._uploading?' uploading':'')+'">'+inner+'<button type="button" class="thumb-rm" onclick="rmDoc('+i+')">×</button></div>';
   }).join('');
 }

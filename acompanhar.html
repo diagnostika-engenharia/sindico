@@ -84,6 +84,17 @@ async function carregar(){
 function fmtDt(s){ if(!s) return '—'; const d=new Date(s); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtBR(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
 
+// Escapa HTML especial — usar em TODA interpolação de dados em template literals
+function esc(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Monta URL pública pra fotos novas (storage) ou usa URL antiga base64
 function getFotoUrl(a){
   if(!a) return '';
@@ -99,36 +110,36 @@ function renderizar(d){
   const fotosDiag=fotos.filter(a=>a && typeof a==='object' && a.origem==='diagnostika' && a.tipo!=='documento');
   const html = `
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
-      <span class="proto">📋 ${d.protocolo||'—'}</span>
+      <span class="proto">📋 ${esc(d.protocolo||'—')}</span>
       <span class="status s-${d.status}">${statusLbl[d.status]||d.status}</span>
     </div>
-    <h2>${d.titulo||'—'}</h2>
-    <div class="meta">${CONDOS[d.condo_id]||d.condo_id} · ${subtipos[d.detalhes?.subtipo_morador]||cats[d.categoria]||d.categoria} · enviado em ${fmtDt(d.created_at)}</div>
-    <div class="meta">Por <b>${d.morador_nome||'—'}</b> · ${d.morador_apto||'—'}</div>
+    <h2>${esc(d.titulo||'—')}</h2>
+    <div class="meta">${esc(CONDOS[d.condo_id]||d.condo_id)} · ${esc(subtipos[d.detalhes?.subtipo_morador]||cats[d.categoria]||d.categoria)} · enviado em ${fmtDt(d.created_at)}</div>
+    <div class="meta">Por <b>${esc(d.morador_nome||'—')}</b> · ${esc(d.morador_apto||'—')}</div>
 
     ${d.deletada_em?`<div class="bloco del" style="margin-top:14px"><b>🗑 Este chamado foi cancelado/encerrado.</b></div>`:''}
 
     <div class="section-lbl">📝 Descrição</div>
-    <div class="bloco">${(d.descricao||'(sem descrição)').replace(/</g,'&lt;')}</div>
+    <div class="bloco">${esc(d.descricao||'(sem descrição)')}</div>
 
     ${fotosMorador.length?`<div class="section-lbl">📷 Fotos enviadas por você</div>
       <div class="fotos">${fotosMorador.map(a=>{const u=getFotoUrl(a);return `<img src="${u}" onclick="lb('${u}')">`;}).join('')}</div>`:''}
 
     ${docsMorador.length?`<div class="section-lbl">📎 Documentos enviados por você</div>
-      <div style="background:var(--gray);border-radius:8px;padding:8px 10px">${docsMorador.map(doc=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;font-size:13px"><span>📄</span><a href="${getFotoUrl(doc)}" download="${(doc.nome||'documento').replace(/"/g,'&quot;')}" target="_blank" style="color:var(--teal);text-decoration:none;font-weight:600;flex:1;word-break:break-word">${(doc.nome||'arquivo').replace(/</g,'&lt;')}</a></div>`).join('')}</div>`:''}
+      <div style="background:var(--gray);border-radius:8px;padding:8px 10px">${docsMorador.map(doc=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;font-size:13px"><span>📄</span><a href="${esc(getFotoUrl(doc))}" download="${esc(doc.nome||'documento')}" target="_blank" style="color:var(--teal);text-decoration:none;font-weight:600;flex:1;word-break:break-word">${esc(doc.nome||'arquivo')}</a></div>`).join('')}</div>`:''}
 
     ${d.data_programada?`
       <div class="section-lbl">📅 Programado pela Diagnóstika</div>
       <div class="bloco prog">
         <b>${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</b>
-        ${d.descricao_programada?'<div style="margin-top:6px">'+d.descricao_programada.replace(/</g,'&lt;')+'</div>':''}
+        ${d.descricao_programada?'<div style="margin-top:6px">'+esc(d.descricao_programada)+'</div>':''}
         ${d.programado_em?`<div style="font-size:11px;color:var(--text2);margin-top:6px">Confirmado em ${fmtDt(d.programado_em)}${d.programado_por?' por '+d.programado_por:''}</div>`:''}
       </div>
     `:''}
 
     ${d.resposta?`
       <div class="section-lbl">💬 Resposta da Engenharia</div>
-      <div class="bloco resp">${d.resposta.replace(/</g,'&lt;')}
+      <div class="bloco resp">${esc(d.resposta)}
         ${d.respondido_em?`<div style="font-size:11px;color:var(--text2);margin-top:6px">${fmtDt(d.respondido_em)}${d.respondido_por?' · '+d.respondido_por:''}</div>`:''}
       </div>
     `:'<div class="section-lbl">💬 Resposta da Engenharia</div><div class="bloco" style="color:var(--text2);font-style:italic">Ainda aguardando análise técnica. Você será contatado(a) por WhatsApp.</div>'}
