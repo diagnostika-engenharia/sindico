@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
+<meta name="theme-color" content="#155B67">
+<title>Visualizar PDF — Diagnóstika</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#155B67;--teal-dk:#0D3C44;--text:#1A2E31;--gray:#F0F4F5;--gray2:#E0EAEC;--red:#C00000}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:#3a3a3a;color:#fff}
+.toolbar{position:fixed;top:0;left:0;right:0;background:var(--teal);color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);height:48px}
+.toolbar h1{font-size:13px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:38px;height:38px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-btn:hover{background:rgba(255,255,255,.25)}
+.tb-btn:disabled{opacity:.4;cursor:not-allowed}
+.zoom-disp{background:rgba(0,0,0,.25);padding:4px 10px;border-radius:8px;font-size:11.5px;font-weight:700;min-width:54px;text-align:center}
+.page-disp{background:rgba(0,0,0,.25);padding:4px 10px;border-radius:8px;font-size:11.5px;font-weight:700;min-width:60px;text-align:center}
+
+#pdf-container{position:absolute;top:48px;left:0;right:0;bottom:0;overflow:auto;background:#3a3a3a;text-align:center;padding:14px 0;-webkit-overflow-scrolling:touch}
+.pdf-page{display:block;margin:8px auto;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.4);max-width:none}
+
+.loading{position:absolute;inset:48px 0 0 0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:14px;gap:14px}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:#FFB4B4;text-align:center;padding:30px;font-size:14px;line-height:1.6}
+.err b{display:block;color:#fff;font-size:16px;margin-bottom:8px}
+.err a{color:#FBC02D;font-weight:700;text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="tb-btn" onclick="voltar()" title="Voltar">←</button>
+  <h1 id="doc-titulo">Documento</h1>
+  <button class="tb-btn" onclick="zoomOut()" title="Diminuir zoom">−</button>
+  <div class="zoom-disp" id="zoom-disp">100%</div>
+  <button class="tb-btn" onclick="zoomIn()" title="Aumentar zoom">+</button>
+  <button class="tb-btn" onclick="fitWidth()" title="Ajustar largura">↔</button>
+  <div class="page-disp" id="page-disp">— / —</div>
+  <a class="tb-btn" id="baixar-btn" download style="text-decoration:none">⬇</a>
+</div>
+
+<div id="pdf-container">
+  <div class="loading"><div class="spinner"></div><div id="loading-msg">Carregando documento…</div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs" type="module"></script>
+<script type="module">
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+
+const params = new URLSearchParams(location.search);
+const fileUrl = params.get('file');
+const tituloParam = params.get('nome') || 'Documento';
+document.getElementById('doc-titulo').textContent = tituloParam;
+document.getElementById('baixar-btn').href = fileUrl || '#';
+document.getElementById('baixar-btn').setAttribute('download', tituloParam + '.pdf');
+
+let _pdfDoc = null;
+let _scale = 1.0;
+let _renderedPages = new Map();
+
+const container = document.getElementById('pdf-container');
+
+window.voltar = ()=> history.length>1 ? history.back() : window.close();
+window.zoomIn = ()=>{ _scale = Math.min(4.0, _scale * 1.25); rerenderAll(); };
+window.zoomOut = ()=>{ _scale = Math.max(0.4, _scale / 1.25); rerenderAll(); };
+window.fitWidth = ()=>{
+  if(!_pdfDoc) return;
+  _pdfDoc.getPage(1).then(page=>{
+    const vp = page.getViewport({scale:1});
+    _scale = (container.clientWidth - 28) / vp.width;
+    rerenderAll();
+  });
+};
+
+function atualizarZoomDisplay(){
+  document.getElementById('zoom-disp').textContent = Math.round(_scale*100)+'%';
+}
+
+async function renderPage(num){
+  const page = await _pdfDoc.getPage(num);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const viewport = page.getViewport({scale: _scale * dpr});
+  const cssViewport = page.getViewport({scale: _scale});
+
+  let canvas = _renderedPages.get(num);
+  if(!canvas){
+    canvas = document.createElement('canvas');
+    canvas.className = 'pdf-page';
+    container.appendChild(canvas);
+    _renderedPages.set(num, canvas);
+  }
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.width = cssViewport.width + 'px';
+  canvas.style.height = cssViewport.height + 'px';
+
+  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+}
+
+async function rerenderAll(){
+  if(!_pdfDoc) return;
+  atualizarZoomDisplay();
+  for(let i=1; i<=_pdfDoc.numPages; i++){
+    await renderPage(i);
+  }
+}
+
+async function carregar(){
+  if(!fileUrl){
+    container.innerHTML = '<div class="err"><b>⚠ Nenhum documento informado</b>Esta página precisa do parâmetro <code>?file=URL</code> para funcionar.</div>';
+    return;
+  }
+  try{
+    _pdfDoc = await pdfjsLib.getDocument(fileUrl).promise;
+    container.innerHTML = '';
+    document.getElementById('page-disp').textContent = '1 / ' + _pdfDoc.numPages;
+
+    // Detecta página visível no scroll
+    container.addEventListener('scroll', ()=>{
+      const top = container.scrollTop + 60;
+      const canvases = container.querySelectorAll('canvas');
+      for(let i=0; i<canvases.length; i++){
+        if(canvases[i].offsetTop + canvases[i].offsetHeight > top){
+          document.getElementById('page-disp').textContent = (i+1) + ' / ' + _pdfDoc.numPages;
+          break;
+        }
+      }
+    });
+
+    // Render inicial: ajusta largura + renderiza tudo
+    const firstPage = await _pdfDoc.getPage(1);
+    const vp = firstPage.getViewport({scale:1});
+    _scale = Math.min(1.5, (container.clientWidth - 28) / vp.width);
+    await rerenderAll();
+  }catch(e){
+    console.error(e);
+    container.innerHTML = `<div class="err"><b>❌ Não foi possível abrir o documento</b>${e.message||'erro desconhecido'}<br><br><a href="${fileUrl}" target="_blank">Baixar arquivo original →</a></div>`;
+  }
+}
+
+// Pinch-zoom no container (zoom do PDF, não da página)
+let _pinchStart = 0, _scaleStart = 1;
+container.addEventListener('touchstart', e=>{
+  if(e.touches.length===2){
+    e.preventDefault();
+    const t1=e.touches[0], t2=e.touches[1];
+    _pinchStart = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    _scaleStart = _scale;
+  }
+}, {passive:false});
+container.addEventListener('touchmove', e=>{
+  if(e.touches.length===2 && _pinchStart > 0){
+    e.preventDefault();
+    const t1=e.touches[0], t2=e.touches[1];
+    const d = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    const target = Math.max(0.4, Math.min(4, _scaleStart * (d / _pinchStart)));
+    if(Math.abs(target - _scale) > 0.05){
+      _scale = target;
+      atualizarZoomDisplay();
+    }
+  }
+}, {passive:false});
+container.addEventListener('touchend', e=>{
+  if(e.touches.length<2 && _pinchStart > 0){
+    _pinchStart = 0;
+    rerenderAll();
+  }
+});
+
+carregar();
+</script>
+</body>
+</html>
