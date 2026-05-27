@@ -90,11 +90,22 @@ textarea{resize:vertical;min-height:90px}
 #global-err{position:fixed;top:0;left:0;right:0;background:#C00000;color:#fff;padding:10px 14px;font-size:12.5px;z-index:9999;text-align:center;display:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 #global-err.show{display:block}
 #global-err b{display:block;margin-bottom:2px}
+
+/* Toast de validação — fica colado no topo da viewport e desliza */
+#toast{position:fixed;top:14px;left:14px;right:14px;max-width:520px;margin:0 auto;background:#C00000;color:#fff;padding:13px 16px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:9998;box-shadow:0 6px 20px rgba(192,0,0,.4);transform:translateY(-120%);transition:transform .25s ease-out;display:flex;align-items:center;gap:10px;line-height:1.4}
+#toast.show{transform:translateY(0)}
+#toast .toast-ico{font-size:20px;flex-shrink:0}
+#toast .toast-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;font-weight:800;flex-shrink:0;line-height:1;margin-left:auto}
+
+/* Campo com erro pulsante */
+.field-error{outline:2px solid var(--red)!important;outline-offset:1px;animation:errPulse .8s ease-out 2}
+@keyframes errPulse{0%,100%{box-shadow:0 0 0 0 rgba(192,0,0,0)}50%{box-shadow:0 0 0 6px rgba(192,0,0,.18)}}
 </style>
 </head>
 <body>
 
 <div id="global-err"></div>
+<div id="toast"><span class="toast-ico">⚠</span><span id="toast-msg">—</span><button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">×</button></div>
 
 <div class="wrap">
   <div class="brand">
@@ -518,13 +529,36 @@ bindDrop('drop-docs', adicionarDocs);
 // ============================================================
 // MENSAGENS
 // ============================================================
-function setMsg(tipo, txt){
+function setMsg(tipo, txt, campoFocar){
   var el = $('msg');
-  if(!tipo){ el.className='msg'; el.style.display='none'; return; }
+  if(!tipo){ el.className='msg'; el.style.display='none'; hideToast(); return; }
   el.className = 'msg ' + tipo;
   el.innerHTML = txt;
+  // Toast no topo da viewport (sempre visível, independente de scroll)
+  if(tipo === 'err'){
+    showToast(txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
+    if(campoFocar){
+      var f = $(campoFocar);
+      if(f){
+        f.classList.add('field-error');
+        setTimeout(function(){ f.classList.remove('field-error'); }, 2000);
+        try{ f.focus({preventScroll:false}); }catch(e){ f.focus(); }
+        f.scrollIntoView({block:'center', behavior:'smooth'});
+        return;
+      }
+    }
+  }
   setTimeout(function(){ el.scrollIntoView({block:'center', behavior:'smooth'}); }, 50);
 }
+
+function showToast(msg){
+  var t = $('toast');
+  $('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(hideToast, 5500);
+}
+function hideToast(){ $('toast').classList.remove('show'); }
 
 // ============================================================
 // ENVIO — tenta supabase-js, fallback fetch direto
@@ -546,13 +580,13 @@ async function enviarSolicitacao(){
     var titulo = $('titulo').value.trim();
     var desc = $('desc').value.trim();
 
-    if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos do prédio).'); return; }
-    if(!cat){ setMsg('err','Selecione o tipo de solicitação.'); return; }
-    if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.'); return; }
-    if(!apto){ setMsg('err','Informe seu apartamento.'); return; }
-    if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.'); return; }
-    if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo.'); return; }
-    if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).'); return; }
+    if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos do prédio).', 'pin'); return; }
+    if(!cat){ setMsg('err','Selecione o tipo de solicitação.', 'cats'); return; }
+    if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.', 'nome'); return; }
+    if(!apto){ setMsg('err','Informe seu apartamento.', 'apto'); return; }
+    if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.', 'tel'); return; }
+    if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo.', 'titulo'); return; }
+    if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).', 'desc'); return; }
 
     var unidade = bloco ? (bloco + ' · Apto ' + apto) : ('Apto ' + apto);
 
