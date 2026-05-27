@@ -158,6 +158,67 @@ main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
 .dem-acoes .btn-del{border:1.5px solid var(--red);color:var(--red);background:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
 .dem-acoes .btn-del:hover{background:rgba(192,0,0,.06)}
 
+/* TILES — formato em grade hierárquica */
+.section-title-tiles{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.section-title-tiles .count{background:#fff;border:1px solid var(--gray2);padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.section-title-tiles.urgent{color:var(--red)}
+.section-title-tiles.urgent .count{background:#C00000;color:#fff;border-color:transparent}
+.section-title-tiles.muted{color:var(--gray4);opacity:.7}
+
+.tile-grid{display:grid;gap:11px;margin-bottom:6px}
+.tile-grid.ativas{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.tile-grid.resolvidas{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.tile-grid.fechadas{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+
+.tile{background:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid var(--gray3);cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:6px;position:relative}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.10)}
+.tile.s-aberta{border-left-color:#C00000;min-height:135px}
+.tile.s-em_andamento{border-left-color:#E65100;min-height:135px}
+.tile.urg-alta{border-left-width:5px}
+.tile.s-resolvida{border-left-color:#9CC4AC;min-height:115px;background:rgba(255,255,255,.55);opacity:.72;box-shadow:0 1px 2px rgba(0,0,0,.03);filter:saturate(.55)}
+.tile.s-resolvida:hover{opacity:1;filter:saturate(1);background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.tile.s-resolvida .tile-titulo{font-weight:600;color:var(--text2)}
+.tile.s-resolvida:hover .tile-titulo{color:var(--text)}
+.tile.s-fechada{border-left-color:#C9D4D7;min-height:100px;background:rgba(248,249,250,.7);opacity:.55;filter:saturate(.3) brightness(1.02);box-shadow:0 1px 2px rgba(0,0,0,.02)}
+.tile.s-fechada:hover{opacity:1;filter:saturate(1) brightness(1);background:#fff}
+.tile.s-fechada .tile-titulo{font-weight:500;color:var(--gray4);font-size:12.5px}
+.tile.s-fechada:hover .tile-titulo{color:var(--text)}
+.tile.morador{background-image:linear-gradient(to bottom right,rgba(125,60,152,.06),transparent 70%)}
+.tile.morador.s-resolvida{background-image:linear-gradient(to bottom right,rgba(125,60,152,.025),transparent 70%)}
+.tile.morador.s-fechada{background-image:linear-gradient(to bottom right,rgba(125,60,152,.015),transparent 70%)}
+
+.tile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.tile-proto{font-size:9.5px;font-weight:700;color:var(--teal);font-family:'SF Mono',Menlo,Consolas,monospace;letter-spacing:.3px}
+.tile.s-resolvida .tile-proto{color:var(--gray4)}
+.tile.s-fechada .tile-proto{color:#A8BFC2}
+.tile-status{padding:2px 8px;border-radius:9px;font-size:9px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.st-aberta{background:#C00000}.st-em_andamento{background:#E65100}.st-resolvida{background:#9CC4AC}.st-fechada{background:#C9D4D7;color:#5A7A7E}
+
+.tile-titulo{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile.s-aberta .tile-titulo,.tile.s-em_andamento .tile-titulo{font-size:14px}
+.tile-meta{font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tile-info-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;flex-wrap:wrap}
+.tile-icons{font-size:10.5px;color:var(--gray4);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tile-ind{display:inline-flex;align-items:center;gap:3px;font-weight:600}
+.tile-mor-badge{background:#7D3C98;color:#fff;padding:1px 7px;border-radius:6px;font-size:9px;font-weight:800;letter-spacing:.3px}
+.tile-unidade{font-size:10.5px;background:rgba(125,60,152,.08);padding:2px 7px;border-radius:5px;font-weight:600;color:#7D3C98;align-self:flex-start}
+.tile-prog{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--teal-dk);background:rgba(13,60,68,.08);padding:5px 8px;border-radius:6px;font-weight:600;margin-top:3px}
+.tile-prog .dt{font-weight:800}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:var(--teal);color:#fff}
+
+.tile::after{content:'›';position:absolute;right:14px;bottom:12px;font-size:18px;color:var(--gray3);opacity:0;transition:all .15s;font-weight:700}
+.tile:hover::after{opacity:1;right:11px;color:var(--teal)}
+
+/* Modal de detalhe da demanda no portal do síndico */
+.dem-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;z-index:200}
+.dem-modal-ov.open{display:flex}
+.dem-modal{background:#fff;border-radius:14px;max-width:780px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.4);margin:auto;overflow:hidden}
+.dem-modal-head{background:var(--teal);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dem-modal-head .h-proto{font-size:11px;opacity:.85;font-family:'SF Mono',Menlo,Consolas,monospace;cursor:pointer}
+.dem-modal-head h2{font-size:17px;font-weight:700;margin:2px 0 0;line-height:1.3}
+.dem-modal-x{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;flex-shrink:0}
+.dem-modal-body{padding:18px 22px}
+
 /* "Ver mais/menos" — clica em qualquer ponto do bloco truncável */
 .truncavel{cursor:pointer;position:relative;max-height:5.5em;overflow:hidden;transition:max-height .25s}
 .truncavel.com-overflow::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(to bottom, transparent, var(--gray));pointer-events:none}
@@ -1411,6 +1472,59 @@ async function carregarDemandas(){
 }
 
 let _moradores=[];
+function renderTileMorador(d){
+  const fotos = d.fotos || [];
+  const nFotos = fotos.filter(a=>a && a.tipo!=='documento').length;
+  const nDocs = fotos.filter(a=>a && a.tipo==='documento').length;
+  const dt = new Date(d.created_at);
+  const hoje = new Date();
+  const horas = Math.floor((hoje - dt) / 3600000);
+  let quando;
+  if(horas < 1) quando = 'agora';
+  else if(horas < 24) quando = 'há ' + horas + 'h';
+  else if(horas < 48) quando = 'ontem';
+  else quando = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+
+  const det = d.detalhes || {};
+  const sub = det.subtipo_morador;
+  const subLbl = {reforma:'🏗️ Reforma',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade',art:'📜 ART'}[sub] || '';
+
+  const inds = [];
+  if(nFotos > 0) inds.push(`<span class="tile-ind">📎 ${nFotos}</span>`);
+  if(nDocs > 0) inds.push(`<span class="tile-ind">📄 ${nDocs}</span>`);
+  if(d.resposta) inds.push(`<span class="tile-ind">💬 1</span>`);
+  if(d.data_programada) inds.push(`<span class="tile-ind">📅</span>`);
+
+  let progHtml = '';
+  if(d.data_programada && (d.status==='aberta'||d.status==='em_andamento')){
+    progHtml = `<div class="tile-prog"><span>📅</span><span><b class="dt">${fmtBR(d.data_programada).substring(0,5)}</b>${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</span></div>`;
+  }
+
+  let unidadeHtml = '';
+  if(d.status==='aberta' || d.status==='em_andamento'){
+    unidadeHtml = `<span class="tile-unidade">🏠 ${(d.morador_nome||'').split(' ').slice(0,2).join(' ')} · ${d.morador_apto||''}</span>`;
+  }
+
+  const classes = ['tile','morador', 's-'+d.status].join(' ');
+  return `<div class="${classes}" onclick="abrirDetalheDemandaSindico('${d.id}')">
+    <div class="tile-head">
+      <span class="tile-proto">📋 ${d.protocolo||'—'}</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span class="tile-mor-badge">🏠 MOR</span>
+        <span class="tile-status st-${d.status}">${STATUS_SIND[d.status]||d.status}</span>
+      </div>
+    </div>
+    <div class="tile-titulo">${(d.titulo||'').replace(/</g,'&lt;')}</div>
+    <div class="tile-meta">${subLbl?`<span>${subLbl}</span>`:''}</div>
+    ${unidadeHtml}
+    ${progHtml}
+    <div class="tile-info-row">
+      <div class="tile-icons">${inds.join('')}</div>
+      <div style="font-size:10.5px;color:var(--gray4)">${quando}</div>
+    </div>
+  </div>`;
+}
+
 function renderMoradoresList(){
   const el=document.getElementById('moradores-list');
   if(!el) return;
@@ -1418,9 +1532,28 @@ function renderMoradoresList(){
     el.innerHTML='<div class="empty">Nenhum chamado de morador ainda<br><small>Divulgue o QR Code/link para os moradores começarem a usar.</small></div>';
     return;
   }
-  const cats={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade'};
-  const statusLbl={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
-  el.innerHTML = _moradores.map(d=>{
+  const ativas = _moradores.filter(d => d.status==='aberta' || d.status==='em_andamento');
+  const resolvidas = _moradores.filter(d => d.status==='resolvida');
+  const fechadas = _moradores.filter(d => d.status==='fechada');
+
+  let html = '';
+  if(ativas.length){
+    html += `<div class="section-title-tiles urgent">🔥 Chamados em aberto <span class="count">${ativas.length}</span></div>`;
+    html += `<div class="tile-grid ativas">${ativas.map(renderTileMorador).join('')}</div>`;
+  }
+  if(resolvidas.length){
+    html += `<div class="section-title-tiles muted">✅ Resolvidos <span class="count">${resolvidas.length}</span></div>`;
+    html += `<div class="tile-grid resolvidas">${resolvidas.map(renderTileMorador).join('')}</div>`;
+  }
+  if(fechadas.length){
+    html += `<div class="section-title-tiles muted">🗂 Arquivo <span class="count">${fechadas.length}</span></div>`;
+    html += `<div class="tile-grid fechadas">${fechadas.map(renderTileMorador).join('')}</div>`;
+  }
+  el.innerHTML = html;
+  return;
+}
+
+function _renderMoradoresLegacy(){ return; /*
     const dt=new Date(d.created_at);
     const fotos=Array.isArray(d.fotos)?d.fotos:[];
     return `<div class="dem" data-dem-id="${d.id}" style="border-left:4px solid #7D3C98;background:linear-gradient(to right,rgba(125,60,152,.04),#fff 60%)">
@@ -1441,10 +1574,10 @@ function renderMoradoresList(){
         <div style="margin-left:auto;font-size:11px;color:var(--text2);align-self:center"><i>🔒 Modo acompanhamento — atendido pela engenharia</i></div>
       </div>
       <div id="hist-${d.id}" style="display:none"></div>
-    </div>`;
+    </div>\`;
   }).join('');
   setTimeout(detectarTruncamento, 50);
-}
+*/ }
 
 function abrirCompartilharMorador(){
   const condo = CONDOS[_condoAtivo];
@@ -1509,6 +1642,55 @@ function limparFiltrosDem(){
   renderDemandas();
 }
 
+const CATS_SIND = {corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida técnica',reforma:'🏗️ Aprovação de reforma',laudo:'📋 Solicitação de laudo',emergencia:'🚨 Emergência',documento:'📄 Documento'};
+const URGS_SIND = {baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
+const STATUS_SIND = {aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
+
+function renderTileSindico(d){
+  const fotos = d.fotos || [];
+  const sindIdxs = fotos.map((a,i)=>i).filter(i=>!fotos[i] || typeof fotos[i]==='string' || fotos[i].origem!=='diagnostika');
+  const diagIdxs = fotos.map((a,i)=>i).filter(i=>fotos[i] && fotos[i].origem==='diagnostika');
+  const dt = new Date(d.created_at);
+  const hoje = new Date();
+  const horas = Math.floor((hoje - dt) / 3600000);
+  let quando;
+  if(horas < 1) quando = 'agora';
+  else if(horas < 24) quando = 'há ' + horas + 'h';
+  else if(horas < 48) quando = 'ontem';
+  else quando = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+
+  const urgAlta = d.urgencia === 'alta';
+  const inds = [];
+  if(sindIdxs.length) inds.push(`<span class="tile-ind">📎 ${sindIdxs.length}</span>`);
+  if(diagIdxs.length) inds.push(`<span class="tile-ind">📄 ${diagIdxs.length}</span>`);
+  if(d.resposta) inds.push(`<span class="tile-ind">💬 1</span>`);
+  if(d.data_programada) inds.push(`<span class="tile-ind">📅</span>`);
+
+  let progHtml = '';
+  if(d.data_programada && (d.status==='aberta'||d.status==='em_andamento')){
+    progHtml = `<div class="tile-prog"><span>📅</span><span><b class="dt">${fmtBR(d.data_programada).substring(0,5)}</b>${d.hora_programada?' às '+d.hora_programada.substring(0,5):''} · ${d.tipo_programado||'Visita'}</span></div>`;
+  }
+
+  let metaExtra = `<span>${CATS_SIND[d.categoria]||d.categoria}</span>`;
+  if(urgAlta) metaExtra += `<span style="color:var(--red);font-weight:800">🔴 ALTA</span>`;
+  else if(d.urgencia==='media' && (d.status==='aberta'||d.status==='em_andamento')) metaExtra += `<span>🟡 Média</span>`;
+
+  const classes = ['tile', 's-'+d.status, urgAlta?'urg-alta':''].filter(Boolean).join(' ');
+  return `<div class="${classes}" onclick="abrirDetalheDemandaSindico('${d.id}')" data-dem-id="${d.id}">
+    <div class="tile-head">
+      <span class="tile-proto">📋 ${d.protocolo||'—'}</span>
+      <span class="tile-status st-${d.status}">${STATUS_SIND[d.status]||d.status}</span>
+    </div>
+    <div class="tile-titulo">${(d.titulo||'').replace(/</g,'&lt;')}</div>
+    <div class="tile-meta">${metaExtra}</div>
+    ${progHtml}
+    <div class="tile-info-row">
+      <div class="tile-icons">${inds.join('')}</div>
+      <div style="font-size:10.5px;color:var(--gray4)">${quando}</div>
+    </div>
+  </div>`;
+}
+
 function renderDemandas(){
   const el=document.getElementById('demandas-list');
   const filtros=document.getElementById('demandas-filtros');
@@ -1533,6 +1715,31 @@ function renderDemandas(){
     el.innerHTML='<div class="empty">Nenhuma demanda encontrada com os filtros atuais<br><small>Tente limpar os filtros ou alterar a busca</small></div>';
     return;
   }
+
+  // Agrupa por status: ativas / resolvidas / fechadas
+  const ativas = lista.filter(d => d.status==='aberta' || d.status==='em_andamento');
+  const resolvidas = lista.filter(d => d.status==='resolvida');
+  const fechadas = lista.filter(d => d.status==='fechada');
+
+  let html = '';
+  if(ativas.length){
+    html += `<div class="section-title-tiles urgent">🔥 Em aberto · suas demandas <span class="count">${ativas.length}</span></div>`;
+    html += `<div class="tile-grid ativas">${ativas.map(renderTileSindico).join('')}</div>`;
+  }
+  if(resolvidas.length){
+    html += `<div class="section-title-tiles muted">✅ Resolvidas <span class="count">${resolvidas.length}</span></div>`;
+    html += `<div class="tile-grid resolvidas">${resolvidas.map(renderTileSindico).join('')}</div>`;
+  }
+  if(fechadas.length){
+    html += `<div class="section-title-tiles muted">🗂 Arquivo · fechadas <span class="count">${fechadas.length}</span></div>`;
+    html += `<div class="tile-grid fechadas">${fechadas.map(renderTileSindico).join('')}</div>`;
+  }
+  el.innerHTML = html;
+  return;
+}
+
+// Mantida pra compat (não usada)
+function _renderDemandasLegacySindico(lista){ return; /*
   const cats={corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida técnica',reforma:'🏗️ Aprovação de reforma',laudo:'📋 Solicitação de laudo',emergencia:'🚨 Emergência',documento:'📄 Documento'};
   const urgs={baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
   const status={aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'✅ Resolvida',fechada:'🔒 Fechada'};
@@ -1595,10 +1802,96 @@ function renderDemandas(){
         ${podeEditar?`<button class="btn-del" onclick="excluirDemandaSindico('${d.id}')" title="Excluir esta demanda">🗑 Excluir</button>`:''}
       </div>
       <div id="hist-${d.id}" style="display:none"></div>
-    </div>`;
+    </div>\`;
   }).join('');
-  // Pós-render: detecta truncamento e ativa ver mais
   setTimeout(detectarTruncamento, 50);
+  */ }
+function _renderDemandasLegacySindicoEnd(){
+  // antigo fim
+}
+
+function abrirDetalheDemandaSindico(id){
+  const d = (_demandas || []).concat(_moradores || []).find(x=>x.id===id);
+  if(!d){ alert('Demanda não encontrada'); return; }
+  const fotos = d.fotos || [];
+  const isMorador = (d.origem||'sindico')==='morador';
+  const sindIdxs = fotos.map((a,i)=>i).filter(i=>!fotos[i] || typeof fotos[i]==='string' || fotos[i].origem!=='diagnostika');
+  const diagIdxs = fotos.map((a,i)=>i).filter(i=>fotos[i] && fotos[i].origem==='diagnostika');
+  const podeEditar = !_modoEquipe && !isMorador && d.user_id===_user?.id && d.status!=='fechada';
+
+  const renderAnexo = (a,i)=>{
+    if(a && a.tipo==='video'){
+      return '<div style="position:relative;cursor:pointer" onclick="abrirAnexo(\''+d.id+'\','+i+')"><video src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;background:#000" muted></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.8);pointer-events:none">▶</div></div>';
+    }
+    if(a && (a.tipo==='documento'||a.tipo==='pdf'||a.tipo==='doc')){
+      const nome = a.nome||'arquivo';
+      return '<a href="'+a.url+'" download="'+nome.replace(/"/g,'&quot;')+'" target="_blank" style="display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;background:rgba(21,91,103,.08);border:1px dashed var(--teal);border-radius:5px;text-decoration:none;color:var(--teal);padding:6px;text-align:center;font-size:10px;gap:4px"><div style="font-size:28px">📄</div><div style="word-break:break-all;line-height:1.1">'+nome.substring(0,30)+'</div></a>';
+    }
+    const url = typeof a==='string'?a:a.url;
+    return '<img src="'+url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:pointer" onclick="abrirAnexo(\''+d.id+'\','+i+')">';
+  };
+  const gridSind = sindIdxs.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+sindIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>' : '';
+  const gridDiag = diagIdxs.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px">'+diagIdxs.map(i=>renderAnexo(fotos[i],i)).join('')+'</div>' : '';
+
+  const bannerHtml = d.data_programada ? `<div style="background:rgba(13,60,68,.08);border-left:3px solid var(--teal-dk);padding:10px 12px;border-radius:0 6px 6px 0;margin-bottom:12px">
+    <span style="color:var(--teal-dk);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;font-weight:700">📅 Programado pela Diagnóstika</span>
+    <div style="font-size:13.5px;font-weight:700;color:var(--teal-dk)">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
+    ${d.descricao_programada?'<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4">'+d.descricao_programada+'</div>':''}
+    ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
+  </div>` : '';
+
+  const respostaHtml = (d.resposta || diagIdxs.length) ? `<div style="background:rgba(21,91,103,.10);border-left:3px solid var(--teal);padding:10px 12px;border-radius:0 6px 6px 0;margin-bottom:12px">
+    <b style="color:var(--teal);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">💬 Resposta Diagnóstika</b>
+    ${d.resposta||''}
+    ${gridDiag}
+    ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:''):''}
+  </div>` : '';
+
+  let moradorBlock = '';
+  if(isMorador){
+    moradorBlock = `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(125,60,152,.10);border-left:3px solid #7D3C98;border-radius:0 6px 6px 0;font-size:12.5px">
+      <b style="color:#7D3C98">🏠 MORADOR:</b> ${d.morador_nome||'—'} · ${d.morador_apto||'—'} ${d.morador_telefone?'· 📱 '+d.morador_telefone:''}
+    </div>`;
+  }
+
+  document.getElementById('dem-detail-modal-sind')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'dem-detail-modal-sind';
+  ov.className = 'dem-modal-ov open';
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+
+  const acoes = isMorador ?
+    `<button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
+     <div style="margin-left:auto;font-size:11px;color:var(--text2);align-self:center"><i>🔒 Modo acompanhamento — atendido pela engenharia</i></div>` :
+    `${podeEditar?`<button class="btn-pri" onclick="editarDemanda('${d.id}')">✏️ Editar / Adicionar info</button>`:''}
+     <button class="btn-sec" onclick="toggleHistorico('${d.id}')">📜 Ver histórico</button>
+     ${podeEditar?`<button class="btn-del" onclick="excluirDemandaSindico('${d.id}')">🗑 Excluir</button>`:''}`;
+
+  ov.innerHTML = `
+    <div class="dem-modal">
+      <div class="dem-modal-head">
+        <div style="flex:1;min-width:0">
+          <div class="h-proto" onclick="copiarProtocolo('${d.protocolo||'—'}')" title="Clique para copiar">📋 ${d.protocolo||'—'}</div>
+          <h2>${(d.titulo||'').replace(/</g,'&lt;')}</h2>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+            ${isMorador?'<span style="background:rgba(255,255,255,.22);padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🏠 MORADOR</span>':''}
+            <span class="tile-status st-${d.status}" style="font-size:10px">${STATUS_SIND[d.status]||d.status}</span>
+          </div>
+        </div>
+        <button class="dem-modal-x" onclick="document.getElementById('dem-detail-modal-sind').remove()">×</button>
+      </div>
+      <div class="dem-modal-body">
+        <div style="font-size:11.5px;color:var(--text2);margin-bottom:12px">${CATS_SIND[d.categoria]||d.categoria} · ${URGS_SIND[d.urgencia]||d.urgencia} · ${new Date(d.created_at).toLocaleString('pt-BR')}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
+        ${moradorBlock}
+        ${d.descricao?`<div style="font-size:13px;color:var(--text);line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;margin-bottom:12px;white-space:pre-wrap">${d.descricao}</div>`:''}
+        ${gridSind}
+        ${bannerHtml}
+        ${respostaHtml}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--gray2);margin-top:10px">${acoes}</div>
+        <div id="hist-${d.id}" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
 }
 
 function detectarTruncamento(){
