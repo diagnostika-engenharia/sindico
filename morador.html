@@ -662,10 +662,14 @@ async function enviarSolicitacao(){
   }
 }
 
-// Bind no botão — dois caminhos (event listener + onclick attr)
-$('btn-send').addEventListener('click', enviarSolicitacao);
+// Bind no botão — guard contra duplo disparo (addEventListener + onclick fallback)
 window.diagEnviar = enviarSolicitacao;
-$('btn-send').setAttribute('onclick', 'window.diagEnviar(event)');
+var _emEnvio = false;
+$('btn-send').addEventListener('click', function(e){
+  if(_emEnvio) return;
+  _emEnvio = true;
+  enviarSolicitacao().finally(function(){ setTimeout(function(){ _emEnvio = false; }, 800); });
+});
 
 window.copiarLink = function(){
   var inp = $('ok-link');
