@@ -68,6 +68,12 @@ textarea{resize:vertical;min-height:90px}
 
 .toggle{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--gray);border-radius:8px;cursor:pointer;margin-top:5px;font-size:13px}
 .toggle input{width:18px;height:18px;accent-color:var(--teal)}
+.multi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:5px}
+@media(max-width:420px){.multi-grid{grid-template-columns:1fr}}
+.multi-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:#fff;border:1.5px solid var(--gray2);border-radius:7px;cursor:pointer;font-size:12.5px;transition:all .15s}
+.multi-item:hover{border-color:var(--gray3);background:var(--gray)}
+.multi-item input{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.multi-item.sel{border-color:var(--teal);background:rgba(21,91,103,.06);font-weight:600;color:var(--teal-dk)}
 
 .ok-screen{text-align:center;padding:20px 10px}
 .ok-icon{font-size:54px;margin-bottom:8px}
@@ -147,20 +153,19 @@ textarea{resize:vertical;min-height:90px}
           <div style="margin-top:6px;color:var(--text2);font-size:11.5px">Prazo de análise: <b>2 a 4 dias úteis</b> após envio completo.</div>
         </div>
 
-        <label for="ref-tipo">Tipo de serviço previsto</label>
-        <select id="ref-tipo">
-          <option value="">Selecione...</option>
-          <option value="pisos-paredes">Revestimentos (piso/parede)</option>
-          <option value="hidraulica">Hidráulica (pontos de água/esgoto)</option>
-          <option value="eletrica">Elétrica (pontos elétricos)</option>
-          <option value="gas">Gás (alteração)</option>
-          <option value="ar-condicionado">Ar-condicionado (instalação)</option>
-          <option value="rebaixamento">Rebaixamento de teto / drywall</option>
-          <option value="bancadas">Bancadas / louças</option>
-          <option value="tela-protecao">Tela de proteção</option>
-          <option value="contrapiso">Contrapiso para laminado/vinílico</option>
-          <option value="outros">Outros (descrever abaixo)</option>
-        </select>
+        <label>Tipo(s) de serviço previsto(s) <span style="font-weight:500;text-transform:none;color:var(--text2)">— marque todos que se aplicam</span></label>
+        <div class="multi-grid" id="ref-tipos">
+          <label class="multi-item"><input type="checkbox" value="pisos-paredes">Revestimentos (piso/parede)</label>
+          <label class="multi-item"><input type="checkbox" value="hidraulica">Hidráulica (água/esgoto)</label>
+          <label class="multi-item"><input type="checkbox" value="eletrica">Elétrica (pontos elétricos)</label>
+          <label class="multi-item"><input type="checkbox" value="gas">Gás (alteração)</label>
+          <label class="multi-item"><input type="checkbox" value="ar-condicionado">Ar-condicionado</label>
+          <label class="multi-item"><input type="checkbox" value="rebaixamento">Rebaixamento / drywall</label>
+          <label class="multi-item"><input type="checkbox" value="bancadas">Bancadas / louças</label>
+          <label class="multi-item"><input type="checkbox" value="tela-protecao">Tela de proteção</label>
+          <label class="multi-item"><input type="checkbox" value="contrapiso">Contrapiso / laminado</label>
+          <label class="multi-item"><input type="checkbox" value="outros">Outros (descrever abaixo)</label>
+        </div>
 
         <label class="toggle"><input type="checkbox" id="ref-tem-rt"> Já tenho responsável técnico (engenheiro/arquiteto) contratado</label>
         <div id="ref-rt-fields" style="display:none">
@@ -249,10 +254,11 @@ textarea{resize:vertical;min-height:90px}
         🔒 Seus dados (nome, apartamento, WhatsApp) serão usados apenas para o atendimento técnico desta solicitação pela Diagnóstika Engenharia. Nada é compartilhado com terceiros.
       </div>
 
-      <button class="btn-send" id="btn-send">
+      <button class="btn-send" id="btn-send" type="button" onclick="window.diagEnviar && window.diagEnviar(event)">
         <span id="btn-spinner" class="loading"></span>
         <span id="btn-txt">📤 Enviar solicitação</span>
       </button>
+      <div id="boot-msg" style="display:none;font-size:11px;color:var(--text2);margin-top:6px;text-align:center"></div>
     </div>
 
     <div id="screen-ok" class="ok-screen" style="display:none">
@@ -337,6 +343,13 @@ textarea{resize:vertical;min-height:90px}
   // Toggle RT (responsável técnico)
   document.getElementById('ref-tem-rt').addEventListener('change', e=>{
     document.getElementById('ref-rt-fields').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  // Multi-select de tipos de serviço (visual)
+  document.querySelectorAll('#ref-tipos input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      cb.closest('.multi-item').classList.toggle('sel', cb.checked);
+    });
   });
 
   // Máscara telefone BR
@@ -444,56 +457,57 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ============ ENVIO ============
-  btnSend.addEventListener('click', async function(){
-    setMsg(null);
-    if(!CONDOS[condoId]){ setMsg('err','Link inválido. Solicite o link correto ao(à) síndico(a).'); return; }
-
-    const pin=document.getElementById('pin').value.trim().toUpperCase();
-    const cat=document.querySelector('input[name=cat]:checked')?.value;
-    const nome=document.getElementById('nome').value.trim();
-    const bloco=document.getElementById('bloco').value.trim();
-    const apto=document.getElementById('apto').value.trim();
-    const tel=document.getElementById('tel').value.trim();
-    const titulo=document.getElementById('titulo').value.trim();
-    const desc=document.getElementById('desc').value.trim();
-
-    if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos)'); return; }
-    if(!cat){ setMsg('err','Selecione o tipo de solicitação'); return; }
-    if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo'); return; }
-    if(!apto){ setMsg('err','Informe seu apartamento'); return; }
-    if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD'); return; }
-    if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo'); return; }
-    if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres)'); return; }
-
-    // Monta string apto final
-    const unidadeFinal = bloco ? `${bloco} · Apto ${apto}` : `Apto ${apto}`;
-
-    // Monta detalhes específicos
-    const detalhes = {};
-    if(cat==='reforma'){
-      detalhes.tipo_servico = document.getElementById('ref-tipo').value || null;
-      detalhes.tem_rt = document.getElementById('ref-tem-rt').checked;
-      if(detalhes.tem_rt){
-        detalhes.rt_nome = document.getElementById('ref-rt-nome').value.trim();
-        detalhes.rt_registro = document.getElementById('ref-rt-reg').value.trim();
-      }
-    } else if(cat==='art'){
-      detalhes.art_tipo_obra = document.getElementById('art-tipo').value || null;
-      detalhes.art_prazo = document.getElementById('art-prazo').value || null;
-    }
-
-    const todosAnexos = [..._fotos, ..._docs];
-    const tamanho = payloadSize({detalhes, fotos:todosAnexos, desc});
-    if(tamanho > 6*1024*1024){
-      setMsg('err','Total de anexos muito grande. Reduza a quantidade ou comprima os arquivos. Limite: ~6 MB no total.');
-      return;
-    }
-
-    btnSend.disabled = true;
-    btnSpinner.classList.add('show');
-    btnTxt.textContent = 'Enviando...';
-
+  async function enviarSolicitacao(){
     try{
+      setMsg(null);
+      if(!CONDOS[condoId]){ setMsg('err','Link inválido. Solicite o link correto ao(à) síndico(a) do seu condomínio.'); return; }
+
+      const pin=document.getElementById('pin').value.trim().toUpperCase();
+      const cat=document.querySelector('input[name=cat]:checked')?.value;
+      const nome=document.getElementById('nome').value.trim();
+      const bloco=document.getElementById('bloco').value.trim();
+      const apto=document.getElementById('apto').value.trim();
+      const tel=document.getElementById('tel').value.trim();
+      const titulo=document.getElementById('titulo').value.trim();
+      const desc=document.getElementById('desc').value.trim();
+
+      if(!pin){ setMsg('err','Informe o PIN do condomínio (está no quadro de avisos do prédio).'); return; }
+      if(!cat){ setMsg('err','Selecione o tipo de solicitação.'); return; }
+      if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.'); return; }
+      if(!apto){ setMsg('err','Informe seu apartamento.'); return; }
+      if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.'); return; }
+      if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo da solicitação.'); return; }
+      if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).'); return; }
+
+      const unidadeFinal = bloco ? `${bloco} · Apto ${apto}` : `Apto ${apto}`;
+
+      const detalhes = {};
+      if(cat==='reforma'){
+        const checks = [...document.querySelectorAll('#ref-tipos input:checked')].map(c=>c.value);
+        detalhes.tipos_servico = checks;
+        detalhes.tem_rt = document.getElementById('ref-tem-rt').checked;
+        if(detalhes.tem_rt){
+          detalhes.rt_nome = document.getElementById('ref-rt-nome').value.trim();
+          detalhes.rt_registro = document.getElementById('ref-rt-reg').value.trim();
+        }
+      } else if(cat==='art'){
+        detalhes.art_tipo_obra = document.getElementById('art-tipo').value || null;
+        detalhes.art_prazo = document.getElementById('art-prazo').value || null;
+      }
+
+      const todosAnexos = [..._fotos, ..._docs];
+      const tamanho = payloadSize({detalhes, fotos:todosAnexos, desc});
+      if(tamanho > 6*1024*1024){
+        setMsg('err','Total de anexos muito grande (>6 MB). Reduza a quantidade ou comprima os arquivos.');
+        return;
+      }
+
+      btnSend.disabled = true;
+      btnSpinner.classList.add('show');
+      btnTxt.textContent = 'Enviando...';
+
+      console.log('[diag] enviando RPC criar_chamado_morador...', {condoId, cat, tamanho});
+
       const {data, error} = await sb.rpc('criar_chamado_morador', {
         p_pin: pin,
         p_condo_id: condoId,
@@ -506,24 +520,41 @@ textarea{resize:vertical;min-height:90px}
         p_fotos: todosAnexos,
         p_detalhes: detalhes
       });
-      if(error) throw error;
-      if(!data || data.ok===false){ throw new Error(data?.erro || 'Resposta inesperada do servidor'); }
 
-      // Sucesso
+      console.log('[diag] resposta:', {data, error});
+
+      if(error){
+        throw new Error(error.message || error.details || error.hint || JSON.stringify(error));
+      }
+      if(!data){
+        throw new Error('Servidor não devolveu dados. Tente novamente em alguns segundos.');
+      }
+      if(data.ok===false){
+        throw new Error(data.erro || 'Validação falhou');
+      }
+      if(!data.id || !data.protocolo){
+        throw new Error('Resposta incompleta do servidor: '+JSON.stringify(data));
+      }
+
+      // SUCESSO
       document.getElementById('screen-form').style.display='none';
       document.getElementById('screen-ok').style.display='block';
-      document.getElementById('ok-proto').textContent = '📋 ' + (data.protocolo||'—');
+      document.getElementById('ok-proto').textContent = '📋 ' + data.protocolo;
       const link = location.origin + location.pathname.replace(/morador\.html.*$/i,'') + 'acompanhar.html?id=' + data.id;
       document.getElementById('ok-link').value = link;
       window.scrollTo({top:0, behavior:'smooth'});
     }catch(e){
-      console.error('Erro envio:', e);
-      setMsg('err', '<b>Falha ao enviar:</b> ' + (e.message || e.toString() || 'erro desconhecido') + '<br><small>Se persistir, fale com a Diagnóstika pelo WhatsApp do(a) síndico(a).</small>');
+      console.error('[diag] erro no envio:', e);
+      const txt = (e && (e.message||e.toString())) || 'Erro desconhecido';
+      setMsg('err', '<b>Falha ao enviar:</b> ' + txt + '<br><small style="display:block;margin-top:4px">Se persistir, tire um print desta tela e fale com a Diagnóstika pelo WhatsApp do(a) síndico(a).</small>');
       btnSend.disabled = false;
       btnSpinner.classList.remove('show');
       btnTxt.textContent = '📤 Enviar solicitação';
     }
-  });
+  }
+
+  window.diagEnviar = enviarSolicitacao;  // fallback global (onclick attr)
+  btnSend.addEventListener('click', enviarSolicitacao);  // primário
 
   // Função global pra copiar link no screen-ok
   window.copiarLink = function(){
