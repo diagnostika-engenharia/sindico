@@ -247,21 +247,12 @@ textarea{resize:vertical;min-height:90px}
       <label for="desc">Descrição detalhada</label>
       <textarea id="desc" maxlength="2000" placeholder="Descreva com detalhes: o que pretende fazer, o que está acontecendo, há quanto tempo, observações relevantes..."></textarea>
 
-      <label>📷 Fotos (até 6) <span style="font-weight:500;text-transform:none;color:var(--text2)">— arraste ou clique</span></label>
-      <label class="drop-area" id="drop-fotos">
-        <input type="file" id="file-fotos" accept="image/*" multiple>
-        <div style="font-size:30px;line-height:1">📷</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:5px">Toque ou arraste fotos aqui</div>
-        <div style="font-size:11px;color:var(--gray4);margin-top:3px">JPG/PNG · comprimidas automaticamente</div>
-      </label>
-      <div id="thumbs-fotos" class="thumbs"></div>
-
-      <label>📎 Documentos / projetos (até 4) <span style="font-weight:500;text-transform:none;color:var(--text2)">— arraste ou clique</span></label>
+      <label>📎 Documentos, projetos e fotos (até 6) <span style="font-weight:500;text-transform:none;color:var(--text2)">— arraste ou clique</span></label>
       <label class="drop-area" id="drop-docs">
-        <input type="file" id="file-docs" accept="application/pdf,image/*" multiple>
+        <input type="file" id="file-docs" accept="application/pdf,image/*,.doc,.docx" multiple>
         <div style="font-size:30px;line-height:1">📎</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:5px">PDF, projeto, ART, memorial...</div>
-        <div style="font-size:11px;color:var(--gray4);margin-top:3px">PDF/JPG/PNG · <b>máx. 1,5 MB cada</b></div>
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:5px">PDF, projeto, ART, memorial, fotos...</div>
+        <div style="font-size:11px;color:var(--gray4);margin-top:3px">PDF/DOC/JPG/PNG · <b>máx. 5 MB cada</b></div>
       </label>
       <div id="thumbs-docs" class="thumbs"></div>
 
@@ -384,12 +375,11 @@ $('tel').addEventListener('input', function(e){
 // ============================================================
 // UPLOADS — drag & drop + click + size enforcement
 // ============================================================
-var _fotos = [];
+var _fotos = []; // mantido vazio (campo removido) por compat com lógica de payload
 var _docs = [];
 
-var MAX_FOTOS = 6;
-var MAX_DOCS = 4;
-var MAX_DOC_BYTES = 1.5 * 1024 * 1024;  // 1,5 MB
+var MAX_DOCS = 6;
+var MAX_DOC_BYTES = 5 * 1024 * 1024;  // 5 MB
 
 function fmtSize(b){ if(b<1024) return b+' B'; if(b<1024*1024) return Math.round(b/1024)+' KB'; return (b/1024/1024).toFixed(1)+' MB'; }
 
@@ -426,41 +416,20 @@ function lerComoBase64(file){
   });
 }
 
-async function adicionarFotos(filesList){
-  var slots = MAX_FOTOS - _fotos.length;
-  if(slots <= 0){ alert('Limite de '+MAX_FOTOS+' fotos atingido.'); return; }
-  var files = Array.prototype.slice.call(filesList, 0, slots);
-  for(var i=0; i<files.length; i++){
-    var f = files[i];
-    if(!f.type || !f.type.indexOf || !f.type.startsWith('image/')){
-      alert('"'+f.name+'" não é uma imagem. Use a área de Documentos para PDFs.');
-      continue;
-    }
-    try{
-      var dataUrl = await comprimirImagem(f, 1280, 0.78);
-      _fotos.push({url:dataUrl, tipo:'foto', origem:'morador', nome:f.name});
-    }catch(err){
-      console.error('Erro foto:', err);
-      alert('Não foi possível processar "'+f.name+'": '+(err.message||err));
-    }
-  }
-  renderFotos();
-}
-
 async function adicionarDocs(filesList){
   var slots = MAX_DOCS - _docs.length;
-  if(slots <= 0){ alert('Limite de '+MAX_DOCS+' documentos atingido.'); return; }
+  if(slots <= 0){ alert('Limite de '+MAX_DOCS+' arquivos atingido.'); return; }
   var files = Array.prototype.slice.call(filesList, 0, slots);
   for(var i=0; i<files.length; i++){
     var f = files[i];
     if(f.size > MAX_DOC_BYTES){
-      alert('"'+f.name+'" tem '+fmtSize(f.size)+'. Limite é '+fmtSize(MAX_DOC_BYTES)+'. Comprima o PDF ou reduza a imagem antes de anexar.');
+      alert('"'+f.name+'" tem '+fmtSize(f.size)+'. Limite é '+fmtSize(MAX_DOC_BYTES)+' por arquivo. Comprima o PDF ou reduza a imagem antes de anexar.');
       continue;
     }
     try{
       var dataUrl;
       if(f.type && f.type.startsWith('image/')){
-        dataUrl = await comprimirImagem(f, 1600, 0.85);
+        dataUrl = await comprimirImagem(f, 2000, 0.85);
       } else {
         dataUrl = await lerComoBase64(f);
       }
@@ -473,11 +442,6 @@ async function adicionarDocs(filesList){
   renderDocs();
 }
 
-function renderFotos(){
-  $('thumbs-fotos').innerHTML = _fotos.map(function(f, i){
-    return '<div class="thumb"><img src="'+f.url+'" alt="foto"><button type="button" class="thumb-rm" onclick="rmFoto('+i+')">×</button></div>';
-  }).join('');
-}
 function renderDocs(){
   $('thumbs-docs').innerHTML = _docs.map(function(d, i){
     var ehImg = d.mime && d.mime.indexOf && d.mime.startsWith('image/');
@@ -488,14 +452,9 @@ function renderDocs(){
     return '<div class="thumb '+(ehImg?'':'doc')+'">'+inner+'<button type="button" class="thumb-rm" onclick="rmDoc('+i+')">×</button></div>';
   }).join('');
 }
-window.rmFoto = function(i){ _fotos.splice(i,1); renderFotos(); };
 window.rmDoc = function(i){ _docs.splice(i,1); renderDocs(); };
 
-// Click handlers (no input[type=file] change)
-$('file-fotos').addEventListener('change', function(e){
-  adicionarFotos(e.target.files);
-  e.target.value = '';
-});
+// Click handler (file input)
 $('file-docs').addEventListener('change', function(e){
   adicionarDocs(e.target.files);
   e.target.value = '';
@@ -516,7 +475,6 @@ function bindDrop(areaId, handler){
     }
   });
 }
-bindDrop('drop-fotos', adicionarFotos);
 bindDrop('drop-docs', adicionarDocs);
 
 // Impede que arrastar pra fora da área abra o arquivo no navegador
@@ -622,8 +580,8 @@ async function enviarSolicitacao(){
     var tamanhoMB = (bodyStr.length / 1024 / 1024).toFixed(2);
     console.log('[diag] payload:', tamanhoMB + ' MB', { cat: cat, fotos: _fotos.length, docs: _docs.length });
 
-    if(bodyStr.length > 8 * 1024 * 1024){
-      setMsg('err','Total de anexos muito grande (' + tamanhoMB + ' MB). Reduza fotos ou comprima o PDF.');
+    if(bodyStr.length > 14 * 1024 * 1024){
+      setMsg('err','Total de anexos muito grande (' + tamanhoMB + ' MB). Reduza a quantidade ou comprima os arquivos.');
       return;
     }
 
