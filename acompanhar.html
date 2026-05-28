@@ -142,7 +142,7 @@ function renderizar(d){
       <div class="bloco resp">${esc(d.resposta)}
         ${d.respondido_em?`<div style="font-size:11px;color:var(--text2);margin-top:6px">${fmtDt(d.respondido_em)}${d.respondido_por?' · '+d.respondido_por:''}</div>`:''}
       </div>
-    `:'<div class="section-lbl">💬 Resposta da Engenharia</div><div class="bloco" style="color:var(--text2);font-style:italic">Ainda aguardando análise técnica. Você será contatado(a) por WhatsApp.</div>'}
+    `:'<div class="section-lbl">💬 Resposta da Engenharia</div><div class="bloco" style="color:var(--text2);font-style:italic">Ainda aguardando análise técnica.</div>'}
 
     ${fotosDiag.length?`<div class="section-lbl">📎 Documentos / fotos da Diagnóstika</div>
       <div class="fotos">${fotosDiag.map(a=>{const u=getFotoUrl(a);return `<img src="${u}" onclick="lb('${u}')">`;}).join('')}</div>`:''}

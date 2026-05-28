@@ -146,7 +146,7 @@ textarea{resize:vertical;min-height:90px}
         <label class="cat" data-cat="art">
           <input type="radio" name="cat" value="art">
           <span class="ico">📜</span>
-          <span class="lbl"><b>Solicitar ART (Diagnóstika)</b><small>Emissão de ART pela Diagnóstika para sua obra (orçamento prévio)</small></span>
+          <span class="lbl"><b>Solicitar ART (Diagnóstika)</b><small>Emissão de ART pela Diagnóstika para sua obra</small></span>
         </label>
       </div>
 
@@ -208,17 +208,16 @@ textarea{resize:vertical;min-height:90px}
           <div style="margin-top:6px;color:var(--text2);font-size:11.5px">⚠ A ART só pode ser emitida após análise do escopo. Algumas obras (estruturais, gás especializado) podem exigir profissional específico.</div>
         </div>
 
-        <label for="art-tipo">Tipo principal da obra</label>
-        <select id="art-tipo">
-          <option value="">Selecione...</option>
-          <option value="reforma-completa">Reforma completa do apartamento</option>
-          <option value="banheiro">Reforma de banheiro</option>
-          <option value="cozinha">Reforma de cozinha</option>
-          <option value="hidraulica">Apenas hidráulica</option>
-          <option value="eletrica">Apenas elétrica</option>
-          <option value="ar-condicionado">Instalação de ar-condicionado</option>
-          <option value="outros">Outros</option>
-        </select>
+        <label>Tipo(s) de obra <span style="font-weight:500;text-transform:none;color:var(--text2)">— marque todos que se aplicam</span></label>
+        <div class="multi-grid" id="art-tipos">
+          <label class="multi-item"><input type="checkbox" value="reforma-completa">Reforma completa do apartamento</label>
+          <label class="multi-item"><input type="checkbox" value="banheiro">Reforma de banheiro</label>
+          <label class="multi-item"><input type="checkbox" value="cozinha">Reforma de cozinha</label>
+          <label class="multi-item"><input type="checkbox" value="hidraulica">Apenas hidráulica</label>
+          <label class="multi-item"><input type="checkbox" value="eletrica">Apenas elétrica</label>
+          <label class="multi-item"><input type="checkbox" value="ar-condicionado">Instalação de ar-condicionado</label>
+          <label class="multi-item"><input type="checkbox" value="outros">Outros</label>
+        </div>
 
         <label for="art-prazo">Previsão de início</label>
         <select id="art-prazo">
@@ -231,6 +230,14 @@ textarea{resize:vertical;min-height:90px}
         </select>
       </div>
 
+      <!-- Assunto + Descrição — agrupados depois do contexto (Fase #8 item 3) -->
+      <label for="titulo">Assunto (resumo)</label>
+      <input type="text" id="titulo" maxlength="100" placeholder="Ex: Reforma do banheiro social">
+
+      <label for="desc">Descrição detalhada <span id="desc-opt-hint" style="font-weight:500;text-transform:none;color:var(--text2);display:none">(opcional — já documentado pelo seu RT)</span></label>
+      <textarea id="desc" maxlength="2000" placeholder="Descreva com detalhes: o que pretende fazer, o que está acontecendo, há quanto tempo, observações relevantes..."></textarea>
+
+      <!-- Dados de contato — agrupados (Fase #8 item 5: novo campo email) -->
       <label for="nome">Seu nome completo</label>
       <input type="text" id="nome" maxlength="80" autocomplete="name">
 
@@ -244,11 +251,8 @@ textarea{resize:vertical;min-height:90px}
       <label for="tel">WhatsApp para contato</label>
       <input type="tel" id="tel" maxlength="20" placeholder="(11) 99999-9999" autocomplete="tel">
 
-      <label for="titulo">Assunto (resumo)</label>
-      <input type="text" id="titulo" maxlength="100" placeholder="Ex: Reforma do banheiro social">
-
-      <label for="desc">Descrição detalhada</label>
-      <textarea id="desc" maxlength="2000" placeholder="Descreva com detalhes: o que pretende fazer, o que está acontecendo, há quanto tempo, observações relevantes..."></textarea>
+      <label for="email">E-mail <span style="font-weight:500;text-transform:none;color:var(--text2)">(opcional — para receber notificações)</span></label>
+      <input type="email" id="email" maxlength="100" placeholder="seu@email.com" autocomplete="email">
 
       <label>📎 Documentos, projetos e fotos (até 6) <span style="font-weight:500;text-transform:none;color:var(--text2)">— arraste ou clique</span></label>
       <label class="drop-area" id="drop-docs">
@@ -395,6 +399,9 @@ async function carregarDocsDoCondo(){
 // RT toggle
 $('ref-tem-rt').addEventListener('change', function(e){
   $('ref-rt-fields').style.display = e.target.checked ? 'block' : 'none';
+  // Fase #8 item 2 — descrição vira opcional quando morador tem RT
+  var hint = document.getElementById('desc-opt-hint');
+  if(hint) hint.style.display = e.target.checked ? 'inline' : 'none';
 });
 
 // Multi-seleção tipos
@@ -651,16 +658,21 @@ async function enviarSolicitacao(){
     var bloco = $('bloco').value.trim();
     var apto = $('apto').value.trim();
     var tel = $('tel').value.trim();
+    var email = $('email') ? $('email').value.trim() : '';
     var titulo = $('titulo').value.trim();
     var desc = $('desc').value.trim();
+
+    // Descrição é OPCIONAL quando for reforma + morador já tem RT (toda info técnica já está nos documentos anexos) — Fase #8 item 2
+    var temRtReforma = (cat === 'reforma') && document.getElementById('ref-tem-rt') && document.getElementById('ref-tem-rt').checked;
 
     if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos do prédio).', 'pin'); return; }
     if(!cat){ setMsg('err','Selecione o tipo de solicitação.', 'cats'); return; }
     if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.', 'nome'); return; }
     if(!apto){ setMsg('err','Informe seu apartamento.', 'apto'); return; }
     if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.', 'tel'); return; }
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setMsg('err','E-mail inválido.', 'email'); return; }
     if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo.', 'titulo'); return; }
-    if(desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).', 'desc'); return; }
+    if(!temRtReforma && desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).', 'desc'); return; }
 
     var unidade = bloco ? (bloco + ' · Apto ' + apto) : ('Apto ' + apto);
 
@@ -674,9 +686,13 @@ async function enviarSolicitacao(){
         detalhes.rt_registro = $('ref-rt-reg').value.trim();
       }
     } else if(cat === 'art'){
-      detalhes.art_tipo_obra = $('art-tipo').value || null;
+      // Fase #12 — multi-select de tipo de obra (era select único)
+      var artChecks = Array.prototype.slice.call(document.querySelectorAll('#art-tipos input:checked')).map(function(c){ return c.value; });
+      detalhes.art_tipos_obra = artChecks;
+      detalhes.art_tipo_obra = artChecks[0] || null; // compat retroativo (PMP ainda lê o singular)
       detalhes.art_prazo = $('art-prazo').value || null;
     }
+    if(email) detalhes.morador_email = email; // Fase #8 item 5
 
     // Filtra docs que ainda estão em upload — não pode enviar sem path
     var docsUploading = _docs.filter(function(d){ return d._uploading; });

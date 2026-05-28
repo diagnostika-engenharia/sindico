@@ -525,11 +525,19 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
-            <div>
-              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Valor (R$)</label>
-              <input type="number" id="mnt-valor" placeholder="0,00" step="0.01" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
+          <!-- Fase #13 — Valor é opcional. Checkbox controla exibição do campo. -->
+          <div style="margin-bottom:10px">
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text);font-weight:600">
+              <input type="checkbox" id="mnt-tem-valor" onchange="document.getElementById('mnt-valor-wrap').style.display=this.checked?'block':'none';if(!this.checked)document.getElementById('mnt-valor').value='';" style="width:16px;height:16px;cursor:pointer;accent-color:var(--teal)">
+              💰 Informar valor do contrato
+              <span style="font-size:11px;color:var(--text2);font-weight:500">(opcional)</span>
+            </label>
+            <div id="mnt-valor-wrap" style="display:none;margin-top:8px">
+              <input type="number" id="mnt-valor" placeholder="Valor em R$ (ex: 1500.00)" step="0.01" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
             </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Garantia (dias)</label>
               <input type="number" id="mnt-garantia" placeholder="Ex: 90" style="width:100%;padding:9px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit">
@@ -1293,9 +1301,9 @@ function gerarAgendaCompletaSindico(){
     '</tr>';
   });
 
-  // Determina o nome do(a) síndico(a) — pega da metadata ou de qualquer vínculo do condo
+  // Determina o nome do(a) síndico(a) — Fase #14 item 1: prefere nome COMPLETO do cadastro
   const meuVinc=_meusCondos.find(uc=>uc.condo_id===_condoAtivo);
-  const sindicoNome=meuVinc?.nome_exibicao || _user?.user_metadata?.nome || '—';
+  const sindicoNome = condo.sindico || meuVinc?.nome_exibicao || _user?.user_metadata?.nome || '—';
 
   const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Agenda Anual 2026 — '+condo.nome+'</title><style>'+
     '@page{size:A4;margin:14mm 12mm}'+
@@ -2685,7 +2693,9 @@ function gerarLivroManutencoes(){
   const condo=CONDOS[_condoAtivo]||{nome:_condoAtivo,cor:'#155B67',emblema:''};
   const hoje=new Date();
   const meuVinc=_meusCondos.find(uc=>uc.condo_id===_condoAtivo);
-  const sindicoNome=meuVinc?.nome_exibicao||_user?.user_metadata?.nome||'—';
+  // Fase #14 item 1 — prefere nome COMPLETO do cadastro do condomínio (mais oficial)
+  // Fallback: nome_exibicao do vínculo (pode ser apelido), nome auth, ou "—"
+  const sindicoNome = condo.sindico || meuVinc?.nome_exibicao || _user?.user_metadata?.nome || '—';
 
   // Estatísticas
   const total=_manutencoes.length;
@@ -2796,15 +2806,14 @@ function gerarLivroManutencoes(){
       '<tbody>'+linhas+'</tbody>'+
     '</table>'+
 
-    // DECLARAÇÃO
+    // DECLARAÇÃO — Fase #14 item 2: privativa do síndico (Diagnóstika só faz vistorias técnicas, manutenção é responsabilidade exclusiva da síndica)
     '<div style="margin-top:20pt;padding:14pt;border:1pt solid #155B67;border-radius:5pt;background:#F0F4F5;page-break-inside:avoid">'+
       '<div style="font-size:10pt;font-weight:700;color:#155B67;margin-bottom:8pt">📜 DECLARAÇÃO</div>'+
       '<div style="font-size:9pt;line-height:1.7;text-align:justify">'+
-        'Eu, <b>'+sindicoNome+'</b>, na qualidade de síndico(a) do condomínio <b>'+condo.nome+'</b>, declaro para os devidos fins que as informações constantes neste Livro de Manutenção Predial são verdadeiras e correspondem aos serviços efetivamente executados nas datas indicadas. Os documentos comprobatórios (notas fiscais, ARTs/RRTs, fotos antes/depois) encontram-se anexados a cada registro no sistema digital da Diagnóstika Engenharia, à disposição para verificação técnica e fiscalização.'+
+        'Eu, <b>'+sindicoNome+'</b>, na qualidade de síndico(a) do condomínio <b>'+condo.nome+'</b>, declaro para os devidos fins que as informações constantes neste Livro de Manutenção Predial são verdadeiras e correspondem aos serviços efetivamente executados nas datas indicadas. Os documentos comprobatórios (notas fiscais, ARTs/RRTs, fotos antes/depois) encontram-se anexados a cada registro deste livro, à disposição para verificação técnica e fiscalização.'+
       '</div>'+
-      '<div style="margin-top:20pt;display:grid;grid-template-columns:1fr 1fr;gap:20pt;font-size:9pt">'+
-        '<div style="text-align:center;border-top:.8pt solid #1A2E31;padding-top:5pt"><b>'+sindicoNome+'</b><br><small style="color:#5A7A7E">Síndico(a) · '+condo.nome+'</small><br><small style="color:#5A7A7E">'+hoje.toLocaleDateString('pt-BR')+'</small></div>'+
-        '<div style="text-align:center;border-top:.8pt solid #1A2E31;padding-top:5pt"><b>Diagnóstika Engenharia LTDA</b><br><small style="color:#5A7A7E">CNPJ 54.027.948/0001-60 · CREA/SP 50.707.124-26</small><br><small style="color:#5A7A7E">RT: Eng. Civil Claudemir Scaranello</small></div>'+
+      '<div style="margin-top:24pt;display:flex;justify-content:center;font-size:9pt">'+
+        '<div style="text-align:center;border-top:.8pt solid #1A2E31;padding-top:5pt;min-width:240pt"><b>'+sindicoNome+'</b><br><small style="color:#5A7A7E">Síndico(a) · '+condo.nome+'</small><br><small style="color:#5A7A7E">'+hoje.toLocaleDateString('pt-BR')+'</small></div>'+
       '</div>'+
     '</div>'+
 
