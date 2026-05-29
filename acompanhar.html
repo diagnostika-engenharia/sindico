@@ -56,8 +56,14 @@ const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const CONDOS = {
-  'monte-carlo':'Edifício Monte Carlo','morada-morumbi':'Morada do Morumbi','portal-primavera':'Portal Primavera',
-  'residencial-santa-clara':'Residencial Santa Clara','jardins-do-malta':'Jardins do Malta','condominio-teste':'Condomínio TESTE'
+  'monte-carlo':'Condomínio Residencial Monte Carlo',
+  'morada-morumbi':'Condomínio Residencial Morada Morumbi',
+  'portal-primavera':'Condomínio Portal Primavera',
+  'residencial-santa-clara':'Condomínio Residencial Santa Clara',
+  'jardins-do-malta':'Condomínio Residencial Jardins do Malta',
+  'menotti-del-picchia':'Condomínio Edifício Menotti del Picchia',
+  'montville-residence':'Residencial MontVille',
+  'condominio-teste':'Condomínio TESTE (sandbox)'
 };
 const cats={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade',laudo:'📜 Solicitação de ART'};
 const subtipos={reforma:'🏗️ Reforma na unidade',duvida:'❓ Dúvida técnica',corretiva:'🔧 Problema na unidade',art:'📜 Solicitação de ART à Diagnóstika'};
