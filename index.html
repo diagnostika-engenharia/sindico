@@ -3366,28 +3366,47 @@ let _portariaTorreSel = null;
 function _statusUnidadeSindica(torre, num){
   const tS = torre.toString();
   const nS = num.toString();
-  const hoje0 = new Date(); hoje0.setHours(0,0,0,0);
+  // cutoff baseado no filtro de período selecionado
+  let cutoff = 0;
+  if(_portFil === 'hoje'){ const d = new Date(); d.setHours(0,0,0,0); cutoff = d.getTime(); }
+  else if(_portFil === '7d')  cutoff = Date.now() - 7*86400000;
+  else if(_portFil === '30d') cutoff = Date.now() - 30*86400000;
+  // 'cland' usa todo o histórico
 
-  // 1. clandestina ativa (não revisada nas últimas 30 dias)
-  const cland = _portariaEvs.find(e => e.tipo_evento==='obra_clandestina' && (e.torre||'').toString()===tS && (e.apto||'').toString()===nS && !e.revisada_em);
-  if(cland) return {cls:'cland', title:`⚠ Obra não autorizada (${new Date(cland.hora).toLocaleString('pt-BR')})`};
+  // Coleta TODOS os eventos da unidade no período
+  const eventosUni = _portariaEvs.filter(e =>
+    (e.torre||'').toString() === tS &&
+    (e.apto||'').toString() === nS &&
+    new Date(e.hora).getTime() >= cutoff
+  );
+
+  // 1. clandestina ativa (não revisada)
+  const cland = eventosUni.find(e => e.tipo_evento==='obra_clandestina' && !e.revisada_em);
+  if(cland){
+    const n = eventosUni.length;
+    return {cls:'cland', count:n, title:`⚠ Obra não autorizada — ${new Date(cland.hora).toLocaleString('pt-BR')}${n>1?'\n+ '+(n-1)+' outro(s) evento(s)':''}`};
+  }
 
   // 2. reforma cadastrada nesta unidade
   const refs = (_demandas||[]).filter(d => d.categoria==='reforma' && !d.deletada_em && ((d.bloco||'').toString().toUpperCase()===tS.toUpperCase()) && ((d.apto||'').toString()===nS));
   if(refs.length){
     const r = refs[0];
-    if(r.clandestina) return {cls:'cland', title:'⚠ Reforma clandestina (em chamado)'};
-    if(r.art_numero)  return {cls:'art', title:`📄 Reforma c/ART ${r.art_numero}`};
+    const n = eventosUni.length;
+    if(r.clandestina) return {cls:'cland', count:n, title:'⚠ Reforma marcada como obra não autorizada'};
+    if(r.art_numero)  return {cls:'art',   count:n, title:`📄 Reforma c/ART ${r.art_numero}${n?' · '+n+' entrada(s)':''}`};
     const rt = r.responsavel_tecnico;
-    if(r.irregular || (r.status==='resolvida' && !rt)) return {cls:'sem-rt', title:'⚠ Sem responsável técnico'};
-    return {cls:'aguard', title:'⏳ Reforma aguardando ART'};
+    if(r.irregular || (r.status==='resolvida' && !rt)) return {cls:'sem-rt', count:n, title:'⚠ Sem responsável técnico'};
+    return {cls:'aguard', count:n, title:'⏳ Reforma aguardando ART'};
   }
 
-  // 3. entrada de prestador hoje
-  const entrou = _portariaEvs.find(e => e.tipo_evento==='entrada_prestador' && (e.torre||'').toString()===tS && (e.apto||'').toString()===nS && new Date(e.hora).getTime()>=hoje0.getTime());
-  if(entrou) return {cls:'entrada', title:`🔧 Entrada hoje: ${entrou.prestador_nome||'prestador'} (${entrou.tipo_servico||'?'})`};
+  // 3. entrada de prestador no período
+  const entradas = eventosUni.filter(e => e.tipo_evento==='entrada_prestador');
+  if(entradas.length){
+    const ult = entradas[0];
+    return {cls:'entrada', count:entradas.length, title:`🔧 ${entradas.length} entrada(s) · última: ${ult.prestador_nome||'prestador'} (${ult.tipo_servico||'?'}) em ${new Date(ult.hora).toLocaleString('pt-BR')}`};
+  }
 
-  return {cls:'', title:''};
+  return {cls:'', count:0, title:''};
 }
 
 function renderMapaPortariaSindico(){
@@ -3397,13 +3416,23 @@ function renderMapaPortariaSindico(){
   if(!wrap || !est){ if(wrap) wrap.style.display='none'; return; }
   wrap.style.display = 'block';
 
-  // Torre selector
+  // Torre selector com contagem de eventos
   const sel = document.getElementById('portaria-torre-selector');
   if(_portariaTorreSel === null) _portariaTorreSel = est.torres[0];
+
+  // cutoff p/ contar eventos
+  let cutoff = 0;
+  if(_portFil === 'hoje'){ const d = new Date(); d.setHours(0,0,0,0); cutoff = d.getTime(); }
+  else if(_portFil === '7d')  cutoff = Date.now() - 7*86400000;
+  else if(_portFil === '30d') cutoff = Date.now() - 30*86400000;
+  const evsPer = _portariaEvs.filter(e => new Date(e.hora).getTime() >= cutoff);
+
   sel.innerHTML = '<span style="font-size:10.5px;color:var(--text2);font-weight:700;letter-spacing:.4px;align-self:center;margin-right:4px">TORRE:</span>' +
     est.torres.map(t => {
       const active = _portariaTorreSel === t ? 'active' : '';
-      return `<button class="torre-pill ${active}" onclick="selTorrePortariaSindico('${t}')">${t}</button>`;
+      const n = evsPer.filter(e => (e.torre||'').toString().toUpperCase() === t.toString().toUpperCase()).length;
+      const badge = n>0 ? `<span style="background:rgba(255,255,255,.9);color:${active?'#155B67':'#155B67'};font-weight:800;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:5px">${n}</span>` : '';
+      return `<button class="torre-pill ${active}" onclick="selTorrePortariaSindico('${t}')">${t}${badge}</button>`;
     }).join('');
 
   // Grid de unidades
@@ -3411,7 +3440,8 @@ function renderMapaPortariaSindico(){
   const cells = [];
   for(let i=1; i<=est.aptosPorTorre; i++){
     const st = _statusUnidadeSindica(_portariaTorreSel, i);
-    cells.push(`<div class="uni-cell ${st.cls}" title="${st.title || _portariaTorreSel+'·'+i}">${i}</div>`);
+    const countBadge = (st.count && st.count > 1) ? `<span style="position:absolute;top:-3px;right:-3px;background:#fff;color:#1A2E31;font-size:9px;font-weight:800;padding:0 4px;border-radius:7px;border:1.5px solid currentColor;line-height:1.4">${st.count}</span>` : '';
+    cells.push(`<div class="uni-cell ${st.cls}" title="${(st.title||(_portariaTorreSel+'·'+i+' — sem movimento')).replace(/"/g,'&quot;')}">${i}${countBadge}</div>`);
   }
   grid.innerHTML = cells.join('');
 }
