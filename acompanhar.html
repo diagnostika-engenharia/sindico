@@ -137,15 +137,12 @@ function renderizar(d){
       </div>
     `:''}
 
-    ${d.resposta?`
-      <div class="section-lbl">💬 Resposta da Engenharia</div>
-      <div class="bloco resp">${esc(d.resposta)}
-        ${d.respondido_em?`<div style="font-size:11px;color:var(--text2);margin-top:6px">${fmtDt(d.respondido_em)}${d.respondido_por?' · '+d.respondido_por:''}</div>`:''}
-      </div>
-    `:'<div class="section-lbl">💬 Resposta da Engenharia</div><div class="bloco" style="color:var(--text2);font-style:italic">Ainda aguardando análise técnica.</div>'}
+    ${renderMensagensThread(d)}
 
     ${fotosDiag.length?`<div class="section-lbl">📎 Documentos / fotos da Diagnóstika</div>
       <div class="fotos">${fotosDiag.map(a=>{const u=getFotoUrl(a);return `<img src="${u}" onclick="lb('${u}')">`;}).join('')}</div>`:''}
+
+    ${renderFormResposta(d)}
 
     <div style="margin-top:18px;text-align:center;font-size:11px;color:var(--text2)">
       Atualizado: ${fmtDt(d.updated_at||d.created_at)}<br>
@@ -153,6 +150,119 @@ function renderizar(d){
     </div>
   `;
   document.getElementById('content').innerHTML = html;
+  window._demandaAtual = d;
+}
+
+function renderMensagensThread(d){
+  const msgs = Array.isArray(d.mensagens) ? d.mensagens : [];
+  const itens = [];
+  // Resposta legacy (campo `resposta`) primeiro se existir e não estiver já no thread
+  if(d.resposta && !msgs.some(m => m.texto === d.resposta)){
+    itens.push({
+      autor:'engenharia',
+      autor_nome:d.respondido_por||'Diagnóstika',
+      texto:d.resposta,
+      em:d.respondido_em,
+      anexos:[]
+    });
+  }
+  msgs.forEach(m => itens.push(m));
+  // ordena por data
+  itens.sort((a,b) => new Date(a.em||0) - new Date(b.em||0));
+
+  if(!itens.length){
+    return '<div class="section-lbl">💬 Conversa</div><div class="bloco" style="color:var(--text2);font-style:italic">Ainda aguardando primeira resposta da engenharia.</div>';
+  }
+
+  const html = itens.map(m => {
+    const isMorador = m.autor === 'morador';
+    const cor = isMorador ? '#7D3C98' : '#1B8A4A';
+    const bg  = isMorador ? 'rgba(125,60,152,.08)' : 'rgba(27,138,74,.08)';
+    const anexHtml = (m.anexos||[]).length ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:5px">'+m.anexos.map(a => {
+      const url = getFotoUrl(a);
+      const isImg = (a.tipo||'').startsWith('image/');
+      return isImg ?
+        `<img src="${url}" onclick="lb('${url}')" style="width:60px;height:60px;object-fit:cover;border-radius:5px;cursor:pointer">` :
+        `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #E5E7EB;padding:4px 8px;border-radius:6px;font-size:11px;color:${cor};text-decoration:none">📎 ${esc(a.nome||'arquivo').substring(0,30)}</a>`;
+    }).join('')+'</div>' : '';
+    return `<div style="background:${bg};border-left:3px solid ${cor};padding:10px 13px;border-radius:0 8px 8px 0;margin-bottom:8px">
+      <div style="font-size:11px;color:${cor};font-weight:700;letter-spacing:.3px;margin-bottom:4px">${isMorador?'👤 '+esc(m.autor_nome||'Você'):'🛠 '+esc(m.autor_nome||'Diagnóstika')}${m.em?' · '+fmtDt(m.em):''}</div>
+      <div style="font-size:13.5px;line-height:1.5;color:#111;white-space:pre-wrap">${esc(m.texto)}</div>
+      ${anexHtml}
+    </div>`;
+  }).join('');
+
+  return '<div class="section-lbl">💬 Conversa</div>'+html;
+}
+
+function renderFormResposta(d){
+  if(d.deletada_em) return '';
+  if(d.status === 'fechada') return '<div style="margin-top:14px;padding:12px;background:#F0F4F5;border-radius:8px;font-size:12px;color:var(--text2);text-align:center">🔒 Este chamado está fechado. Para retomar contato, abra um novo chamado.</div>';
+  return `
+    <div class="section-lbl">✏️ Sua resposta</div>
+    <div style="background:rgba(125,60,152,.04);border:1.5px solid rgba(125,60,152,.2);border-radius:10px;padding:13px 14px">
+      <textarea id="reply-text" placeholder="Adicione uma informação, tire uma dúvida ou envie fotos para a engenharia…" rows="3" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:7px;font-size:13.5px;font-family:inherit;resize:vertical;outline:none;background:#fff" lang="pt-BR" spellcheck="true"></textarea>
+      <div id="reply-anexos-preview" style="display:none;margin-top:8px;display:flex;flex-wrap:wrap;gap:5px"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <label style="background:#fff;border:1.5px solid #D1D5DB;padding:7px 11px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:#7D3C98;display:inline-flex;align-items:center;gap:5px">
+          📷 Foto / arquivo
+          <input type="file" multiple accept="image/*,application/pdf" onchange="anexarRespMorador(this)" style="display:none">
+        </label>
+        <span id="reply-info" style="font-size:11px;color:var(--text2)"></span>
+        <div style="flex:1"></div>
+        <button onclick="enviarRespostaMorador()" id="btn-reply" style="background:#7D3C98;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Enviar resposta</button>
+      </div>
+    </div>
+  `;
+}
+
+let _replyAnexos = [];
+
+async function anexarRespMorador(input){
+  const files = Array.from(input.files||[]);
+  const info = document.getElementById('reply-info');
+  if(info) info.textContent = 'Enviando '+files.length+' arquivo(s)…';
+  for(const f of files){
+    if(f.size > 10*1024*1024){ alert(f.name+' tem mais de 10MB — ignorado'); continue; }
+    try{
+      const ext = (f.name.split('.').pop()||'bin').toLowerCase();
+      const uuid = (crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));
+      const path = `respostas-morador/${id}/${uuid}.${ext}`;
+      const { error } = await sb.storage.from('chamados-morador').upload(path, f, {cacheControl:'3600'});
+      if(error) throw error;
+      _replyAnexos.push({nome:f.name, storage_path:path, tipo:f.type, tamanho:f.size, origem:'morador'});
+    }catch(e){ console.warn(e); alert('Falha em '+f.name+': '+e.message); }
+  }
+  if(info) info.textContent = _replyAnexos.length+' anexo(s) prontos';
+  // preview
+  const prev = document.getElementById('reply-anexos-preview');
+  if(prev){
+    prev.style.display = _replyAnexos.length ? 'flex' : 'none';
+    prev.innerHTML = _replyAnexos.map((a,i)=>`<div style="background:#fff;border:1px solid #E5E7EB;padding:4px 8px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:5px">📎 ${esc(a.nome).substring(0,28)} <button onclick="_replyAnexos.splice(${i},1);anexarRespMorador({files:[]});" style="background:none;border:none;color:#C00000;cursor:pointer;font-weight:700">×</button></div>`).join('');
+  }
+}
+
+async function enviarRespostaMorador(){
+  const txt = document.getElementById('reply-text').value.trim();
+  if(!txt && !_replyAnexos.length){ alert('Escreva algo ou anexe um arquivo.'); return; }
+  if(txt.length > 0 && txt.length < 3){ alert('Texto muito curto.'); return; }
+  const btn = document.getElementById('btn-reply');
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try{
+    const { data, error } = await sb.rpc('responder_chamado_morador', {
+      p_id: id,
+      p_texto: txt || '(anexo enviado)',
+      p_nome: window._demandaAtual?.morador_nome || 'Morador',
+      p_anexos: _replyAnexos
+    });
+    if(error) throw error;
+    if(data?.erro) throw new Error(data.erro);
+    _replyAnexos = [];
+    location.reload();
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = 'Enviar resposta'; }
+    alert('Erro ao enviar: '+(e.message||e));
+  }
 }
 
 function lb(url){
