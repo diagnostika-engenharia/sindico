@@ -358,7 +358,9 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
       <button class="tab" data-tab="portaria" onclick="trocarTab('portaria')"><span class="ic">🛡️</span>Portaria <span class="badge-num" id="port-count" style="display:none">0</span></button>
       <button class="tab" data-tab="moradores" onclick="trocarTab('moradores')"><span class="ic">🏠</span>Moradores <span class="badge-num" id="mor-count" style="display:none">0</span></button>
       <button class="tab" data-tab="manutencoes" onclick="trocarTab('manutencoes')"><span class="ic">🔧</span>Manutenções <span class="badge-num" id="mnt-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="equipe" onclick="trocarTab('equipe')"><span class="ic">👥</span>Minha equipe <span class="badge-num" id="eq-count" style="display:none">0</span></button>
       <button class="tab" data-tab="docs" onclick="trocarTab('docs')"><span class="ic">📄</span>Documentos</button>
+      <button class="tab" data-tab="perfil" onclick="trocarTab('perfil')"><span class="ic">👤</span>Meu perfil</button>
     </div>
 
     <!-- Conteúdo das tabs -->
@@ -635,6 +637,102 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
             <button onclick="salvarPreferenciasNotif()" style="padding:9px 16px;border:none;background:var(--teal);color:#fff;border-radius:7px;font-weight:700;cursor:pointer;font-size:12px">💾 Salvar</button>
           </div>
           <div id="mnt-email-status" style="font-size:11px;color:var(--text2);margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════ ABA EQUIPE (NOVA) ═════════════ -->
+    <div class="tab-content" data-tab="equipe">
+      <div class="section">
+        <h2>👥 Minha equipe
+          <button onclick="abrirFormEquipe()" id="btn-add-eq" style="float:right;background:linear-gradient(135deg,#7D3C98,#5E2D74);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">+ Adicionar funcionário</button>
+        </h2>
+        <div style="background:rgba(125,60,152,.06);border-left:3px solid #7D3C98;padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;margin:10px 0;color:var(--text);line-height:1.5">
+          <b style="color:#7D3C98">ℹ Cadastre até 3 pessoas que trabalham com você</b> (zelador, conselheiro, ajudante). Eles aparecem como referências em manutenções, vistorias e registros do livro do condomínio. <b>Limite: 3 ativos por condomínio</b> — para trocar alguém, desative antes de adicionar outro.
+        </div>
+
+        <div id="form-equipe" style="display:none;background:#fff;border:1.5px solid var(--gray2);border-radius:10px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+          <h3 style="font-size:14px;color:var(--teal);margin-bottom:12px;font-weight:700"><span id="form-eq-title">Adicionar funcionário</span></h3>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Nome completo *</label>
+          <input type="text" id="eq-nome" placeholder="Ex: João da Silva Santos" autocomplete="name" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:inherit;outline:none">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">CPF *</label>
+              <input type="text" id="eq-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none" oninput="mascararCPF(this)">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Cargo *</label>
+              <select id="eq-cargo" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;background:#fff;font-family:inherit;outline:none;cursor:pointer">
+                <option value="">— selecione —</option>
+                <option value="zelador">Zelador(a)</option>
+                <option value="conselho">Conselheiro(a)</option>
+                <option value="subsindico">Subsíndico(a)</option>
+                <option value="administrador">Administrador(a)</option>
+                <option value="ajudante">Auxiliar/Ajudante</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">E-mail *</label>
+              <input type="email" id="eq-email" placeholder="nome@email.com" autocomplete="email" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Telefone</label>
+              <input type="text" id="eq-tel" placeholder="(19) 99999-9999" inputmode="tel" maxlength="15" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none" oninput="mascararTel(this)">
+            </div>
+          </div>
+
+          <div id="eq-erro" style="background:rgba(192,0,0,.10);color:var(--red);padding:9px 12px;border-radius:7px;font-size:12.5px;margin-bottom:10px;border-left:3px solid var(--red);display:none"></div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="fecharFormEquipe()" style="background:#fff;border:1.5px solid var(--gray2);color:var(--text2);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+            <button onclick="salvarEquipe()" id="btn-save-eq" style="background:#1B8A4A;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">💾 Salvar</button>
+          </div>
+        </div>
+
+        <div id="equipe-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
+    <!-- ═════════════ ABA MEU PERFIL (NOVA) ═════════════ -->
+    <div class="tab-content" data-tab="perfil">
+      <div class="section">
+        <h2>👤 Meu perfil</h2>
+        <div style="background:rgba(21,91,103,.06);border-left:3px solid var(--teal);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;margin:10px 0;color:var(--text);line-height:1.5">
+          <b style="color:var(--teal)">ℹ Mantenha seus dados atualizados</b>. Eles aparecem em documentos oficiais (Livro de Manutenção, atestados, ATAs) e são usados para contato pela Diagnóstika.
+        </div>
+
+        <div style="background:#fff;border:1.5px solid var(--gray2);border-radius:10px;padding:18px">
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Nome completo *</label>
+          <input type="text" id="perf-nome" placeholder="Ex: Ana Paula Ferreira Cruz" autocomplete="name" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;margin-bottom:12px;font-family:inherit;outline:none">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">CPF *</label>
+              <input type="text" id="perf-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none" oninput="mascararCPF(this)">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">Telefone / WhatsApp *</label>
+              <input type="text" id="perf-tel" placeholder="(19) 99999-9999" inputmode="tel" maxlength="15" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none" oninput="mascararTel(this)">
+            </div>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">E-mail *</label>
+          <input type="email" id="perf-email" disabled style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;background:var(--gray);color:var(--text2);font-family:inherit;outline:none;cursor:not-allowed;margin-bottom:6px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:14px">O e-mail principal é usado para login e não pode ser alterado aqui. Para mudar, fale com a Diagnóstika.</div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:5px">E-mail secundário (opcional)</label>
+          <input type="email" id="perf-email2" placeholder="outro@email.com" style="width:100%;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;margin-bottom:14px;font-family:inherit;outline:none">
+
+          <div id="perf-erro" style="background:rgba(192,0,0,.10);color:var(--red);padding:9px 12px;border-radius:7px;font-size:12.5px;margin-bottom:10px;border-left:3px solid var(--red);display:none"></div>
+          <div id="perf-ok" style="background:rgba(27,138,74,.10);color:var(--green);padding:9px 12px;border-radius:7px;font-size:12.5px;margin-bottom:10px;border-left:3px solid var(--green);display:none">✅ Perfil atualizado</div>
+
+          <button onclick="salvarPerfil()" id="btn-save-perf" style="background:#155B67;color:#fff;border:none;padding:11px 22px;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%">💾 Salvar perfil</button>
         </div>
       </div>
     </div>
@@ -2936,6 +3034,244 @@ function trocarTab(nome){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
   if(nome==='manutencoes'){ carregarManutencoes(); carregarPreferenciasNotif(); }
   if(nome==='portaria'){ carregarPortaria(); }
+  if(nome==='equipe'){ carregarEquipe(); }
+  if(nome==='perfil'){ carregarPerfil(); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EQUIPE — Funcionários da síndica (até 3 ativos por condomínio)
+// ═══════════════════════════════════════════════════════════════════════════
+let _equipeList = [];
+let _equipeEditId = null;
+
+function mascararCPF(el){
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>9)      v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+  else if(v.length>6) v = v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+  else if(v.length>3) v = v.slice(0,3)+'.'+v.slice(3);
+  el.value = v;
+}
+function mascararTel(el){
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>10)     v = '('+v.slice(0,2)+') '+v.slice(2,7)+'-'+v.slice(7);
+  else if(v.length>6) v = '('+v.slice(0,2)+') '+v.slice(2,6)+'-'+v.slice(6);
+  else if(v.length>2) v = '('+v.slice(0,2)+') '+v.slice(2);
+  el.value = v;
+}
+function validaCPFLength(cpf){
+  return (cpf||'').replace(/\D/g,'').length === 11;
+}
+function validaEmail(e){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||'');
+}
+
+async function carregarEquipe(){
+  if(!_condoAtivo || !sb) return;
+  const list = document.getElementById('equipe-list');
+  try{
+    const { data, error } = await sb.from('equipe_condo').select('*')
+      .eq('condo_id', _condoAtivo).order('criado_em', {ascending:true});
+    if(error) throw error;
+    _equipeList = data || [];
+    renderEquipe();
+    atualizarBadgeEquipe();
+  }catch(e){
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:13px">⚠ ${e.message||'Erro ao carregar equipe'}</div>`;
+  }
+}
+
+function atualizarBadgeEquipe(){
+  const ativos = _equipeList.filter(e => e.ativo).length;
+  const b = document.getElementById('eq-count');
+  if(b){
+    if(ativos>0){ b.textContent = ativos; b.style.display='inline-block'; b.style.background='#7D3C98'; }
+    else b.style.display='none';
+  }
+}
+
+function renderEquipe(){
+  const list = document.getElementById('equipe-list');
+  if(!_equipeList.length){
+    list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text2)">
+      <div style="font-size:46px;margin-bottom:8px">👥</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Nenhum funcionário cadastrado ainda</div>
+      <div style="font-size:12px">Clique em <b>+ Adicionar funcionário</b> acima para começar.</div>
+    </div>`;
+    return;
+  }
+  const cargos = {zelador:'🔧 Zelador(a)',conselho:'🏛 Conselheiro(a)',subsindico:'👤 Subsíndico(a)',administrador:'📊 Administrador(a)',ajudante:'🤝 Auxiliar',outro:'👤 Outro'};
+  list.innerHTML = _equipeList.map(eq => {
+    const cor = eq.ativo ? '#7D3C98' : '#9CA3AF';
+    const op = eq.ativo ? '1' : '0.55';
+    return `<div style="background:#fff;border:1.5px solid var(--gray2);border-left:5px solid ${cor};border-radius:10px;padding:14px;margin-bottom:10px;opacity:${op}">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="width:46px;height:46px;border-radius:50%;background:${cor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0">${esc(eq.nome_completo||'?').substring(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:2px">${esc(eq.nome_completo)}${!eq.ativo?' <span style="font-size:11px;color:var(--text2);font-weight:500">(inativo)</span>':''}</div>
+          <div style="font-size:12px;color:${cor};font-weight:600;margin-bottom:5px">${cargos[eq.cargo]||eq.cargo}</div>
+          ${eq.cpf?`<div style="font-size:12px;color:var(--text2)"><b>CPF:</b> ${formatCPF(eq.cpf)}</div>`:''}
+          ${eq.email?`<div style="font-size:12px;color:var(--text2)"><b>E-mail:</b> <a href="mailto:${eq.email}" style="color:var(--teal)">${esc(eq.email)}</a></div>`:''}
+          ${eq.telefone?`<div style="font-size:12px;color:var(--text2)"><b>Telefone:</b> ${esc(eq.telefone)}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+          <button onclick="editarEquipe('${eq.id}')" style="background:#fff;border:1px solid var(--gray3);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11.5px;cursor:pointer;font-weight:600">✎ Editar</button>
+          ${eq.ativo?`<button onclick="toggleEquipe('${eq.id}',false)" style="background:#fff;border:1px solid #D4A24C;color:#A87826;padding:5px 10px;border-radius:6px;font-size:11.5px;cursor:pointer;font-weight:600">⊘ Desativar</button>`:`<button onclick="toggleEquipe('${eq.id}',true)" style="background:#1B8A4A;border:none;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;cursor:pointer;font-weight:700">✓ Reativar</button>`}
+          <button onclick="excluirEquipe('${eq.id}')" style="background:#fff;border:1px solid var(--red);color:var(--red);padding:5px 10px;border-radius:6px;font-size:11.5px;cursor:pointer;font-weight:600">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatCPF(cpf){
+  const c = (cpf||'').replace(/\D/g,'');
+  if(c.length !== 11) return cpf;
+  return c.slice(0,3)+'.'+c.slice(3,6)+'.'+c.slice(6,9)+'-'+c.slice(9);
+}
+
+function abrirFormEquipe(){
+  _equipeEditId = null;
+  document.getElementById('form-eq-title').textContent = 'Adicionar funcionário';
+  ['eq-nome','eq-cpf','eq-email','eq-tel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('eq-cargo').value = '';
+  document.getElementById('eq-erro').style.display = 'none';
+  document.getElementById('form-equipe').style.display = 'block';
+  setTimeout(()=>document.getElementById('eq-nome').focus(), 100);
+}
+function fecharFormEquipe(){
+  document.getElementById('form-equipe').style.display = 'none';
+  _equipeEditId = null;
+}
+function editarEquipe(id){
+  const eq = _equipeList.find(x => x.id === id);
+  if(!eq) return;
+  _equipeEditId = id;
+  document.getElementById('form-eq-title').textContent = 'Editar funcionário';
+  document.getElementById('eq-nome').value = eq.nome_completo || '';
+  document.getElementById('eq-cpf').value  = formatCPF(eq.cpf || '');
+  document.getElementById('eq-email').value = eq.email || '';
+  document.getElementById('eq-tel').value  = eq.telefone || '';
+  document.getElementById('eq-cargo').value = eq.cargo || '';
+  document.getElementById('eq-erro').style.display = 'none';
+  document.getElementById('form-equipe').style.display = 'block';
+  document.getElementById('form-equipe').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+async function salvarEquipe(){
+  const nome  = document.getElementById('eq-nome').value.trim();
+  const cpf   = document.getElementById('eq-cpf').value.replace(/\D/g,'');
+  const cargo = document.getElementById('eq-cargo').value;
+  const email = document.getElementById('eq-email').value.trim();
+  const tel   = document.getElementById('eq-tel').value.trim();
+  const erro  = document.getElementById('eq-erro');
+  erro.style.display = 'none';
+
+  if(!nome || nome.length < 5){ erro.textContent='Informe o nome completo (mín. 5 caracteres)'; erro.style.display='block'; return; }
+  if(!validaCPFLength(cpf)){    erro.textContent='CPF inválido — precisa ter 11 dígitos'; erro.style.display='block'; return; }
+  if(!cargo){                   erro.textContent='Selecione o cargo'; erro.style.display='block'; return; }
+  if(!validaEmail(email)){      erro.textContent='E-mail inválido'; erro.style.display='block'; return; }
+
+  const btn = document.getElementById('btn-save-eq');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  const payload = {
+    condo_id: _condoAtivo,
+    sindico_user_id: _user.id,
+    nome_completo: nome,
+    cpf, cargo, email,
+    telefone: tel || null,
+    ativo: true,
+    atualizado_em: new Date().toISOString()
+  };
+
+  try{
+    if(_equipeEditId){
+      const { error } = await sb.from('equipe_condo').update(payload).eq('id', _equipeEditId);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('equipe_condo').insert(payload);
+      if(error) throw error;
+    }
+    fecharFormEquipe();
+    await carregarEquipe();
+  }catch(e){
+    btn.disabled = false; btn.textContent = '💾 Salvar';
+    erro.textContent = e.message || 'Erro ao salvar';
+    erro.style.display = 'block';
+  }
+}
+
+async function toggleEquipe(id, novoAtivo){
+  if(novoAtivo){
+    const ativos = _equipeList.filter(e => e.ativo && e.id !== id).length;
+    if(ativos >= 3){ alert('⚠ Você já tem 3 funcionários ativos. Desative outro antes de reativar este.'); return; }
+  }
+  try{
+    const { error } = await sb.from('equipe_condo').update({ativo: novoAtivo, atualizado_em: new Date().toISOString()}).eq('id', id);
+    if(error) throw error;
+    await carregarEquipe();
+  }catch(e){ alert('Erro: '+e.message); }
+}
+
+async function excluirEquipe(id){
+  const eq = _equipeList.find(x => x.id === id);
+  if(!confirm(`Excluir permanentemente ${eq?.nome_completo||'este funcionário'}?\n\nEsta ação não pode ser desfeita.`)) return;
+  try{
+    const { error } = await sb.from('equipe_condo').delete().eq('id', id);
+    if(error) throw error;
+    await carregarEquipe();
+  }catch(e){ alert('Erro: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERFIL — Dados pessoais da síndica
+// ═══════════════════════════════════════════════════════════════════════════
+async function carregarPerfil(){
+  if(!_user) return;
+  const meta = _user.user_metadata || {};
+  document.getElementById('perf-nome').value = meta.nome_completo || meta.nome || '';
+  document.getElementById('perf-cpf').value  = formatCPF(meta.cpf || '');
+  document.getElementById('perf-tel').value  = meta.telefone || '';
+  document.getElementById('perf-email').value = _user.email || '';
+  document.getElementById('perf-email2').value = meta.email_secundario || '';
+  document.getElementById('perf-erro').style.display = 'none';
+  document.getElementById('perf-ok').style.display = 'none';
+}
+
+async function salvarPerfil(){
+  const nome   = document.getElementById('perf-nome').value.trim();
+  const cpf    = document.getElementById('perf-cpf').value.replace(/\D/g,'');
+  const tel    = document.getElementById('perf-tel').value.trim();
+  const email2 = document.getElementById('perf-email2').value.trim();
+  const erro = document.getElementById('perf-erro');
+  const ok = document.getElementById('perf-ok');
+  erro.style.display = 'none'; ok.style.display = 'none';
+
+  if(!nome || nome.length < 5){ erro.textContent='Informe seu nome completo'; erro.style.display='block'; return; }
+  if(!validaCPFLength(cpf)){    erro.textContent='CPF inválido (precisa ter 11 dígitos)'; erro.style.display='block'; return; }
+  if(!tel){                     erro.textContent='Informe telefone/WhatsApp'; erro.style.display='block'; return; }
+  if(email2 && !validaEmail(email2)){ erro.textContent='E-mail secundário inválido'; erro.style.display='block'; return; }
+
+  const btn = document.getElementById('btn-save-perf');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try{
+    const { error } = await sb.auth.updateUser({
+      data: { nome_completo: nome, nome, cpf, telefone: tel, email_secundario: email2 || null }
+    });
+    if(error) throw error;
+    // refresh local user
+    const { data } = await sb.auth.getUser();
+    if(data?.user) _user = data.user;
+    btn.disabled = false; btn.textContent = '💾 Salvar perfil';
+    ok.style.display = 'block';
+    // atualiza header se tiver função
+    if(typeof atualizarHeaderUsuario === 'function') atualizarHeaderUsuario();
+    setTimeout(()=>{ok.style.display='none';}, 4000);
+  }catch(e){
+    btn.disabled = false; btn.textContent = '💾 Salvar perfil';
+    erro.textContent = e.message || 'Erro ao salvar';
+    erro.style.display = 'block';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
