@@ -334,6 +334,17 @@ window.addEventListener('unhandledrejection', function(ev){
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Banner modo demo (?demo=1)
+if(new URLSearchParams(location.search).get('demo')==='1'){
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const b = document.createElement('div');
+    b.style.cssText = 'position:sticky;top:0;background:#D4A24C;color:#1A2E31;padding:8px 14px;text-align:center;font-size:12.5px;font-weight:800;z-index:9999;letter-spacing:.4px;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+    b.innerHTML = '🎬 MODO DEMONSTRAÇÃO — todos os campos liberados, apenas para apresentação';
+    document.body.insertAdjacentElement('afterbegin', b);
+  });
+}
+</script>
+<script>
 // ============================================================
 // Morador form — robust, defensive, with fetch fallback
 // ============================================================
@@ -699,19 +710,33 @@ async function enviarSolicitacao(){
     var titulo = $('titulo').value.trim();
     var desc = $('desc').value.trim();
 
-    // Descrição é OPCIONAL quando for reforma + morador já tem RT (toda info técnica já está nos documentos anexos) — Fase #8 item 2
+    // Modo demo: ?demo=1 desabilita todas as validações + pre-preenche
+    var _isDemoMor = new URLSearchParams(location.search).get('demo') === '1';
+
     var temRtReforma = (cat === 'reforma') && document.getElementById('ref-tem-rt') && document.getElementById('ref-tem-rt').checked;
 
-    if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos do prédio).', 'pin'); return; }
-    if(!cat){ setMsg('err','Selecione o tipo de solicitação.', 'cats'); return; }
-    if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.', 'nome'); return; }
-    if(cpf && cpf.length !== 11){ setMsg('err','CPF inválido — precisa ter 11 dígitos.', 'cpf'); return; }
-    if(!apto){ setMsg('err','Informe seu apartamento.', 'apto'); return; }
-    if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.', 'tel'); return; }
-    if(!email){ setMsg('err','Informe seu e-mail para receber retornos.', 'email'); return; }
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setMsg('err','E-mail inválido.', 'email'); return; }
-    if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo.', 'titulo'); return; }
-    if(!temRtReforma && desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).', 'desc'); return; }
+    if(_isDemoMor){
+      // Pre-fill defaults se vazio (apresentação rápida)
+      pin = pin || 'DEMO';
+      cat = cat || 'reforma';
+      nome = nome || 'Visitante Demonstração';
+      apto = apto || '101';
+      tel = tel || '(19) 99999-9999';
+      email = email || 'demo@diagnostika-pmp.app';
+      titulo = titulo || 'Demonstração — chamado de exemplo';
+      desc = desc || 'Esta é uma demonstração do sistema. Em produção, o morador descreveria sua solicitação aqui em detalhes.';
+    } else {
+      if(!pin){ setMsg('err','Informe o PIN do condomínio (no quadro de avisos do prédio).', 'pin'); return; }
+      if(!cat){ setMsg('err','Selecione o tipo de solicitação.', 'cats'); return; }
+      if(!nome || nome.length<3){ setMsg('err','Informe seu nome completo.', 'nome'); return; }
+      if(cpf && cpf.length !== 11){ setMsg('err','CPF inválido — precisa ter 11 dígitos.', 'cpf'); return; }
+      if(!apto){ setMsg('err','Informe seu apartamento.', 'apto'); return; }
+      if(!tel || tel.replace(/\D/g,'').length<10){ setMsg('err','Informe um WhatsApp válido com DDD.', 'tel'); return; }
+      if(!email){ setMsg('err','Informe seu e-mail para receber retornos.', 'email'); return; }
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setMsg('err','E-mail inválido.', 'email'); return; }
+      if(!titulo || titulo.length<3){ setMsg('err','Informe um assunto/resumo.', 'titulo'); return; }
+      if(!temRtReforma && desc.length<10){ setMsg('err','Descreva com mais detalhes (mínimo 10 caracteres).', 'desc'); return; }
+    }
 
     var unidade = bloco ? (bloco + ' · Apto ' + apto) : ('Apto ' + apto);
 
