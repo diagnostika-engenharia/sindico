@@ -1137,6 +1137,10 @@ async function mostrarApp(){
     // Lista única de condos com os síndicos de cada um
     const porCondo={};
     vincsAll.forEach(v=>{ if(!porCondo[v.condo_id]){ porCondo[v.condo_id]={condo_id:v.condo_id,sindicos:[]}; } porCondo[v.condo_id].sindicos.push(v.nome_exibicao||'—'); });
+    // Em modo equipe, garante que TODOS os condomínios cadastrados em CONDOS apareçam (mesmo sem síndico vinculado)
+    Object.keys(CONDOS).forEach(cid => {
+      if(!porCondo[cid]) porCondo[cid] = {condo_id:cid, sindicos:['(sem síndico vinculado)']};
+    });
     _meusCondos=Object.values(porCondo).map(c=>({condo_id:c.condo_id,nome_exibicao:c.sindicos.join(', ')}));
     document.getElementById('user-role').innerHTML='<span style="background:#7D3C98;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px">🛠️ MODO EQUIPE</span> · '+_meusCondos.length+' condomínios (somente leitura)';
   }
