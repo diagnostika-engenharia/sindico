@@ -3346,7 +3346,7 @@ async function carregarPortaria(){
 }
 
 function atualizarBadgePortariaSindico(){
-  // badge = clandestinas das últimas 24h não revisadas
+  // badge = obras não autorizadas das últimas 24h não revisadas
   const cutoff = Date.now() - 24*3600*1000;
   const n = _portariaEvs.filter(e =>
     e.tipo_evento === 'obra_clandestina' &&
@@ -3380,7 +3380,7 @@ function _statusUnidadeSindica(torre, num){
     new Date(e.hora).getTime() >= cutoff
   );
 
-  // 1. clandestina ativa (não revisada)
+  // 1. obra não autorizada ativa (não revisada)
   const cland = eventosUni.find(e => e.tipo_evento==='obra_clandestina' && !e.revisada_em);
   if(cland){
     const n = eventosUni.length;
@@ -3470,7 +3470,7 @@ function renderPortaria(){
   if(_portFil === 'hoje'){ const d = new Date(); d.setHours(0,0,0,0); cutoffKPI = d.getTime(); }
   else if(_portFil === '7d') cutoffKPI = now - 7*86400000;
   else if(_portFil === '30d') cutoffKPI = now - 30*86400000;
-  else if(_portFil === 'cland') cutoffKPI = 0; // todas as clandestinas
+  else if(_portFil === 'cland') cutoffKPI = 0; // todas as não autorizadas
   const lblPer = _portFil === 'hoje' ? 'hoje' : (_portFil === '7d' ? '7 dias' : (_portFil === '30d' ? '30 dias' : 'total'));
   const evPer = _portariaEvs.filter(e => new Date(e.hora).getTime() >= cutoffKPI);
   const totPer = evPer.length;
