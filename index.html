@@ -1120,11 +1120,19 @@ async function mostrarApp(){
   const {data:vincsProp,error}=await sb.from('user_condos').select('*').eq('user_id',_user.id);
   if(error){ alert('Erro ao carregar condomínios: '+error.message); return; }
 
+  // Modo demo (?demo=1) — interage com todos condomínios sem read-only
+  const _demoSindico = new URLSearchParams(location.search).get('demo')==='1';
+
   if(vincsProp && vincsProp.length){
     // Usuário é síndico — fluxo normal
     _modoEquipe=false;
     _meusCondos=vincsProp;
     document.getElementById('user-role').textContent=vincsProp.length>1?vincsProp.length+' condomínios':'Síndico(a) · '+(CONDOS[vincsProp[0].condo_id]?.nome||'');
+  } else if(_demoSindico){
+    // DEMO: trata como síndico de TODOS os condomínios cadastrados
+    _modoEquipe=false;
+    _meusCondos=Object.keys(CONDOS).map(cid => ({condo_id:cid, nome_exibicao:'Demonstração'}));
+    document.getElementById('user-role').innerHTML='<span style="background:#D4A24C;color:#1A2E31;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🎬 MODO DEMONSTRAÇÃO</span> · '+_meusCondos.length+' condomínios';
   } else {
     // Não tem vínculo próprio — pode ser EQUIPE (acesso panorâmico) ou usuário sem permissão
     const {data:vincsAll}=await sb.from('user_condos').select('*');
