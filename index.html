@@ -1611,10 +1611,12 @@ async function toggleHistorico(demandaId){
   box.style.display='block';
   box.innerHTML='<div style="text-align:center;color:var(--text2);font-size:11px;padding:8px">⏳ Carregando histórico…</div>';
   const eventos=await carregarHistoricoDemanda(demandaId);
-  box.innerHTML=renderTimelineHistorico(eventos);
+  // Fix: descobre a demanda para corrigir nome do autor em eventos 'criada' (trigger DB às vezes pega o síndico)
+  const demanda = (_demandas||[]).concat(_moradores||[]).find(x=>x.id===demandaId);
+  box.innerHTML=renderTimelineHistorico(eventos, demanda);
 }
 
-function renderTimelineHistorico(eventos){
+function renderTimelineHistorico(eventos, demanda){
   if(!eventos.length) return '<div style="color:var(--text2);font-size:11px;padding:6px">Nenhum registro de histórico.</div>';
   function labelEvento(acao, tipo){
     const quem = tipo==='equipe' ? 'pela Diagnóstika' : tipo==='morador' ? 'pelo(a) morador(a)' : 'pelo(a) síndico(a)';
@@ -1632,11 +1634,22 @@ function renderTimelineHistorico(eventos){
     return map[acao] || acao;
   }
   const statusLabels={aberta:'Aberta',em_andamento:'Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
+  // Fix: se demanda veio do morador, o evento 'criada' deve mostrar nome do morador,
+  // não do síndico/auth (trigger DB ocasionalmente registra o user_id da requisição
+  // mesmo quando a demanda foi aberta pelo formulário público do morador).
+  const isMor = demanda && (demanda.origem === 'morador');
   const linhas=eventos.map((e,i)=>{
     const dt=new Date(e.quando);
     const data=dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    const tipoCor=e.quem_tipo==='equipe'?'#7D3C98':'#155B67';
-    const tipoEmoji=e.quem_tipo==='equipe'?'🛠️':'🏢';
+    const isCriadaPorMorador = (e.acao === 'criada') && isMor;
+    const tipoCor = isCriadaPorMorador ? '#7D3C98'
+      : (e.quem_tipo==='equipe' ? '#7D3C98' : '#155B67');
+    const tipoEmoji = isCriadaPorMorador ? '🏠'
+      : (e.quem_tipo==='equipe' ? '🛠️' : '🏢');
+    // Override do nome quando evento de criação de demanda do morador
+    const quemNome = isCriadaPorMorador
+      ? (demanda.morador_nome || e.quem_nome || '—')
+      : (e.quem_nome || '—');
     let detalhe='';
     const d=e.detalhes||{};
     if(e.acao==='criada'){
@@ -1671,7 +1684,7 @@ function renderTimelineHistorico(eventos){
       <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:${tipoCor}15;border:2px solid ${tipoCor};color:${tipoCor};display:flex;align-items:center;justify-content:center;font-size:13px">${tipoEmoji}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:var(--text)">${labelEvento(e.acao, e.quem_tipo)}</div>
-        <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${data} · por <b>${e.quem_nome||'—'}</b></div>
+        <div style="font-size:10.5px;color:var(--text2);margin-top:1px">${data} · por <b>${quemNome}</b></div>
         ${detalhe?'<div style="margin-top:3px;font-size:11px">'+detalhe+'</div>':''}
       </div>
     </div>`;
@@ -2697,19 +2710,28 @@ async function criarDemanda(){
 // ═══════════════════════════════════════════════════════════════════════════
 // MANUTENÇÕES — síndica registra; equipe valida/audita
 // ═══════════════════════════════════════════════════════════════════════════
-let _manutencoes=[], _anexosMnt=[];
+let _manutencoes=[], _anexosMnt=[], _editandoMntId=null;
 
 function toggleFormMnt(){
   if(_modoEquipe){ alert('🛠️ Modo equipe é somente leitura. A Diagnóstika faz vistorias e indica manutenções — a contratação e execução são responsabilidade da sindica.\n\nPeça à sindica para registrar.'); return; }
   const f=document.getElementById('form-mnt');
   const visivel=f.style.display!=='none';
   f.style.display=visivel?'none':'block';
-  if(!visivel){
+  if(visivel){
+    // Está fechando → limpa flag de edição
+    _editandoMntId=null;
+    const btn=document.getElementById('btn-salvar-mnt');
+    if(btn) btn.textContent='💾 Registrar Manutenção';
+  } else {
+    // Abrindo: novo registro (não edição)
+    _editandoMntId=null;
     // Pré-popula data com hoje
     document.getElementById('mnt-data').value=new Date().toISOString().slice(0,10);
     popularSistemasMnt();
     _anexosMnt=[];
     renderAnexosMntPreview();
+    const btn=document.getElementById('btn-salvar-mnt');
+    if(btn) btn.textContent='💾 Registrar Manutenção';
   }
 }
 
@@ -2802,23 +2824,70 @@ async function salvarManutencao(){
 
   const btn=document.getElementById('btn-salvar-mnt');
   btn.disabled=true; btn.textContent='⏳ Salvando…';
+  const payload={
+    tipo, data_execucao, sistema, item_plano:item_plano||null,
+    titulo, descricao:descricao||null,
+    empresa_nome:empresa_nome||null, empresa_cnpj:empresa_cnpj||null,
+    responsavel_nome:responsavel_nome||null, responsavel_doc:responsavel_doc||null,
+    valor, garantia_dias, proxima_data_recomendada,
+    anexos:_anexosMnt,
+    updated_at:new Date().toISOString()
+  };
   try{
-    const {data,error}=await sb.from('manutencoes').insert({
-      condo_id:_condoAtivo, user_id:_user.id,
-      tipo, data_execucao, sistema, item_plano:item_plano||null,
-      titulo, descricao:descricao||null,
-      empresa_nome:empresa_nome||null, empresa_cnpj:empresa_cnpj||null,
-      responsavel_nome:responsavel_nome||null, responsavel_doc:responsavel_doc||null,
-      valor, garantia_dias, proxima_data_recomendada,
-      anexos:_anexosMnt
-    }).select().single();
+    let data, error;
+    if(_editandoMntId){
+      // UPDATE
+      const r=await sb.from('manutencoes').update(payload).eq('id',_editandoMntId).select().single();
+      data=r.data; error=r.error;
+    } else {
+      // INSERT
+      payload.condo_id=_condoAtivo;
+      payload.user_id=_user.id;
+      const r=await sb.from('manutencoes').insert(payload).select().single();
+      data=r.data; error=r.error;
+    }
     if(error) throw error;
-    _anexosMnt=[];
+    const eraEdicao=!!_editandoMntId;
+    _anexosMnt=[]; _editandoMntId=null;
     document.getElementById('form-mnt').style.display='none';
-    alert('✓ Manutenção registrada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'gerado')+'\n\nDocumento adicionado ao Livro de Manutenção Predial do condomínio.');
+    alert(eraEdicao
+      ? '✓ Manutenção atualizada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'—')
+      : '✓ Manutenção registrada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'gerado')+'\n\nDocumento adicionado ao Livro de Manutenção Predial do condomínio.');
     carregarManutencoes();
   }catch(e){ alert('Erro: '+e.message); }
-  finally{ btn.disabled=false; btn.textContent='💾 Registrar Manutenção'; }
+  finally{ btn.disabled=false; btn.textContent=_editandoMntId?'💾 Salvar alterações':'💾 Registrar Manutenção'; }
+}
+
+function editarManutencao(id){
+  if(_modoEquipe){ alert('Modo equipe — somente leitura.'); return; }
+  const m=_manutencoes.find(x=>x.id===id);
+  if(!m){ alert('Manutenção não encontrada.'); return; }
+  if(m.user_id !== _user.id){ alert('Só quem criou pode editar esta manutenção.'); return; }
+  _editandoMntId=id;
+  // Abre form
+  const f=document.getElementById('form-mnt');
+  f.style.display='block';
+  popularSistemasMnt();
+  // Pré-popula
+  document.getElementById('mnt-tipo').value=m.tipo||'preventiva';
+  document.getElementById('mnt-data').value=m.data_execucao||'';
+  document.getElementById('mnt-sistema').value=m.sistema||'';
+  atualizarItensPlano();
+  setTimeout(()=>{ const it=document.getElementById('mnt-item'); if(it) it.value=m.item_plano||''; },50);
+  document.getElementById('mnt-titulo').value=m.titulo||'';
+  document.getElementById('mnt-descricao').value=m.descricao||'';
+  document.getElementById('mnt-empresa').value=m.empresa_nome||'';
+  document.getElementById('mnt-cnpj').value=m.empresa_cnpj||'';
+  document.getElementById('mnt-responsavel').value=m.responsavel_nome||'';
+  document.getElementById('mnt-doc').value=m.responsavel_doc||'';
+  document.getElementById('mnt-valor').value=m.valor||'';
+  document.getElementById('mnt-garantia').value=m.garantia_dias||'';
+  document.getElementById('mnt-proxima').value=m.proxima_data_recomendada||'';
+  _anexosMnt=Array.isArray(m.anexos)?[...m.anexos]:[];
+  renderAnexosMntPreview();
+  document.getElementById('btn-salvar-mnt').textContent='💾 Salvar alterações';
+  // Scroll até o form
+  f.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 async function carregarManutencoes(){
@@ -2886,7 +2955,7 @@ function renderManutencoes(){
         }).join('')}
       </div>`:''}
       ${m.parecer_tecnico?`<div style="background:rgba(27,138,74,.08);border-left:3px solid #1B8A4A;padding:8px 10px;border-radius:0 6px 6px 0;margin-top:8px;font-size:11.5px"><b style="color:#1B8A4A;font-size:10px;text-transform:uppercase">💬 Parecer da Diagnóstika:</b><br>${m.parecer_tecnico}</div>`:''}
-      ${m.user_id===_user?.id && !_modoEquipe?'<div style="margin-top:10px;display:flex;gap:6px"><button onclick="excluirManutencao(\''+m.id+'\')" style="padding:6px 12px;border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗑 Excluir</button></div>':''}
+      ${m.user_id===_user?.id && !_modoEquipe?'<div style="margin-top:10px;display:flex;gap:6px"><button onclick="editarManutencao(\''+m.id+'\')" style="padding:6px 12px;border:1px solid var(--teal);background:var(--teal);color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✏️ Editar</button><button onclick="excluirManutencao(\''+m.id+'\')" style="padding:6px 12px;border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗑 Excluir</button></div>':''}
     </div>`;
   }).join('');
 }
@@ -3550,7 +3619,7 @@ function fmtHoraPort(iso){
   return `${dd}/${mm} ${hh}:${mi}`;
 }
 
-function esc(s){ return (s||'').toString().replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+// esc() já definida na linha ~1811 — usa aquela (mais robusta, trata null)
 
 function abrirCompartilharPortaria(){
   if(!_condoAtivo) return;
