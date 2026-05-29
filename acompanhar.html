@@ -112,6 +112,7 @@ function renderizar(d){
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
       <span class="proto">📋 ${esc(d.protocolo||'—')}</span>
       <span class="status s-${d.status}">${statusLbl[d.status]||d.status}</span>
+      ${renderAguardandoBadgeMorador(d)}
     </div>
     <h2>${esc(d.titulo||'—')}</h2>
     <div class="meta">${esc(CONDOS[d.condo_id]||d.condo_id)} · ${esc(subtipos[d.detalhes?.subtipo_morador]||cats[d.categoria]||d.categoria)} · enviado em ${fmtDt(d.created_at)}</div>
@@ -151,6 +152,20 @@ function renderizar(d){
   `;
   document.getElementById('content').innerHTML = html;
   window._demandaAtual = d;
+}
+
+function renderAguardandoBadgeMorador(d){
+  if(!d) return '';
+  if(d.deletada_em) return '';
+  if(d.status === 'resolvida') return '<span style="background:#1B8A4A;color:#fff;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">✅ RESOLVIDA</span>';
+  if(d.status === 'fechada')   return '<span style="background:#5A7A7E;color:#fff;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🔒 FECHADA</span>';
+  const msgs = Array.isArray(d.mensagens) ? d.mensagens : [];
+  let ultimo = null;
+  if(msgs.length) ultimo = msgs[msgs.length-1].autor;
+  else if(d.resposta) ultimo = 'engenharia';
+  if(!ultimo) return '<span style="background:#D97706;color:#fff;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🛠 AGUARDANDO DIAGNÓSTIKA</span>';
+  if(ultimo === 'engenharia') return '<span style="background:#7D3C98;color:#fff;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">👋 SUA VEZ DE RESPONDER</span>';
+  return '<span style="background:#D97706;color:#fff;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🛠 AGUARDANDO DIAGNÓSTIKA</span>';
 }
 
 function renderMensagensThread(d){

@@ -1807,6 +1807,42 @@ const CATS_SIND = {corretiva:'🔧 Manutenção corretiva',duvida:'❓ Dúvida t
 const URGS_SIND = {baixa:'🟢 Baixa',media:'🟡 Média',alta:'🔴 Alta'};
 const STATUS_SIND = {aberta:'🆕 Aberta',em_andamento:'⏳ Em andamento',resolvida:'Resolvida',fechada:'Fechada'};
 
+// ═════════════════════════════════════════════════════════════
+// "Aguardando ação de X" — do ponto de vista da síndica
+// ═════════════════════════════════════════════════════════════
+function calcAguardandoSindico(d){
+  if(!d) return null;
+  if(d.deletada_em) return null;
+  if(d.status === 'resolvida') return {de:'encerrada', lbl:'Resolvida', cor:'#1B8A4A', icon:'✅'};
+  if(d.status === 'fechada')   return {de:'encerrada', lbl:'Fechada',   cor:'#5A7A7E', icon:'🔒'};
+
+  const msgs = Array.isArray(d.mensagens) ? d.mensagens : [];
+  const origem = (d.origem === 'morador') ? 'morador' : 'sindico';
+
+  let ultimoAutor = null;
+  if(msgs.length) ultimoAutor = msgs[msgs.length-1].autor;
+  else if(d.resposta) ultimoAutor = 'engenharia';
+
+  if(!ultimoAutor){
+    // chamado novo sem trocas
+    return {de:'diagnostika', lbl:'Aguardando Diagnóstika', cor:'#D97706', icon:'🛠'};
+  }
+  if(ultimoAutor === 'engenharia'){
+    // Diagnóstika respondeu — bola está com o solicitante
+    return origem === 'morador'
+      ? {de:'morador', lbl:'Aguardando morador', cor:'#7D3C98', icon:'👤'}
+      : {de:'voce',    lbl:'Sua vez de responder', cor:'#D4A24C', icon:'👋'};
+  }
+  // morador ou síndica respondeu — bola voltou pra Diagnóstika
+  return {de:'diagnostika', lbl:'Aguardando Diagnóstika', cor:'#D97706', icon:'🛠'};
+}
+
+function aguardandoBadgeHTMLSindico(d){
+  const a = calcAguardandoSindico(d);
+  if(!a) return '';
+  return `<span style="background:${a.cor};color:#fff;padding:2px 7px;border-radius:8px;font-size:9.5px;font-weight:800;letter-spacing:.2px;display:inline-flex;align-items:center;gap:2px;margin-left:auto">${a.icon} ${a.lbl}</span>`;
+}
+
 function renderTileSindico(d){
   const fotos = d.fotos || [];
   const sindIdxs = fotos.map((a,i)=>i).filter(i=>!fotos[i] || typeof fotos[i]==='string' || fotos[i].origem!=='diagnostika');
@@ -1841,6 +1877,7 @@ function renderTileSindico(d){
     <div class="tile-head">
       <span class="tile-proto">📋 ${d.protocolo||'—'}</span>
       <span class="tile-status st-${d.status}">${STATUS_SIND[d.status]||d.status}</span>
+      ${aguardandoBadgeHTMLSindico(d)}
     </div>
     <div class="tile-titulo">${esc(d.titulo||'')}</div>
     <div class="tile-meta">${metaExtra}</div>
