@@ -355,6 +355,7 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
       <button class="tab active" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
       <button class="tab" data-tab="agenda" onclick="trocarTab('agenda')"><span class="ic">📅</span>Agenda</button>
       <button class="tab" data-tab="demandas" onclick="trocarTab('demandas')"><span class="ic">💬</span>Demandas <span class="badge-num" id="dem-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="portaria" onclick="trocarTab('portaria')"><span class="ic">🛡️</span>Portaria <span class="badge-num" id="port-count" style="display:none">0</span></button>
       <button class="tab" data-tab="moradores" onclick="trocarTab('moradores')"><span class="ic">🏠</span>Moradores <span class="badge-num" id="mor-count" style="display:none">0</span></button>
       <button class="tab" data-tab="manutencoes" onclick="trocarTab('manutencoes')"><span class="ic">🔧</span>Manutenções <span class="badge-num" id="mnt-count" style="display:none">0</span></button>
       <button class="tab" data-tab="docs" onclick="trocarTab('docs')"><span class="ic">📄</span>Documentos</button>
@@ -453,6 +454,44 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
         <div id="demandas-list"><div class="loading">Carregando…</div></div>
       </div>
     </div>
+
+    <div class="tab-content" data-tab="portaria">
+      <div class="section">
+        <h2>🛡️ Portaria — Movimentação de Prestadores
+          <button onclick="abrirCompartilharPortaria()" style="float:right;background:#155B67;color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📲 Link para portaria</button>
+        </h2>
+        <div style="background:rgba(21,91,103,.06);border-left:3px solid #155B67;padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;margin:10px 0;color:var(--text)">
+          <b style="color:#155B67">ℹ Como funciona:</b> seu(s) porteiro(s) registram cada prestador que entra no condomínio para executar obra/reforma. Você vê em tempo real quem entrou em qual unidade. Se for detectada obra clandestina (sem reforma autorizada), a Diagnóstika é alertada automaticamente.
+        </div>
+
+        <div id="portaria-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px"></div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="portaria-filtros">
+          <button class="port-fchip active" data-fil="hoje" onclick="setPortFil('hoje')">Hoje</button>
+          <button class="port-fchip" data-fil="7d" onclick="setPortFil('7d')">7 dias</button>
+          <button class="port-fchip" data-fil="30d" onclick="setPortFil('30d')">30 dias</button>
+          <button class="port-fchip" data-fil="cland" onclick="setPortFil('cland')" style="margin-left:auto;border-color:#DC2626;color:#DC2626;font-weight:700">⚠ Só clandestinas</button>
+        </div>
+
+        <div id="portaria-list"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+    <style>
+      .port-fchip{padding:7px 13px;border:1.5px solid var(--gray2);background:#fff;color:var(--text2);border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+      .port-fchip.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+      .port-kpi{background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:12px;border-left:4px solid var(--teal)}
+      .port-kpi.alert{border-left-color:#DC2626;background:rgba(220,38,38,.04);animation:portPulse 1.6s infinite}
+      @keyframes portPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+      .port-kpi-tit{font-size:10.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px}
+      .port-kpi-n{font-size:22px;font-weight:800;color:var(--teal);line-height:1}
+      .port-kpi.alert .port-kpi-n{color:#DC2626}
+      .port-ev{background:#fff;border:1px solid var(--gray2);border-radius:9px;padding:12px;margin-bottom:8px;border-left:4px solid var(--teal);display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:flex-start}
+      .port-ev.cland{background:rgba(220,38,38,.05);border-left-color:#DC2626}
+      .port-ev-ic{font-size:22px;line-height:1}
+      .port-ev-t1{font-weight:700;color:var(--text);font-size:13.5px}
+      .port-ev-t2{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4}
+      .port-ev-meta{font-size:10.5px;color:var(--gray3);margin-top:5px}
+    </style>
 
     <div class="tab-content" data-tab="moradores">
       <div class="section">
@@ -999,7 +1038,7 @@ async function abrirCondo(condoId){
 function voltarCondos(){ _condoAtivo=null; renderCondoCards(); document.getElementById('tabs-bar').style.display='none'; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); }
 
 async function carregarTudo(){
-  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos(),carregarCustomItens(),carregarManutencoes()]);
+  await Promise.all([carregarVisitas(),carregarDemandas(),carregarEventos(),carregarCustomItens(),carregarManutencoes(),carregarPortaria()]);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2859,6 +2898,138 @@ function trocarTab(nome){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===nome));
   if(nome==='manutencoes'){ carregarManutencoes(); carregarPreferenciasNotif(); }
+  if(nome==='portaria'){ carregarPortaria(); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PORTARIA (visão da síndica)
+// ═══════════════════════════════════════════════════════════════════════════
+let _portariaEvs = [];
+let _portFil = 'hoje';
+
+function setPortFil(f){
+  _portFil = f;
+  document.querySelectorAll('.port-fchip').forEach(b => b.classList.toggle('active', b.dataset.fil===f));
+  renderPortaria();
+}
+
+async function carregarPortaria(){
+  if(!_condoAtivo || !sb){ return; }
+  try{
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const { data, error } = await sb.from('portaria_eventos')
+      .select('*')
+      .eq('condo_id', _condoAtivo)
+      .gte('hora', cutoff.toISOString())
+      .order('hora', {ascending:false})
+      .limit(300);
+    if(error) throw error;
+    _portariaEvs = data || [];
+    renderPortaria();
+    atualizarBadgePortariaSindico();
+  }catch(e){
+    console.warn('Erro portaria:', e);
+    document.getElementById('portaria-list').innerHTML = `<div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Não foi possível carregar eventos da portaria.<br><small style="opacity:.7">${e.message||e}</small></div>`;
+  }
+}
+
+function atualizarBadgePortariaSindico(){
+  // badge = clandestinas das últimas 24h não revisadas
+  const cutoff = Date.now() - 24*3600*1000;
+  const n = _portariaEvs.filter(e =>
+    e.tipo_evento === 'obra_clandestina' &&
+    new Date(e.hora).getTime() > cutoff &&
+    !e.revisada_em
+  ).length;
+  const b = document.getElementById('port-count');
+  if(b){
+    if(n>0){ b.textContent = n; b.style.display = 'inline-block'; }
+    else b.style.display = 'none';
+  }
+}
+
+function renderPortaria(){
+  let evs = _portariaEvs;
+  const now = Date.now();
+  if(_portFil==='hoje'){
+    const d = new Date(); d.setHours(0,0,0,0);
+    evs = evs.filter(e => new Date(e.hora).getTime() >= d.getTime());
+  } else if(_portFil==='7d'){
+    evs = evs.filter(e => new Date(e.hora).getTime() >= now - 7*86400000);
+  } else if(_portFil==='30d'){
+    evs = evs.filter(e => new Date(e.hora).getTime() >= now - 30*86400000);
+  } else if(_portFil==='cland'){
+    evs = evs.filter(e => e.tipo_evento === 'obra_clandestina');
+  }
+
+  // KPIs (sempre hoje)
+  const dh = new Date(); dh.setHours(0,0,0,0);
+  const evHoje = _portariaEvs.filter(e => new Date(e.hora).getTime() >= dh.getTime());
+  const totHoje = evHoje.length;
+  const entHoje = evHoje.filter(e => e.tipo_evento === 'entrada_prestador').length;
+  const clHoje  = evHoje.filter(e => e.tipo_evento === 'obra_clandestina').length;
+  const ultima  = _portariaEvs[0];
+
+  const kpisEl = document.getElementById('portaria-kpis');
+  if(kpisEl){
+    kpisEl.innerHTML = `
+      <div class="port-kpi"><div class="port-kpi-tit">Entradas hoje</div><div class="port-kpi-n">${entHoje}</div></div>
+      <div class="port-kpi"><div class="port-kpi-tit">Total eventos hoje</div><div class="port-kpi-n">${totHoje}</div></div>
+      <div class="port-kpi ${clHoje?'alert':''}"><div class="port-kpi-tit">⚠ Clandestinas hoje</div><div class="port-kpi-n">${clHoje}</div></div>
+      <div class="port-kpi"><div class="port-kpi-tit">Última movimentação</div><div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.3;margin-top:2px">${ultima ? fmtHoraPort(ultima.hora) : '—'}</div></div>
+    `;
+  }
+
+  const list = document.getElementById('portaria-list');
+  if(!evs.length){
+    list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text2)">
+      <div style="font-size:36px;margin-bottom:8px">🛡️</div>
+      <div style="font-size:13.5px">Nenhum evento da portaria neste período.</div>
+      <div style="font-size:11.5px;margin-top:4px;opacity:.8">Eventos aparecem aqui em tempo real quando o porteiro registra entradas.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = evs.map(e => {
+    const cland = e.tipo_evento === 'obra_clandestina';
+    const icon = cland ? '🚨' : (e.tipo_evento==='entrada_prestador' ? '🔧' : '🚪');
+    const tit  = cland ? 'OBRA CLANDESTINA' : (e.tipo_servico || 'Entrada de prestador');
+    return `<div class="port-ev ${cland?'cland':''}">
+      <div class="port-ev-ic">${icon}</div>
+      <div>
+        <div class="port-ev-t1">${tit} <span style="font-weight:600;color:var(--text2);font-size:12px">· Unidade ${e.torre||'?'}·${e.apto||'?'}</span></div>
+        <div class="port-ev-t2">
+          ${e.prestador_nome ? '<b>👤 '+esc(e.prestador_nome)+'</b>' : ''}
+          ${e.prestador_tel  ? ' · 📞 '+esc(e.prestador_tel) : ''}
+          ${e.observacao     ? '<br>'+esc(e.observacao) : ''}
+        </div>
+        <div class="port-ev-meta">${fmtHoraPort(e.hora)} · Porteiro: ${esc(e.porteiro||'—')}${e.revisada_em?' · <b style="color:#1B8A4A">✓ revisada</b>':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtHoraPort(iso){
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${dd}/${mm} ${hh}:${mi}`;
+}
+
+function esc(s){ return (s||'').toString().replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+function abrirCompartilharPortaria(){
+  if(!_condoAtivo) return;
+  const url = `https://diagnostika-engenharia.github.io/portaria/?c=${_condoAtivo}`;
+  const txt = `Olá! Segue o link da portaria do nosso condomínio. Acesse pelo celular/tablet e identifique-se com seu nome + PIN.\n\n🛡️ ${url}\n\nPIN: (combinar com a Diagnóstika)`;
+  if(navigator.share){
+    navigator.share({title:'Portaria Diagnóstika', text:txt, url}).catch(()=>{});
+  } else {
+    navigator.clipboard?.writeText(url);
+    alert('Link copiado!\n\n'+url);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2878,10 +3049,11 @@ sb.channel('sindico-realtime')
   .on('postgres_changes',{event:'*',schema:'public',table:'demandas'},()=>{ if(_condoAtivo) carregarDemandas(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'app_config'},(p)=>{ if(_condoAtivo && p.new?.key==='eventos_'+_condoAtivo) carregarEventos(); })
   .on('postgres_changes',{event:'*',schema:'public',table:'manutencoes'},()=>{ if(_condoAtivo) carregarManutencoes(); })
+  .on('postgres_changes',{event:'*',schema:'public',table:'portaria_eventos'},()=>{ if(_condoAtivo) carregarPortaria(); })
   .subscribe();
 
 // Auto-refresh a cada 30s
-setInterval(()=>{ if(_condoAtivo){ carregarVisitas(); carregarDemandas(); carregarEventos(); }},30000);
+setInterval(()=>{ if(_condoAtivo){ carregarVisitas(); carregarDemandas(); carregarEventos(); carregarPortaria(); }},30000);
 </script>
 </body>
 </html>
