@@ -469,8 +469,8 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
         <div id="portaria-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px"></div>
 
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="portaria-filtros">
-          <button class="port-fchip active" data-fil="hoje" onclick="setPortFil('hoje')">Hoje</button>
-          <button class="port-fchip" data-fil="7d" onclick="setPortFil('7d')">7 dias</button>
+          <button class="port-fchip" data-fil="hoje" onclick="setPortFil('hoje')">Hoje</button>
+          <button class="port-fchip active" data-fil="7d" onclick="setPortFil('7d')">7 dias</button>
           <button class="port-fchip" data-fil="30d" onclick="setPortFil('30d')">30 dias</button>
           <button class="port-fchip" data-fil="cland" onclick="setPortFil('cland')" style="margin-left:auto;border-color:#DC2626;color:#DC2626;font-weight:700">⚠ Só não autorizadas</button>
         </div>
@@ -3278,7 +3278,7 @@ async function salvarPerfil(){
 // PORTARIA (visão da síndica)
 // ═══════════════════════════════════════════════════════════════════════════
 let _portariaEvs = [];
-let _portFil = 'hoje';
+let _portFil = '7d';
 
 function setPortFil(f){
   _portFil = f;
@@ -3335,30 +3335,44 @@ function renderPortaria(){
     evs = evs.filter(e => e.tipo_evento === 'obra_clandestina');
   }
 
-  // KPIs (sempre hoje)
-  const dh = new Date(); dh.setHours(0,0,0,0);
-  const evHoje = _portariaEvs.filter(e => new Date(e.hora).getTime() >= dh.getTime());
-  const totHoje = evHoje.length;
-  const entHoje = evHoje.filter(e => e.tipo_evento === 'entrada_prestador').length;
-  const clHoje  = evHoje.filter(e => e.tipo_evento === 'obra_clandestina').length;
-  const ultima  = _portariaEvs[0];
+  // KPIs sincronizados com período selecionado
+  let cutoffKPI = 0;
+  if(_portFil === 'hoje'){ const d = new Date(); d.setHours(0,0,0,0); cutoffKPI = d.getTime(); }
+  else if(_portFil === '7d') cutoffKPI = now - 7*86400000;
+  else if(_portFil === '30d') cutoffKPI = now - 30*86400000;
+  else if(_portFil === 'cland') cutoffKPI = 0; // todas as clandestinas
+  const lblPer = _portFil === 'hoje' ? 'hoje' : (_portFil === '7d' ? '7 dias' : (_portFil === '30d' ? '30 dias' : 'total'));
+  const evPer = _portariaEvs.filter(e => new Date(e.hora).getTime() >= cutoffKPI);
+  const totPer = evPer.length;
+  const entPer = evPer.filter(e => e.tipo_evento === 'entrada_prestador').length;
+  const clPer  = evPer.filter(e => e.tipo_evento === 'obra_clandestina').length;
+  const ultima = _portariaEvs[0];
 
   const kpisEl = document.getElementById('portaria-kpis');
   if(kpisEl){
     kpisEl.innerHTML = `
-      <div class="port-kpi"><div class="port-kpi-tit">Entradas hoje</div><div class="port-kpi-n">${entHoje}</div></div>
-      <div class="port-kpi"><div class="port-kpi-tit">Total eventos hoje</div><div class="port-kpi-n">${totHoje}</div></div>
-      <div class="port-kpi ${clHoje?'alert':''}"><div class="port-kpi-tit">⚠ Não autorizadas hoje</div><div class="port-kpi-n">${clHoje}</div></div>
+      <div class="port-kpi"><div class="port-kpi-tit">Entradas (${lblPer})</div><div class="port-kpi-n">${entPer}</div></div>
+      <div class="port-kpi"><div class="port-kpi-tit">Total eventos (${lblPer})</div><div class="port-kpi-n">${totPer}</div></div>
+      <div class="port-kpi ${clPer?'alert':''}"><div class="port-kpi-tit">⚠ Não autorizadas (${lblPer})</div><div class="port-kpi-n">${clPer}</div></div>
       <div class="port-kpi"><div class="port-kpi-tit">Última movimentação</div><div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.3;margin-top:2px">${ultima ? fmtHoraPort(ultima.hora) : '—'}</div></div>
     `;
   }
 
   const list = document.getElementById('portaria-list');
   if(!evs.length){
+    const total7d = _portariaEvs.filter(e => new Date(e.hora).getTime() >= now-7*86400000).length;
+    const total30d = _portariaEvs.filter(e => new Date(e.hora).getTime() >= now-30*86400000).length;
+    let sug = '';
+    if(_portFil === 'hoje' && total7d > 0){
+      sug = `<button onclick="setPortFil('7d')" style="margin-top:10px;background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12.5px">Ver ${total7d} evento(s) dos últimos 7 dias</button>`;
+    } else if(_portFil === '7d' && total30d > 0){
+      sug = `<button onclick="setPortFil('30d')" style="margin-top:10px;background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12.5px">Ver ${total30d} evento(s) dos últimos 30 dias</button>`;
+    }
     list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text2)">
       <div style="font-size:36px;margin-bottom:8px">🛡️</div>
       <div style="font-size:13.5px">Nenhum evento da portaria neste período.</div>
       <div style="font-size:11.5px;margin-top:4px;opacity:.8">Eventos aparecem aqui em tempo real quando o porteiro registra entradas.</div>
+      ${sug}
     </div>`;
     return;
   }
