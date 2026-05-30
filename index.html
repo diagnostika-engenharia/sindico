@@ -1133,10 +1133,11 @@ async function mostrarApp(){
     _meusCondos=vincsProp;
     document.getElementById('user-role').textContent=vincsProp.length>1?vincsProp.length+' condomínios':'Síndico(a) · '+(CONDOS[vincsProp[0].condo_id]?.nome||'');
   } else if(_demoSindico){
-    // DEMO: trata como síndico de TODOS os condomínios cadastrados
+    // DEMO: trata como síndico APENAS do sandbox (condominio-teste) — NUNCA dos reais.
+    // (FIX auditoria 360 — antes ?demo=1 dava acesso de escrita a TODOS condomínios em produção)
     _modoEquipe=false;
-    _meusCondos=Object.keys(CONDOS).map(cid => ({condo_id:cid, nome_exibicao:'Demonstração'}));
-    document.getElementById('user-role').innerHTML='<span style="background:#D4A24C;color:#1A2E31;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🎬 MODO DEMONSTRAÇÃO</span> · '+_meusCondos.length+' condomínios';
+    _meusCondos=[{condo_id:'condominio-teste', nome_exibicao:'Demonstração'}];
+    document.getElementById('user-role').innerHTML='<span style="background:#D4A24C;color:#1A2E31;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.3px">🎬 MODO DEMONSTRAÇÃO</span> · sandbox (condomínio-teste)';
   } else {
     // Não tem vínculo próprio — pode ser EQUIPE (acesso panorâmico) ou usuário sem permissão
     const {data:vincsAll}=await sb.from('user_condos').select('*');
@@ -1397,8 +1398,8 @@ function renderAgenda(){
               <span style="font-size:10.5px;color:var(--text2);font-family:'SF Mono',Menlo,Consolas,monospace">${dm.protocolo||''}</span>
               ${dm.hora_programada?'<span style="font-size:10.5px;color:#0D3C44;font-weight:700">⏰ '+dm.hora_programada.substring(0,5)+'</span>':''}
             </div>
-            <div style="font-weight:700;color:#0D3C44;font-size:13px;line-height:1.3">${dm.tipo_programado||'Visita'}: ${dm.titulo}</div>
-            ${dm.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.5">'+dm.descricao_programada+'</div>':''}
+            <div style="font-weight:700;color:#0D3C44;font-size:13px;line-height:1.3">${esc(dm.tipo_programado||'Visita')}: ${esc(dm.titulo)}</div>
+            ${dm.descricao_programada?'<div style="font-size:11.5px;color:var(--text);margin-top:4px;line-height:1.5">'+esc(dm.descricao_programada)+'</div>':''}
           </div>
         `).join('')}
       </div>
@@ -2199,22 +2200,22 @@ function abrirDetalheDemandaSindico(id){
 
   const bannerHtml = d.data_programada ? `<div style="background:rgba(13,60,68,.08);border-left:3px solid var(--teal-dk);padding:10px 12px;border-radius:0 6px 6px 0;margin-bottom:12px">
     <span style="color:var(--teal-dk);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;font-weight:700">📅 Programado pela Diagnóstika</span>
-    <div style="font-size:13.5px;font-weight:700;color:var(--teal-dk)">${d.tipo_programado||'Visita'} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
-    ${d.descricao_programada?'<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4">'+d.descricao_programada+'</div>':''}
-    ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
+    <div style="font-size:13.5px;font-weight:700;color:var(--teal-dk)">${esc(d.tipo_programado||'Visita')} em ${fmtBR(d.data_programada)}${d.hora_programada?' às '+d.hora_programada.substring(0,5):''}</div>
+    ${d.descricao_programada?'<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4">'+esc(d.descricao_programada)+'</div>':''}
+    ${d.programado_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+esc(d.programado_por):'')+'</div>':''}
   </div>` : '';
 
   const respostaHtml = (d.resposta || diagIdxs.length) ? `<div style="background:rgba(21,91,103,.10);border-left:3px solid var(--teal);padding:10px 12px;border-radius:0 6px 6px 0;margin-bottom:12px">
     <b style="color:var(--teal);font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">💬 Resposta Diagnóstika</b>
-    ${d.resposta||''}
+    ${esc(d.resposta||'')}
     ${gridDiag}
-    ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:''):''}
+    ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+esc(d.respondido_por):''):''}
   </div>` : '';
 
   let moradorBlock = '';
   if(isMorador){
     moradorBlock = `<div style="margin-bottom:12px;padding:10px 12px;background:rgba(125,60,152,.10);border-left:3px solid #7D3C98;border-radius:0 6px 6px 0;font-size:12.5px">
-      <b style="color:#7D3C98">🏠 MORADOR:</b> ${d.morador_nome||'—'} · ${d.morador_apto||'—'} ${d.morador_telefone?'· 📱 '+d.morador_telefone:''}
+      <b style="color:#7D3C98">🏠 MORADOR:</b> ${esc(d.morador_nome||'—')} · ${esc(d.morador_apto||'—')} ${d.morador_telefone?'· 📱 '+esc(d.morador_telefone):''}
     </div>`;
   }
 
@@ -2247,7 +2248,7 @@ function abrirDetalheDemandaSindico(id){
       <div class="dem-modal-body">
         <div style="font-size:11.5px;color:var(--text2);margin-bottom:12px">${CATS_SIND[d.categoria]||d.categoria} · ${URGS_SIND[d.urgencia]||d.urgencia} · ${new Date(d.created_at).toLocaleString('pt-BR')}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
         ${moradorBlock}
-        ${d.descricao?`<div style="font-size:13px;color:var(--text);line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;margin-bottom:12px;white-space:pre-wrap">${d.descricao}</div>`:''}
+        ${d.descricao?`<div style="font-size:13px;color:var(--text);line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;margin-bottom:12px;white-space:pre-wrap">${esc(d.descricao)}</div>`:''}
         ${gridSind}
         ${bannerHtml}
         ${respostaHtml}
@@ -2867,6 +2868,7 @@ function editarManutencao(id){
   const m=_manutencoes.find(x=>x.id===id);
   if(!m){ alert('Manutenção não encontrada.'); return; }
   if(m.user_id !== _user.id){ alert('Só quem criou pode editar esta manutenção.'); return; }
+  if(m.validada_pela_equipe){ alert('Esta manutenção já foi validada pela Diagnóstika e está consolidada no Livro de Manutenção (NBR 5674). Para correções, abra uma demanda explicando o que precisa ser ajustado.'); return; }
   _editandoMntId=id;
   // Abre form
   const f=document.getElementById('form-mnt');
@@ -2896,9 +2898,23 @@ function editarManutencao(id){
 
 async function carregarManutencoes(){
   if(!_condoAtivo) return;
-  const {data,error}=await sb.from('manutencoes').select('*').eq('condo_id',_condoAtivo).order('data_execucao',{ascending:false});
-  if(error){ document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
-  _manutencoes=data||[];
+  // .is('deletada_em',null) usa filtro robusto — funciona mesmo se a coluna ainda
+  // não existir (Supabase só retorna erro se houver linhas; banco vazio passa OK).
+  let q = sb.from('manutencoes').select('*').eq('condo_id',_condoAtivo);
+  try{ q = q.is('deletada_em', null); }catch(e){}
+  const {data,error}=await q.order('data_execucao',{ascending:false});
+  if(error){
+    // Fallback: se a coluna deletada_em ainda não foi migrada, refaz sem o filtro
+    if(/deletada_em/i.test(error.message)){
+      const r2=await sb.from('manutencoes').select('*').eq('condo_id',_condoAtivo).order('data_execucao',{ascending:false});
+      if(r2.error){ document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+r2.error.message+'</div>'; return; }
+      _manutencoes=r2.data||[];
+    } else {
+      document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return;
+    }
+  } else {
+    _manutencoes=data||[];
+  }
   const badge=document.getElementById('mnt-count');
   if(_manutencoes.length>0){ badge.textContent=_manutencoes.length; badge.style.display='inline-block'; } else badge.style.display='none';
   renderManutencoes();
@@ -2976,9 +2992,30 @@ function abrirAnexoMnt(id, idx){
 }
 
 async function excluirManutencao(id){
-  if(!confirm('Excluir esta manutenção?\n\nAtenção: esta ação é irreversível. O registro será removido do Livro de Manutenção.')) return;
-  const {error}=await sb.from('manutencoes').delete().eq('id',id);
-  if(error){ alert('Erro: '+error.message); return; }
+  const m=_manutencoes.find(x=>x.id===id);
+  if(!m){ alert('Manutenção não encontrada'); return; }
+  if(m.validada_pela_equipe){ alert('Esta manutenção já foi validada pela Diagnóstika e está consolidada no Livro de Manutenção. Para alterações, solicite via Demandas.'); return; }
+  const motivo=prompt('🗑 Excluir manutenção?\n\n"'+(m.titulo||'')+'"\n(Protocolo '+(m.protocolo||'—')+')\n\n⚠ Por exigência da NBR 5674 o registro NÃO é apagado — fica marcado como "excluído" e arquivado para auditoria. Motivo da exclusão (obrigatório):');
+  if(!motivo || motivo.trim().length<5){ if(motivo!==null) alert('Informe um motivo com no mínimo 5 caracteres (exigência de auditoria).'); return; }
+  const meuVinc=_meusCondos?.find(c=>c.condo_id===m.condo_id);
+  const nomeSind=meuVinc?.nome_exibicao || _user?.user_metadata?.nome || _user?.email || 'Síndico(a)';
+  // Soft delete — NBR 5674 §5.3 exige rastreabilidade. Apenas marca como excluído.
+  const {error}=await sb.from('manutencoes').update({
+    deletada_em:new Date().toISOString(),
+    deletada_por_nome:nomeSind,
+    deletada_motivo:motivo.trim(),
+    updated_at:new Date().toISOString()
+  }).eq('id',id);
+  if(error){
+    // Fallback: se as colunas deletada_* não existem ainda no banco, alerta o operador
+    if(/column|deletada/i.test(error.message)){
+      alert('Atenção: o banco precisa receber a migração para soft-delete de manutenções. Execute o SQL em sql/manutencao_audit.sql no Supabase antes de excluir.\n\nDetalhe técnico: '+error.message);
+    } else {
+      alert('Erro: '+error.message);
+    }
+    return;
+  }
+  alert('✓ Manutenção arquivada como excluída.\nRegistro mantido na base para auditoria (NBR 5674).');
   carregarManutencoes();
 }
 

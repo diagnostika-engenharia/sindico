@@ -743,6 +743,11 @@ async function enviarSolicitacao(){
     var unidade = bloco ? (bloco + ' · Apto ' + apto) : ('Apto ' + apto);
 
     var detalhes = {};
+    // FIX auditoria 360 — também envia bloco/apto SEPARADOS, pois a Portaria
+    // e o mapa do Síndico filtram por colunas independentes. Sem isso a reforma
+    // aberta pelo morador fica invisível no grid da portaria.
+    detalhes.bloco = bloco || null;
+    detalhes.apto = apto;
     if(cat === 'reforma'){
       var checks = Array.prototype.slice.call(document.querySelectorAll('#ref-tipos input:checked')).map(function(c){ return c.value; });
       detalhes.tipos_servico = checks;
