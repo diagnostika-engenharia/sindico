@@ -384,6 +384,8 @@ function masc_tel_mor(el){
 
 var params = new URLSearchParams(location.search);
 var condoId = params.get('condo') || '';
+// Fix auditoria: em modo demo, força sandbox para não criar chamados reais
+if(new URLSearchParams(location.search).get('demo') === '1') condoId = 'condominio-teste';
 $('condo-label').textContent = CONDOS[condoId] || '⚠ link sem identificação';
 
 if(!CONDOS[condoId]){

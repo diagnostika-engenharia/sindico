@@ -1214,7 +1214,7 @@ function renderVisitas(){
     const nc=itens.filter(i=>i.status==='nao_conforme').length;
     const [y,mo,d]=v.data.split('-').map(Number);
     const tipoTag=v.tipo==='reforma'?'<span style="font-size:9px;background:#7B1FA2;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">🏗️ Reforma</span>':'';
-    const undInfo=v.tipo==='reforma' && (v.bloco||v.apartamento||v.morador)?'<br><small style="color:#7B1FA2;font-weight:600">📍 '+[v.bloco&&'Bl '+v.bloco,v.apartamento&&'Ap '+v.apartamento,v.morador].filter(Boolean).join(' · ')+'</small>':'';
+    const undInfo=v.tipo==='reforma' && (v.bloco||v.apartamento||v.morador)?'<br><small style="color:#7B1FA2;font-weight:600">📍 '+[v.bloco&&'Bl '+esc(v.bloco),v.apartamento&&'Ap '+esc(v.apartamento),v.morador&&esc(v.morador)].filter(Boolean).join(' · ')+'</small>':'';
     return `<div class="visit" onclick="verVisita('${v.id}')">
       <div class="visit-date"><big>${String(d).padStart(2,'0')}</big><small>${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][mo-1]}</small></div>
       <div class="visit-info">
@@ -1236,19 +1236,19 @@ async function verVisita(id){
   m.innerHTML=`<div class="modal">
     <button class="modal-close" onclick="this.closest('.modal-bg').remove()">×</button>
     <h2>${v.tipo==='reforma'?'🏗️ Vistoria de Reforma':'🛠️ Manutenção Preventiva'}</h2>
-    <div class="sub">📅 ${fmtBR(v.data)} ${v.hora||''} · 👷 ${v.engenheiro||'—'}${v.tipo==='reforma'&&(v.bloco||v.apartamento)?'<br>📍 Unidade: '+[v.bloco&&'Bloco '+v.bloco,v.apartamento&&'Apto '+v.apartamento,v.morador&&'· '+v.morador].filter(Boolean).join(' '):''}</div>
+    <div class="sub">📅 ${fmtBR(v.data)} ${v.hora||''} · 👷 ${esc(v.engenheiro||'—')}${v.tipo==='reforma'&&(v.bloco||v.apartamento)?'<br>📍 Unidade: '+[v.bloco&&'Bloco '+esc(v.bloco),v.apartamento&&'Apto '+esc(v.apartamento),v.morador&&'· '+esc(v.morador)].filter(Boolean).join(' '):''}</div>
     <div class="modal-stats">
       <div class="modal-stat green"><big>${conf}</big><small>Conformes</small></div>
       <div class="modal-stat red"><big>${nc}</big><small>Não Conformes</small></div>
       <div class="modal-stat gray"><big>${na}</big><small>N/A</small></div>
     </div>
-    ${v.obs_geral?'<h3>Observações</h3><div style="font-size:12.5px;line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;white-space:pre-wrap">'+v.obs_geral+'</div>':''}
+    ${v.obs_geral?'<h3>Observações</h3><div style="font-size:12.5px;line-height:1.5;background:var(--gray);padding:10px 12px;border-radius:6px;white-space:pre-wrap">'+esc(v.obs_geral)+'</div>':''}
     <h3>Checklist (${itens.length} itens)</h3>
     ${itens.map(([id,i])=>{
       const cls=i.status==='conforme'?'conf':i.status==='nao_conforme'?'nc':'';
       const lbl=i.status==='conforme'?'✓ Conforme':i.status==='nao_conforme'?'✗ Não Conforme':i.status==='na'?'— N/A':'—';
       const fotos=i.fotos||[];
-      return '<div class="item-mod '+cls+'"><div class="nome">'+id.toUpperCase()+' · <small style="color:var(--text2)">'+lbl+'</small></div>'+(i.obs?'<div class="obs">"'+i.obs+'"</div>':'')+(fotos.length?'<div class="fotos-mod">'+fotos.map(f=>{const u=getFotoUrl(f);return '<img src="'+u+'" onclick="ampliar(this.src)">';}).join('')+'</div>':'')+'</div>';
+      return '<div class="item-mod '+cls+'"><div class="nome">'+esc(id.toUpperCase())+' · <small style="color:var(--text2)">'+esc(lbl)+'</small></div>'+(i.obs?'<div class="obs">"'+esc(i.obs)+'"</div>':'')+(fotos.length?'<div class="fotos-mod">'+fotos.map(f=>{const u=getFotoUrl(f);return '<img src="'+u+'" onclick="ampliar(this.src)">';}).join('')+'</div>':'')+'</div>';
     }).join('')}
   </div>`;
   document.body.appendChild(m);
@@ -1748,7 +1748,7 @@ function renderTileMorador(d){
 
   let unidadeHtml = '';
   if(d.status==='aberta' || d.status==='em_andamento'){
-    unidadeHtml = `<span class="tile-unidade">🏠 ${(d.morador_nome||'').split(' ').slice(0,2).join(' ')} · ${d.morador_apto||''}</span>`;
+    unidadeHtml = `<span class="tile-unidade">🏠 ${esc((d.morador_nome||'').split(' ').slice(0,2).join(' '))} · ${esc(d.morador_apto||'')}</span>`;
   }
 
   const classes = ['tile','morador', 's-'+d.status].join(' ');
@@ -2279,7 +2279,7 @@ function detectarTruncamento(){
 }
 
 function abrirAnexo(demId, idx){
-  const d=_demandas.find(x=>x.id===demId);
+  const d=(_demandas||[]).find(x=>x.id===demId)||(_moradores||[]).find(x=>x.id===demId);
   if(!d || !d.fotos || !d.fotos[idx]) return;
   const a=d.fotos[idx];
   const url=getFotoUrl(a);
@@ -2952,13 +2952,13 @@ function renderManutencoes(){
     const anexos=m.anexos||[];
     return `<div class="dem" style="border-left:4px solid ${m.validada_pela_equipe?'#1B8A4A':'#A8BFC2'}">
       <div style="font-size:10.5px;font-weight:700;color:${protoCor};letter-spacing:.5px;margin-bottom:4px;font-family:'SF Mono',Menlo,Consolas,monospace">📋 ${m.protocolo||'—'}${m.validada_pela_equipe?' · <span style="color:#1B8A4A">✓ VALIDADA PELA DIAGNÓSTIKA</span>':''}</div>
-      <div class="dem-head"><div class="dem-titulo">${tipoIcon[m.tipo]||'🔧'} ${m.titulo}</div><span class="dem-status" style="background:${vencido?'#C00000':proximo?'#FBC02D':'#1B8A4A'};color:#fff">${vencido?'⚠ VENCIDA':proximo?'⏳ PRÓXIMO VENC':'✓ EM DIA'}</span></div>
-      <div class="dem-meta">${tipoLabel[m.tipo]||m.tipo} · ${m.sistema||'—'}${m.item_plano?' · '+m.item_plano:''} · 📅 ${fmtBR(m.data_execucao)}</div>
-      ${m.descricao?'<div class="dem-desc">'+m.descricao+'</div>':''}
+      <div class="dem-head"><div class="dem-titulo">${tipoIcon[m.tipo]||'🔧'} ${esc(m.titulo)}</div><span class="dem-status" style="background:${vencido?'#C00000':proximo?'#FBC02D':'#1B8A4A'};color:#fff">${vencido?'⚠ VENCIDA':proximo?'⏳ PRÓXIMO VENC':'✓ EM DIA'}</span></div>
+      <div class="dem-meta">${tipoLabel[m.tipo]||esc(m.tipo)} · ${esc(m.sistema||'—')}${m.item_plano?' · '+esc(m.item_plano):''} · 📅 ${fmtBR(m.data_execucao)}</div>
+      ${m.descricao?'<div class="dem-desc">'+esc(m.descricao)+'</div>':''}
       ${m.empresa_nome?`<div style="background:#F0F4F5;padding:8px 10px;border-radius:6px;margin-top:8px;font-size:11.5px">
         <b style="color:var(--teal);text-transform:uppercase;font-size:10px;letter-spacing:.3px">🏢 Empresa executora</b><br>
-        ${m.empresa_nome}${m.empresa_cnpj?' · CNPJ '+m.empresa_cnpj:''}<br>
-        ${m.responsavel_nome?'<small>👤 '+m.responsavel_nome+(m.responsavel_doc?' · '+m.responsavel_doc:'')+'</small>':''}
+        ${esc(m.empresa_nome)}${m.empresa_cnpj?' · CNPJ '+esc(m.empresa_cnpj):''}<br>
+        ${m.responsavel_nome?'<small>👤 '+esc(m.responsavel_nome)+(m.responsavel_doc?' · '+esc(m.responsavel_doc):'')+'</small>':''}
         ${m.valor?'<br><small>💰 R$ '+m.valor.toFixed(2).replace('.',',')+'</small>':''}
       </div>`:''}
       ${m.garantia_ate||m.proxima_data_recomendada?`<div style="display:flex;gap:10px;margin-top:8px;font-size:11px;color:var(--text2);flex-wrap:wrap">
@@ -2969,12 +2969,12 @@ function renderManutencoes(){
         ${anexos.map((a,i)=>{
           if(a.tipo==='video') return '<div style="position:relative;cursor:pointer" onclick="abrirAnexoMnt(\''+m.id+'\','+i+')"><video src="'+getFotoUrl(a)+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;background:#000" muted></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.8)">▶</div></div>';
           if(a.tipo==='pdf'||a.tipo==='doc'){
-            return '<a href="'+getFotoUrl(a)+'" download="'+(a.nome||'arquivo')+'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;background:rgba(21,91,103,.08);border:1px dashed var(--teal);border-radius:5px;text-decoration:none;color:var(--teal);padding:6px;text-align:center;font-size:10px;gap:4px"><div style="font-size:24px">'+(a.tipo==='pdf'?'📄':'📎')+'</div><div style="word-break:break-all;line-height:1.1">'+(a.nome||'arquivo')+'</div></a>';
+            return '<a href="'+getFotoUrl(a)+'" download="'+esc(a.nome||'arquivo')+'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;background:rgba(21,91,103,.08);border:1px dashed var(--teal);border-radius:5px;text-decoration:none;color:var(--teal);padding:6px;text-align:center;font-size:10px;gap:4px"><div style="font-size:24px">'+(a.tipo==='pdf'?'📄':'📎')+'</div><div style="word-break:break-all;line-height:1.1">'+esc(a.nome||'arquivo')+'</div></a>';
           }
-          return '<img src="'+a.url+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:pointer" onclick="abrirAnexoMnt(\''+m.id+'\','+i+')">';
+          return '<img src="'+getFotoUrl(a)+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px;cursor:pointer" onclick="abrirAnexoMnt(\''+m.id+'\','+i+')">';
         }).join('')}
       </div>`:''}
-      ${m.parecer_tecnico?`<div style="background:rgba(27,138,74,.08);border-left:3px solid #1B8A4A;padding:8px 10px;border-radius:0 6px 6px 0;margin-top:8px;font-size:11.5px"><b style="color:#1B8A4A;font-size:10px;text-transform:uppercase">💬 Parecer da Diagnóstika:</b><br>${m.parecer_tecnico}</div>`:''}
+      ${m.parecer_tecnico?`<div style="background:rgba(27,138,74,.08);border-left:3px solid #1B8A4A;padding:8px 10px;border-radius:0 6px 6px 0;margin-top:8px;font-size:11.5px"><b style="color:#1B8A4A;font-size:10px;text-transform:uppercase">💬 Parecer da Diagnóstika:</b><br>${esc(m.parecer_tecnico)}</div>`:''}
       ${m.user_id===_user?.id && !_modoEquipe?'<div style="margin-top:10px;display:flex;gap:6px"><button onclick="editarManutencao(\''+m.id+'\')" style="padding:6px 12px;border:1px solid var(--teal);background:var(--teal);color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✏️ Editar</button><button onclick="excluirManutencao(\''+m.id+'\')" style="padding:6px 12px;border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">🗑 Excluir</button></div>':''}
     </div>`;
   }).join('');
