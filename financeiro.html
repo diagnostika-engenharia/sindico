@@ -352,7 +352,7 @@ table.tbl{width:100%;border-collapse:collapse}
           <!-- Botões de ação -->
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
             <button class="btn btn-green" onclick="openModalVisitaManual()">+ Novo Reembolso</button>
-            <button class="btn btn-primary" onclick="iniciarGoogleAuth()" id="gcal-btn">
+            <button class="btn btn-primary" onclick="acaoGcalBtn()" id="gcal-btn">
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="16" height="14" rx="2"/><line x1="2" y1="8" x2="18" y2="8"/><line x1="6" y1="2" x2="6" y2="5"/><line x1="14" y1="2" x2="14" y2="5"/></svg>
               Importar Visitas do Google Calendar
             </button>
@@ -774,6 +774,59 @@ table.tbl{width:100%;border-collapse:collapse}
     <div class="modal-ft">
       <button class="btn btn-outline" onclick="closeModal('modal-visita-manual')">Cancelar</button>
       <button class="btn btn-primary" onclick="adicionarVisitaManual()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REEMBOLSO DIGITAL -->
+<div class="modal-bg" id="modal-rem-digital">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd">
+      <h3>Novo Reembolso Digital</h3>
+      <button class="modal-close" onclick="closeModal('modal-rem-digital')">×</button>
+    </div>
+    <div class="modal-bd">
+      <label class="lbl">Data *</label>
+      <input type="date" id="rd-data" class="inp" style="margin-bottom:12px">
+      <label class="lbl">Descrição *</label>
+      <input type="text" id="rd-desc" class="inp" placeholder="Ex: Almoço com cliente, Estacionamento..." style="margin-bottom:12px">
+      <label class="lbl">Categoria *</label>
+      <select id="rd-categoria" class="inp" style="margin-bottom:12px">
+        <option>Alimentação</option>
+        <option>Transporte</option>
+        <option>Estacionamento</option>
+        <option>Pedágio</option>
+        <option>Hospedagem</option>
+        <option>Material</option>
+        <option>Outros</option>
+      </select>
+      <label class="lbl">Valor (R$) *</label>
+      <input type="number" id="rd-valor" class="inp" placeholder="0,00" min="0" step="0.01" style="margin-bottom:16px">
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-rem-digital')">Cancelar</button>
+      <button class="btn btn-green" onclick="salvarReembolsoDigital()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW RELATÓRIO -->
+<div class="modal-bg" id="modal-preview-rel">
+  <div style="background:var(--white);border-radius:14px;width:760px;max-width:97vw;max-height:93vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column">
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--gray2);position:sticky;top:0;background:var(--white);z-index:10">
+      <div style="font-size:14px;font-weight:700;color:var(--teal)">Preview do Relatório de Reembolsos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="adicionarVisitaNoPreview()">+ Adicionar Visita</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirPreviewRel()">🖨 Imprimir</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadPDFPreview()">⬇ PDF</button>
+        <button class="btn btn-green btn-sm" onclick="criarContaPagarPreview()">💳 Criar Conta a Pagar</button>
+        <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray4);line-height:1;padding:0 4px" onclick="closeModal('modal-preview-rel')">×</button>
+      </div>
+    </div>
+    <!-- Corpo do relatório -->
+    <div id="preview-rel-body" style="padding:28px 32px">
+      <!-- preenchido via JS -->
     </div>
   </div>
 </div>
@@ -1232,14 +1285,25 @@ function atualizarStatusGcal(conectado){
     card.classList.add('connected');
     title.textContent='✓ Google Calendar conectado';
     desc.textContent='Calendário autorizado. Selecione o mês e importe as visitas.';
-    btn.textContent='Reconectar';
-    btn.className='btn btn-outline btn-sm';
+    // Atualiza botão de ação para "Importar do Calendar"
+    if(btn){
+      const svg=btn.querySelector('svg');
+      btn.innerHTML='';
+      if(svg)btn.appendChild(svg);
+      btn.appendChild(document.createTextNode(' Importar do Calendar'));
+      btn.className='btn btn-primary';
+    }
   }else{
     card.classList.remove('connected');
     title.textContent='Conectar Google Calendar';
     desc.textContent='Autorize o acesso para importar visitas automaticamente do calendário.';
-    btn.textContent='Conectar';
-    btn.className='btn btn-primary';
+    if(btn){
+      const svg=btn.querySelector('svg');
+      btn.innerHTML='';
+      if(svg)btn.appendChild(svg);
+      btn.appendChild(document.createTextNode(' Conectar'));
+      btn.className='btn btn-primary';
+    }
   }
 }
 
@@ -1544,6 +1608,8 @@ async function gerarRelatorio(){
 
   toast('Relatório gerado!');
   await carregarHistoricoRem();
+  // Abre preview automaticamente (igual ao Manus)
+  await visualizarRelatorio(nomeMes);
 }
 
 // ─── Download PDF ─────────────────────────────────────────────
@@ -1705,7 +1771,7 @@ async function carregarHistoricoRem(){
 
 async function visualizarRelatorio(mes){
   const{data:{user}}=await sb.auth.getUser();
-  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes);
+  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes).order('data',{ascending:true});
   if(!data||!data.length){toast('Sem dados para este mês',true);return;}
   const total=data.reduce((s,r)=>s+r.valor,0);
   const porCidade={};
@@ -1714,14 +1780,122 @@ async function visualizarRelatorio(mes){
     porCidade[r.cidade].qtd++;
     porCidade[r.cidade].valor+=r.valor;
   }
-  const linhas=Object.entries(porCidade).map(([c,d])=>
-    `<div class="relatorio-linha"><span>${c} (${d.qtd} visita${d.qtd>1?'s':''})</span><span>${fmt(d.valor)}</span></div>`
-  ).join('');
-  document.getElementById('relatorio-resumo').innerHTML=`${linhas}<div class="relatorio-linha"><span>TOTAL (${mes})</span><span>${fmt(total)}</span></div>`;
-  document.getElementById('card-relatorio-gerado').style.display='block';
-  document.getElementById('card-relatorio-gerado').scrollIntoView({behavior:'smooth'});
   _relatorio={mes,visitas:data,total,porCidade};
+
+  // Calcular data prevista de pagamento (dia 15 do mês seguinte)
+  const MESES={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11};
+  const partes=mes.toLowerCase().split('/');
+  const mmIdx=MESES[partes[0]]??0;
+  const aaNum=parseInt('20'+partes[1]);
+  const dtPag=new Date(aaNum,mmIdx+1,15);
+  const dtPagStr=dtPag.toLocaleDateString('pt-BR');
+  const dtGer=new Date().toLocaleString('pt-BR');
+
+  const FUNC_MAP={'bc85944b-5b89-4710-886c-1717e8309e24':'Rogério Conceição','a71d23f8-0b1f-4dc5-ae44-829a5c1073a3':'Claudemir Scaranello'};
+  const nomeFunc=FUNC_MAP[user.id]||user.email;
+
+  // Cards de cidade
+  const cidadeCards=Object.entries(porCidade).map(([c,d])=>`
+    <div style="background:#F0FAF4;border:1.5px solid #C8E6C9;border-radius:8px;padding:14px 20px;text-align:center;min-width:130px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${c}</div>
+      <div style="font-size:18px;font-weight:800;color:var(--green)">${fmt(d.valor)}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${d.qtd} visita${d.qtd!==1?'s':''}</div>
+    </div>`).join('');
+
+  // Linhas de visitas
+  const linhasVisitas=data.map(r=>`
+    <tr>
+      <td style="white-space:nowrap">${formatData(r.data)}</td>
+      <td>${esc(r.descricao||'')}</td>
+      <td>${esc(r.cidade||'')}</td>
+      <td style="text-align:right;font-weight:700;color:${r.valor>0?'var(--green)':'var(--text2)'}">${fmt(r.valor)}</td>
+    </tr>`).join('');
+
+  const mesLabel=`${partes[0].charAt(0).toUpperCase()+partes[0].slice(1)}/${partes[1]}`;
+
+  document.getElementById('preview-rel-body').innerHTML=`
+    <!-- Cabeçalho -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" rx="6" fill="#155B67"/><text x="18" y="24" text-anchor="middle" fill="#8DB72A" font-size="18" font-weight="bold">D</text></svg>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--teal)">DIAGNÓSTIKA</div>
+          <div style="font-size:10px;color:var(--text2)">Engenharia</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:900;color:var(--teal);letter-spacing:.5px">RELATÓRIO DE REEMBOLSO</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">Período: ${mesLabel}</div>
+      </div>
+    </div>
+
+    <!-- Info boxes -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="border:1px solid var(--gray2);border-radius:6px;padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Funcionário</div>
+        <div style="font-size:14px;font-weight:700;color:var(--teal)">${nomeFunc}</div>
+      </div>
+      <div style="border:1px solid var(--gray2);border-radius:6px;padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Data Prevista de Pagamento</div>
+        <div style="font-size:14px;font-weight:700;color:var(--teal)">${dtPagStr}</div>
+      </div>
+    </div>
+
+    <!-- Resumo por Cidade -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Resumo por Cidade</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${cidadeCards}</div>
+    </div>
+
+    <!-- Detalhamento de Visitas -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Detalhamento de Visitas</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:var(--teal);color:#fff">
+            <th style="padding:9px 12px;text-align:left;font-weight:700">Data</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:700">Descrição</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:700">Cidade</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:700">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasVisitas}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Total -->
+    <div style="background:var(--teal);color:#fff;display:flex;justify-content:space-between;padding:12px 16px;border-radius:6px;font-size:14px;font-weight:800;margin-bottom:14px">
+      <span>TOTAL A REEMBOLSAR</span>
+      <span>${fmt(total)}</span>
+    </div>
+
+    <!-- Observações -->
+    <div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:12px 14px;border-radius:4px;font-size:12px;color:#78350F;margin-bottom:14px">
+      <strong>Observações:</strong> Este relatório contém despesas de visitas técnicas e deslocamentos. Os valores incluem combustível e pedágios quando aplicável.
+    </div>
+
+    <!-- Rodapé -->
+    <div style="text-align:center;font-size:11px;color:var(--text2);border-top:1px solid var(--gray2);padding-top:10px">
+      Gerado em ${dtGer} | DIAGNÓSTIKA Engenharia
+    </div>
+  `;
+
+  document.getElementById('modal-preview-rel').classList.add('open');
 }
+
+function imprimirPreviewRel(){
+  const corpo=document.getElementById('preview-rel-body').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Relatório de Reembolso</title>
+    <style>body{font-family:'Segoe UI',sans-serif;padding:24px;color:#1A2E31}table{width:100%;border-collapse:collapse}th{background:#155B67;color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #eee}</style>
+    </head><body>${corpo}</body></html>`);
+  w.document.close();
+  w.print();
+}
+function downloadPDFPreview(){if(_relatorio)downloadPDF();else toast('Nenhum relatório carregado',true);}
+function criarContaPagarPreview(){if(_relatorio)criarContaPagar();else toast('Nenhum relatório carregado',true);}
 
 async function downloadPDFMes(mes){
   const{data:{user}}=await sb.auth.getUser();
@@ -1748,7 +1922,56 @@ async function excluirRelatorio(mes){
 
 function exportarExcelRem(){toast('Em breve: exportação para Excel');}
 function processarFatura(input){toast('Em breve: importação de fatura de cartão');}
-function openModalReembolsoDigital(){toast('Em breve: novo reembolso digital');}
+
+// Botão GCal: conecta se não conectado, importa se conectado
+function acaoGcalBtn(){
+  if(_remGoogleToken) importarCalendario();
+  else iniciarGoogleAuth();
+}
+
+// Adicionar visita direto do preview (igual ao Manus)
+function adicionarVisitaNoPreview(){
+  if(!_relatorio){toast('Abra um relatório primeiro',true);return;}
+  closeModal('modal-preview-rel');
+  openModalVisitaManual();
+  // Reabre preview após salvar — monkey-patch temporário
+  const _orig=adicionarVisitaManual;
+  adicionarVisitaManual=async function(){
+    _orig.call(this);
+    adicionarVisitaManual=_orig; // restaura
+    await visualizarRelatorio(_relatorio.mes);
+  };
+}
+
+// Modal Novo Reembolso Digital
+function openModalReembolsoDigital(){
+  document.getElementById('rd-desc').value='';
+  document.getElementById('rd-valor').value='';
+  document.getElementById('rd-data').value=hoje();
+  document.getElementById('rd-categoria').value='Alimentação';
+  document.getElementById('modal-rem-digital').classList.add('open');
+}
+async function salvarReembolsoDigital(){
+  const desc=document.getElementById('rd-desc').value.trim();
+  const valorStr=document.getElementById('rd-valor').value.replace(',','.');
+  const data=document.getElementById('rd-data').value;
+  const cat=document.getElementById('rd-categoria').value;
+  if(!desc||!valorStr||!data){toast('Preencha todos os campos',true);return;}
+  const valor=Math.round(parseFloat(valorStr)*100);
+  if(isNaN(valor)||valor<=0){toast('Valor inválido',true);return;}
+  const{data:{user}}=await sb.auth.getUser();
+  const mes=data.slice(0,7);
+  const nomeMes=new Date(parseInt(mes.slice(0,4)),parseInt(mes.slice(5,7))-1,1)
+    .toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('. ','/');
+  const{error}=await sb.from('fin_reembolsos').insert({
+    user_id:user.id, data, descricao:`[${cat}] ${desc}`,
+    cidade:'Digital', valor, status:'Pendente', mes:nomeMes,
+  });
+  if(error){toast('Erro ao salvar',true);return;}
+  closeModal('modal-rem-digital');
+  toast('Reembolso digital adicionado!');
+  await carregarHistoricoRem();
+}
 
 // ─── Tab switcher ─────────────────────────────────────────────
 function remTab(tab){
