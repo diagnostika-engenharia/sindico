@@ -62,9 +62,15 @@ CREATE TABLE IF NOT EXISTS fin_contas_pagar (
   data_estorno         VARCHAR(10),
   motivo_estorno       TEXT,
   comprovante          TEXT,
+  -- Integração Reembolsos↔Contas a Pagar (ver sql/reembolsos_integracao_pagar.sql)
+  competencia          VARCHAR(7),   -- "abr/26" (mesma chave de fin_reembolsos.mes); NULL = conta comum
+  tipo_reembolso       VARCHAR(10),  -- 'visita' (Claudemir) | 'digital' (Rogério) | NULL
+  responsavel_user_id  UUID,         -- dono do reembolso
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- Idempotência: no máximo 1 conta por (competência, tipo de reembolso)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cp_reembolso ON fin_contas_pagar (competencia, tipo_reembolso);
 
 -- ─── fin_reembolsos ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS fin_reembolsos (

@@ -857,6 +857,13 @@ const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 
+// ─── Responsáveis pelos reembolsos (por tipo, não por quem está logado) ───
+const RESP_REEMBOLSO={
+  visita :{user_id:'a71d23f8-0b1f-4dc5-ae44-829a5c1073a3',nome:'Claudemir Scaranello'}, // trabalho de campo
+  digital:{user_id:'bc85944b-5b89-4710-886c-1717e8309e24',nome:'Rogério Conceição'},     // trabalho remoto
+};
+const ST_AGUARDANDO='Aguardando aprovação';
+
 // ── Helpers ──────────────────────────────────────────────────
 const fmt=v=>'R$ '+(v/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const hoje=()=>new Date().toISOString().slice(0,10);
@@ -970,6 +977,7 @@ async function loadDashFull(){
 
 function badgeSt(status,venc){
   if(status==='Recebido'||status==='Pago')return`<span class="badge ok">✓ ${status}</span>`;
+  if(status===ST_AGUARDANDO)return`<span class="badge pend" style="background:#fff3cd;color:#8a6d3b">📋 Aguardando aprovação</span>`;
   if(isVencido(venc))return`<span class="badge venc">⚠ Vencido</span>`;
   return`<span class="badge pend">⏳ Pendente</span>`;
 }
@@ -1127,6 +1135,7 @@ async function loadPagar(){
       <td>${fmt(r.valor)}</td>
       <td>${badgeSt(r.status,r.data_vencimento)}</td>
       <td style="white-space:nowrap">
+        ${r.status===ST_AGUARDANDO?`<button class="btn btn-primary btn-sm" onclick="aprovarConta(${r.id})">✓ Aprovar e lançar</button> `:''}
         ${r.status==='Pendente'&&!r.estornado?`<button class="btn btn-green btn-sm" onclick="openMarcarPago(${r.id})">Pagar</button> `:''}
         ${r.status==='Pago'&&!r.estornado?`<button class="btn btn-danger btn-sm" onclick="openEstornoP(${r.id})">Estornar</button> `:''}
         <button class="btn btn-outline btn-sm" onclick="editPagar(${r.id})">✎</button>
@@ -1196,8 +1205,15 @@ async function confirmarPago(){
   if(!data){toast('Informe a data',true);return;}
   const upd={status:'Pago',data_pagamento:data};
   if(contaId)upd.conta_bancaria_id=parseInt(contaId);
+  // Busca o vínculo de reembolso antes de atualizar (para cascatear o status)
+  const{data:conta}=await sb.from('fin_contas_pagar').select('competencia,tipo_reembolso').eq('id',id).single();
   const{error}=await sb.from('fin_contas_pagar').update(upd).eq('id',id);
   if(error){toast('Erro',true);return;}
+  // Cascata: marca os reembolsos do mês como Pagos
+  if(conta&&conta.competencia&&conta.tipo_reembolso){
+    const tabela=conta.tipo_reembolso==='digital'?'fin_reembolsos_digitais':'fin_reembolsos';
+    await sb.from(tabela).update({status:'Pago'}).eq('mes',conta.competencia);
+  }
   closeModal('modal-pago');toast('Marcado como pago!');loadPagar();loadDash();
 }
 
@@ -1211,8 +1227,14 @@ async function confirmarEstornoP(){
   const id=document.getElementById('mep-id').value;
   const motivo=document.getElementById('mep-motivo').value.trim();
   if(!motivo){toast('Informe o motivo',true);return;}
+  const{data:conta}=await sb.from('fin_contas_pagar').select('competencia,tipo_reembolso').eq('id',id).single();
   const{error}=await sb.from('fin_contas_pagar').update({status:'Pendente',estornado:true,data_estorno:hoje(),motivo_estorno:motivo,data_pagamento:null,conta_bancaria_id:null}).eq('id',id);
   if(error){toast('Erro',true);return;}
+  // Cascata: reembolsos do mês voltam a Pendente
+  if(conta&&conta.competencia&&conta.tipo_reembolso){
+    const tabela=conta.tipo_reembolso==='digital'?'fin_reembolsos_digitais':'fin_reembolsos';
+    await sb.from(tabela).update({status:'Pendente'}).eq('mes',conta.competencia);
+  }
   closeModal('modal-estorno-p');toast('Estornado');loadPagar();loadDash();
 }
 
@@ -1624,6 +1646,13 @@ async function gerarRelatorio(){
     await sb.from('fin_reembolsos').upsert(remRows,{onConflict:'user_id,google_event_id',ignoreDuplicates:false});
   }
 
+  // Reflete automaticamente em Contas a Pagar (rascunho "Aguardando aprovação",
+  // responsável = Claudemir). Idempotente: regerar o mês só reconcilia o valor.
+  if(total>0){
+    try{ await upsertContaReembolso('visita',nomeMes,total,remRows.length); }
+    catch(e){ console.warn('Falha ao lançar conta a pagar do reembolso:',e.message); }
+  }
+
   toast('Relatório gerado!');
   await carregarHistoricoRem();
   // Abre preview automaticamente (igual ao Manus)
@@ -1687,33 +1716,63 @@ function downloadPDF(){
   doc.save(`reembolso_${mes}.pdf`);
 }
 
-// ─── Criar Conta a Pagar ──────────────────────────────────────
-async function criarContaPagar(){
-  if(!_relatorio){toast('Gere o relatório primeiro.',true);return;}
-  const mes=_relatorio.mes; // formato "jan/26"
+// ─── Lançar reembolso em Contas a Pagar (idempotente, responsável por tipo) ──
+// tipo: 'visita' (Claudemir) | 'digital' (Rogério). status inicial = Aguardando aprovação.
+// Reaproveita 1 conta por (competência, tipo) → nunca duplica; só reconcilia o valor.
+async function upsertContaReembolso(tipo,mes,totalCent,qtd){
   const MESES={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11};
   const partes=mes.toLowerCase().split('/');
   const mmIdx=MESES[partes[0]]??0;
   const anoNum=2000+parseInt(partes[1]);
   const nomeMes=new Date(anoNum,mmIdx,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const{data:{user}}=await sb.auth.getUser();
-  const nome=user.user_metadata?.name||user.email.split('@')[0];
   const mmStr=String(mmIdx+1).padStart(2,'0');
   const diasMes=new Date(anoNum,mmIdx+1,0).getDate();
   const venc=`${anoNum}-${mmStr}-${String(diasMes).padStart(2,'0')}`;
+  const resp=RESP_REEMBOLSO[tipo];
+  const rotuloTipo=tipo==='visita'?'Visitas':'Digitais';
+
+  // Se já existe conta para este mês/tipo e ela já foi paga, não rebaixa o status.
+  const{data:existente}=await sb.from('fin_contas_pagar')
+    .select('id,status,estornado').eq('competencia',mes).eq('tipo_reembolso',tipo).maybeSingle();
+  if(existente&&existente.status==='Pago'&&!existente.estornado){
+    return{skipped:true,motivo:'já pago'};
+  }
 
   const payload={
     categoria:'Reembolsos',
-    fornecedor:`Reembolso ${nome} — ${nomeMes}`,
-    descricao:`${_relatorio.visitas.length} visitas técnicas — ${mes}`,
-    valor:_relatorio.total,
+    fornecedor:`Reembolso ${resp.nome} (${rotuloTipo}) — ${nomeMes}`,
+    descricao:`${qtd} ${tipo==='visita'?'visitas técnicas':'serviços digitais'} — ${mes}`,
+    valor:totalCent,
     dia_vencimento:diasMes,
     data_vencimento:venc,
     recorrente:false,
+    competencia:mes,
+    tipo_reembolso:tipo,
+    responsavel_user_id:resp.user_id,
+    status:existente?existente.status:ST_AGUARDANDO,
   };
-  const{error}=await sb.from('fin_contas_pagar').insert(payload);
-  if(error){toast('Erro ao criar conta a pagar: '+error.message,true);return;}
-  toast('Conta a pagar criada com sucesso!');
+  const{error}=await sb.from('fin_contas_pagar')
+    .upsert(payload,{onConflict:'competencia,tipo_reembolso'});
+  if(error)throw error;
+  return{ok:true,novo:!existente};
+}
+
+// Botão "Criar Conta a Pagar" do relatório de visitas (tipo = visita → Claudemir)
+async function criarContaPagar(){
+  if(!_relatorio){toast('Gere o relatório primeiro.',true);return;}
+  try{
+    const r=await upsertContaReembolso('visita',_relatorio.mes,_relatorio.total,_relatorio.visitas.length);
+    if(r.skipped){toast('Este mês já foi pago — conta mantida.');return;}
+    toast(r.novo?'Lançado em Contas a Pagar (aguardando aprovação)!':'Conta a pagar atualizada!');
+    loadPagar();loadDash();
+  }catch(e){toast('Erro ao lançar: '+e.message,true);}
+}
+
+// Aprovar e lançar: draft → Pendente (passa a contar no fluxo de caixa)
+async function aprovarConta(id){
+  const{error}=await sb.from('fin_contas_pagar').update({status:'Pendente'}).eq('id',id);
+  if(error){toast('Erro ao aprovar: '+error.message,true);return;}
+  toast('Aprovado e lançado no fluxo de caixa!');
   loadPagar();loadDash();
 }
 
