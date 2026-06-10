@@ -1561,7 +1561,7 @@ async function loadCofre() {
       <td style="color:var(--red);font-weight:600">${!isEnt ? fmt(r.valor) : ''}</td>
       <td style="font-weight:700;color:var(--teal)">${fmt(r.saldo_atual)}</td>
       <td>${origemBadge}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deletarMovCofre(${r.id},'${r.data}')">✕</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletarMovCofre(${r.id})">✕</button></td>
     </tr>`;
   }).join('');
 }
@@ -1587,34 +1587,25 @@ async function salvarMovCofre() {
   const valor = Math.round(valorF * 100);
   const {data:{user}} = await sb.auth.getUser();
 
-  // Buscar saldo anterior: última movimentação ANTES desta data
-  const {data:ant} = await sb.from('fin_livro_caixa_cofre')
-    .select('saldo_atual').lt('data',data).order('data',{ascending:false}).order('id',{ascending:false}).limit(1);
-  // Também verificar mesmo dia com id menor (mesmo se mesma data)
-  const saldoAnt = ant && ant.length ? ant[0].saldo_atual : 0;
-  const saldoNovo = tipo === 'Entrada' ? saldoAnt + valor : saldoAnt - valor;
-
   const {error} = await sb.from('fin_livro_caixa_cofre').insert({
     user_id: user.id, data, tipo, descricao: desc, valor,
-    saldo_anterior: saldoAnt, saldo_atual: saldoNovo,
+    saldo_anterior: 0, saldo_atual: 0,
     origem: 'Manual', observacao: obs
   });
   if(error){toast('Erro ao registrar: '+error.message,true);return;}
 
-  // Recalcular movimentações posteriores
-  await recalcularSaldosCofre(data, saldoNovo);
+  await recalcularTodosSaldosCofre();
   closeModal('modal-cofre');
   toast(tipo === 'Entrada' ? 'Entrada registrada!' : 'Saída registrada!');
   loadCofre();
 }
 
-async function recalcularSaldosCofre(dataRef, saldoBase) {
-  // Buscar todas as movimentações APÓS a dataRef (exclusive a que acabamos de inserir)
+async function recalcularTodosSaldosCofre() {
   const {data:rows} = await sb.from('fin_livro_caixa_cofre')
-    .select('id,tipo,valor,data').gt('data',dataRef)
+    .select('id,tipo,valor')
     .order('data',{ascending:true}).order('id',{ascending:true});
   if(!rows || !rows.length) return;
-  let saldo = saldoBase;
+  let saldo = 0;
   for(const r of rows) {
     const saldoAnterior = saldo;
     saldo = r.tipo === 'Entrada' ? saldo + r.valor : saldo - r.valor;
@@ -1622,14 +1613,11 @@ async function recalcularSaldosCofre(dataRef, saldoBase) {
   }
 }
 
-async function deletarMovCofre(id, dataRef) {
-  if(!confirm('Excluir esta movimentação? Os saldos posteriores serão recalculados.')) return;
-  // Buscar saldo anterior da movimentação a deletar
-  const {data:mov} = await sb.from('fin_livro_caixa_cofre').select('saldo_anterior,data').eq('id',id).single();
+async function deletarMovCofre(id) {
+  if(!confirm('Excluir esta movimentação? Os saldos serão recalculados.')) return;
   const {error} = await sb.from('fin_livro_caixa_cofre').delete().eq('id',id);
   if(error){toast('Erro ao excluir',true);return;}
-  // Recalcular posteriores partindo do saldo_anterior da movimentação deletada
-  if(mov) await recalcularSaldosCofre(mov.data, mov.saldo_anterior);
+  await recalcularTodosSaldosCofre();
   toast('Movimentação excluída!');
   loadCofre();
 }
@@ -1637,19 +1625,14 @@ async function deletarMovCofre(id, dataRef) {
 // Entrada automática no Cofre quando conta a receber é paga em Dinheiro
 async function registrarEntradaAutomaticaCofre(conta, dataRecebimento) {
   const {data:{user}} = await sb.auth.getUser();
-  const {data:ant} = await sb.from('fin_livro_caixa_cofre')
-    .select('saldo_atual').lt('data',dataRecebimento)
-    .order('data',{ascending:false}).order('id',{ascending:false}).limit(1);
-  const saldoAnt = ant && ant.length ? ant[0].saldo_atual : 0;
-  const saldoNovo = saldoAnt + conta.valor;
   const {error} = await sb.from('fin_livro_caixa_cofre').insert({
     user_id: user.id, data: dataRecebimento, tipo: 'Entrada',
     descricao: `Recebimento - ${conta.cliente}`,
-    valor: conta.valor, saldo_anterior: saldoAnt, saldo_atual: saldoNovo,
+    valor: conta.valor, saldo_anterior: 0, saldo_atual: 0,
     conta_receber_ref: conta.id, origem: 'Automático',
     observacao: conta.descricao || null
   });
-  if(!error) await recalcularSaldosCofre(dataRecebimento, saldoNovo);
+  if(!error) await recalcularTodosSaldosCofre();
 }
 
 // Verificar callback Google no carregamento da página
