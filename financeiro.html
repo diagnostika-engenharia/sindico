@@ -62,7 +62,7 @@ main.main{flex:1;overflow-y:auto;padding:24px}
 .page-header p{font-size:13px;color:var(--text2);margin-top:2px}
 
 /* ── KPI CARDS ── */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--white);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border-left:4px solid transparent}
 .kpi.green{border-color:var(--green)}
 .kpi.red{border-color:var(--red)}
@@ -127,11 +127,11 @@ body.capturing .rel-acao{display:none!important}
 .chk-row label{font-size:13px;color:var(--text);cursor:pointer}
 
 /* ── REEMBOLSOS ── */
-.gcal-card{background:linear-gradient(135deg,#F0F8FF,#E8F5E9);border:1.5px solid #C8E6C9;border-radius:var(--r);padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:16px}
+.gcal-card{background:linear-gradient(135deg,#F0F8FF,#E8F5E9);border:1.5px solid #C8E6C9;border-radius:var(--r);padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
 .gcal-card.connected{background:linear-gradient(135deg,#F0FAF4,#E8F5E9);border-color:var(--green)}
-.gcal-icon{width:48px;height:48px;flex-shrink:0}
+.gcal-icon{width:30px;height:30px;flex-shrink:0}
 .gcal-info{flex:1}
-.gcal-info h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.gcal-info h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px}
 .gcal-info p{font-size:12px;color:var(--text2)}
 .visit-row-pendente td{background:#FEF9F0}
 .badge-cidade{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
@@ -149,10 +149,10 @@ body.capturing .rel-acao{display:none!important}
 .rem-tab-btn.active{background:var(--teal);color:var(--white);border-color:var(--teal)}
 .rem-tab-btn:not(.active):hover{border-color:var(--turq);color:var(--teal)}
 /* gerador automático */
-.rel-gerador{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 24px;margin-bottom:16px;border-left:4px solid var(--lima)}
-.rel-gerador h3{font-size:14px;font-weight:700;color:var(--teal);margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.rel-gerador p{font-size:12px;color:var(--text2);margin-bottom:16px}
-.rel-gerador-body{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.rel-gerador{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 18px;margin-bottom:12px;border-left:4px solid var(--lima)}
+.rel-gerador h3{font-size:14px;font-weight:700;color:var(--teal);margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.rel-gerador p{font-size:12px;color:var(--text2);margin-bottom:10px}
+.rel-gerador-body{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
 .func-col{display:flex;flex-direction:column;gap:6px;min-width:160px}
 .func-col label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
 .func-col select{border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;background:var(--white);outline:none;color:var(--text);cursor:pointer}
@@ -352,7 +352,7 @@ body.capturing .rel-acao{display:none!important}
         <div id="rem-tab-visita">
 
           <!-- Botões de ação -->
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
             <button class="btn btn-green" onclick="openModalVisitaManual()">+ Novo Reembolso</button>
             <button class="btn btn-primary" onclick="acaoGcalBtn()" id="gcal-btn">
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="16" height="14" rx="2"/><line x1="2" y1="8" x2="18" y2="8"/><line x1="6" y1="2" x2="6" y2="5"/><line x1="14" y1="2" x2="14" y2="5"/></svg>
@@ -421,7 +421,7 @@ body.capturing .rel-acao{display:none!important}
                 Gerar Relatório
               </button>
             </div>
-            <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
               <button class="btn btn-outline btn-sm" onclick="importarCalendario()">📅 Importar do Calendário</button>
               <span id="rem-pendente-aviso" style="font-size:12px;color:var(--warn);display:none">⚠ Confirme as cidades pendentes antes de gerar o relatório</span>
             </div>
