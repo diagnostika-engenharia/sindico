@@ -1742,7 +1742,8 @@ function getMesISO(){
 // ─── Histórico de Reembolsos → Relatórios Gerados ─────────────
 async function carregarHistoricoRem(){
   const{data:{user}}=await sb.auth.getUser();
-  const{data}=await sb.from('fin_reembolsos').select('mes,status,valor,created_at').eq('user_id',user.id).order('mes',{ascending:true});
+  // Reembolsos de Visita são da empresa (campo = Claudemir) — visão consolidada, sem filtro por usuário
+  const{data}=await sb.from('fin_reembolsos').select('mes,status,valor,created_at').order('mes',{ascending:true});
   if(!data||!data.length){
     document.getElementById('tbl-hist-rem').innerHTML='<tr><td colspan="6" class="empty">Nenhum relatório gerado.</td></tr>';
     document.getElementById('kr-reemb').textContent=fmt(0);
@@ -1795,7 +1796,7 @@ async function carregarHistoricoRem(){
 async function visualizarRelatorio(mes){
 try{
   const{data:{user}}=await sb.auth.getUser();
-  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes).order('data',{ascending:true});
+  const{data}=await sb.from('fin_reembolsos').select('*').eq('mes',mes).order('data',{ascending:true});
   if(!data||!data.length){toast('Sem dados para este mês',true);return;}
   const total=data.reduce((s,r)=>s+r.valor,0);
   const porCidade={};
@@ -1983,8 +1984,7 @@ async function baixarImagemRel(){
 }
 
 async function downloadPDFMes(mes){
-  const{data:{user}}=await sb.auth.getUser();
-  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes);
+  const{data}=await sb.from('fin_reembolsos').select('*').eq('mes',mes);
   if(!data||!data.length){toast('Sem dados para este mês',true);return;}
   const total=data.reduce((s,r)=>s+r.valor,0);
   const porCidade={};
@@ -1999,8 +1999,7 @@ async function downloadPDFMes(mes){
 
 async function excluirRelatorio(mes){
   if(!confirm(`Excluir todos os registros de reembolso de ${mes}?`))return;
-  const{data:{user}}=await sb.auth.getUser();
-  await sb.from('fin_reembolsos').delete().eq('user_id',user.id).eq('mes',mes);
+  await sb.from('fin_reembolsos').delete().eq('mes',mes);
   toast('Relatório excluído');
   await carregarHistoricoRem();
 }
@@ -2087,18 +2086,22 @@ async function loadReembolsos(){
   const{data:{user}}=await sb.auth.getUser();
   const nomeUsuario=user.email.split('@')[0].replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());
   // Mapeamento conhecido
+  const CLAUDEMIR_ID='a71d23f8-0b1f-4dc5-ae44-829a5c1073a3';
   const FUNC_MAP={
     'bc85944b-5b89-4710-886c-1717e8309e24':'Rogério Conceição',
     'a71d23f8-0b1f-4dc5-ae44-829a5c1073a3':'Claudemir Scaranello',
   };
+  // Reembolsos de Visita = trabalho de campo do Claudemir. Atribuição padrão = Claudemir;
+  // Rogério disponível como opção secundária (ex.: visitas eventuais dele).
   funcSel.innerHTML='';
-  const nomeReal=FUNC_MAP[user.id]||nomeUsuario;
-  const opt=document.createElement('option');
-  opt.value=user.id;opt.textContent=nomeReal;opt.selected=true;
-  funcSel.appendChild(opt);
+  [{id:CLAUDEMIR_ID,nome:'Claudemir Scaranello'},{id:'bc85944b-5b89-4710-886c-1717e8309e24',nome:'Rogério Conceição'}].forEach((f,i)=>{
+    const opt=document.createElement('option');
+    opt.value=f.id;opt.textContent=f.nome;if(i===0)opt.selected=true;
+    funcSel.appendChild(opt);
+  });
 
-  // Atualizar subtítulo
-  document.getElementById('rem-subtitulo').textContent=`Histórico completo de solicitações de ${nomeReal}`;
+  // Atualizar subtítulo — visão consolidada das visitas (campo: Claudemir)
+  document.getElementById('rem-subtitulo').textContent='Reembolsos de Visita — visão consolidada (campo: Claudemir Scaranello)';
 
   // Inicializar grade de meses
   atualizarMesGrid();
