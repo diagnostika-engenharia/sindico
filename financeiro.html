@@ -1770,6 +1770,7 @@ async function carregarHistoricoRem(){
 }
 
 async function visualizarRelatorio(mes){
+try{
   const{data:{user}}=await sb.auth.getUser();
   const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes).order('data',{ascending:true});
   if(!data||!data.length){toast('Sem dados para este mês',true);return;}
@@ -1882,7 +1883,11 @@ async function visualizarRelatorio(mes){
     </div>
   `;
 
-  document.getElementById('modal-preview-rel').classList.add('open');
+  const modalEl=document.getElementById('modal-preview-rel');
+  console.log('[rel] modal element:',modalEl);
+  modalEl.classList.add('open');
+  console.log('[rel] modal opened, classes:',modalEl.className);
+}catch(e){console.error('[rel] erro:',e);toast('Erro ao abrir preview: '+e.message,true);}
 }
 
 function imprimirPreviewRel(){
