@@ -199,7 +199,7 @@ table.tbl{width:100%;border-collapse:collapse}
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Conciliação<span class="soon">em breve</span></button>
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>DRE<span class="soon">em breve</span></button>
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Fluxo de Caixa<span class="soon">em breve</span></button>
-      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Cofre<span class="soon">em breve</span></button>
+      <button class="sn-btn" id="sn-cofre" onclick="nav('cofre')"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Cofre</button>
 
       <div class="sn-footer">
         <div class="sn-user">
@@ -375,6 +375,42 @@ table.tbl{width:100%;border-collapse:collapse}
         </div>
       </div>
 
+      <!-- COFRE -->
+      <div class="page" id="page-cofre">
+        <div class="page-header">
+          <div><h2>Livro Caixa do Cofre</h2><p>Controle de movimentações de dinheiro em espécie</p></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" onclick="openModalCofre('Entrada')">+ Registrar Entrada</button>
+            <button class="btn" style="background:var(--red);color:#fff" onclick="openModalCofre('Saída')">+ Registrar Saída</button>
+          </div>
+        </div>
+
+        <!-- Saldo Atual -->
+        <div class="card" style="margin-bottom:16px;border-left:4px solid var(--green)">
+          <div style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Saldo Atual do Cofre</div>
+              <div id="cofre-saldo" style="font-size:32px;font-weight:800;color:var(--teal);margin-top:6px">—</div>
+              <div id="cofre-data" style="font-size:12px;color:var(--text2);margin-top:4px"></div>
+            </div>
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+        </div>
+
+        <!-- Tabela de Movimentações -->
+        <div class="card">
+          <div class="card-hd"><h3>Histórico de Movimentações</h3></div>
+          <div class="card-bd">
+            <table class="tbl">
+              <thead><tr>
+                <th>Data</th><th>Descrição</th><th style="color:var(--green)">Entrada</th><th style="color:var(--red)">Saída</th><th>Saldo</th><th>Origem</th><th></th>
+              </tr></thead>
+              <tbody id="tbl-cofre"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -505,6 +541,24 @@ table.tbl{width:100%;border-collapse:collapse}
     <div class="modal-ft">
       <button class="btn btn-outline" onclick="closeModal('modal-estorno-p')">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarEstornoP()">Estornar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: COFRE ENTRADA/SAÍDA -->
+<div class="modal-bg" id="modal-cofre">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="mcf-title">Registrar Entrada</h3><button onclick="closeModal('modal-cofre')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mcf-tipo">
+      <div class="form-row"><label>Data *</label><input id="mcf-data" type="date"></div>
+      <div class="form-row"><label>Descrição *</label><input id="mcf-desc" placeholder="Ex: Recebimento de cliente, Pagamento fornecedor…"></div>
+      <div class="form-row"><label>Valor (R$) *</label><input id="mcf-valor" type="number" min="0.01" step="0.01" placeholder="0,00"></div>
+      <div class="form-row"><label>Observação</label><textarea id="mcf-obs" rows="2" placeholder="Opcional"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-cofre')">Cancelar</button>
+      <button class="btn btn-primary" id="mcf-save" onclick="salvarMovCofre()">Registrar</button>
     </div>
   </div>
 </div>
@@ -646,6 +700,7 @@ function nav(page){
   if(page==='receber')loadReceber();
   if(page==='pagar')loadPagar();
   if(page==='reembolsos')loadReembolsos();
+  if(page==='cofre')loadCofre();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
@@ -804,8 +859,11 @@ async function confirmarRecebido(){
   const forma=document.getElementById('mrec-forma').value;
   const data=document.getElementById('mrec-data').value;
   if(!data){toast('Informe a data',true);return;}
+  const{data:contaAtual}=await sb.from('fin_contas_receber').select('*').eq('id',id).single();
   const{error}=await sb.from('fin_contas_receber').update({status:'Recebido',forma_pagamento:forma,data_recebimento:data}).eq('id',id);
   if(error){toast('Erro',true);return;}
+  // Entrada automática no Cofre se pago em Dinheiro
+  if(forma==='Dinheiro'&&contaAtual) await registrarEntradaAutomaticaCofre(contaAtual,data);
   closeModal('modal-recebido');toast('Marcado como recebido!');loadReceber();loadDash();
 }
 
@@ -1460,6 +1518,138 @@ async function loadReembolsos(){
   const agora=new Date();
   document.getElementById('rem-mes').value=agora.toISOString().slice(0,7);
   await carregarHistoricoRem();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COFRE — LIVRO CAIXA
+// ═══════════════════════════════════════════════════════════════
+
+async function loadCofre() {
+  const {data,error} = await sb.from('fin_livro_caixa_cofre')
+    .select('*')
+    .order('data',{ascending:true})
+    .order('id',{ascending:true});
+  if(error){toast('Erro ao carregar cofre',true);return;}
+  const rows = data||[];
+
+  // Saldo atual = última movimentação
+  const saldo = rows.length ? rows[rows.length-1].saldo_atual : 0;
+  document.getElementById('cofre-saldo').textContent = fmt(saldo);
+  document.getElementById('cofre-saldo').style.color = saldo < 0 ? 'var(--red)' : 'var(--teal)';
+  const hoje2 = new Date().toLocaleDateString('pt-BR');
+  document.getElementById('cofre-data').textContent = 'Última atualização: ' + (rows.length ? formatData(rows[rows.length-1].data) : hoje2);
+
+  if(!rows.length) {
+    document.getElementById('tbl-cofre').innerHTML='<tr><td colspan="7" class="empty">Nenhuma movimentação registrada.</td></tr>';
+    return;
+  }
+
+  // Exibe em ordem cronológica invertida (mais recente primeiro)
+  const reversed = [...rows].reverse();
+  document.getElementById('tbl-cofre').innerHTML = reversed.map(r => {
+    const isEnt = r.tipo === 'Entrada';
+    const origemBadge = r.origem === 'Automático'
+      ? '<span style="font-size:10px;background:#E3F2FD;color:#1565C0;padding:2px 7px;border-radius:10px;font-weight:700">Automático</span>'
+      : '<span style="font-size:10px;background:var(--gray2);color:var(--text2);padding:2px 7px;border-radius:10px;font-weight:700">Manual</span>';
+    return `<tr>
+      <td style="white-space:nowrap">${formatData(r.data)}</td>
+      <td>
+        <div>${esc(r.descricao)}</div>
+        ${r.observacao ? `<div style="font-size:11px;color:var(--text2)">${esc(r.observacao)}</div>` : ''}
+      </td>
+      <td style="color:var(--green);font-weight:600">${isEnt ? fmt(r.valor) : ''}</td>
+      <td style="color:var(--red);font-weight:600">${!isEnt ? fmt(r.valor) : ''}</td>
+      <td style="font-weight:700;color:var(--teal)">${fmt(r.saldo_atual)}</td>
+      <td>${origemBadge}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletarMovCofre(${r.id},'${r.data}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openModalCofre(tipo) {
+  document.getElementById('mcf-tipo').value = tipo;
+  document.getElementById('mcf-title').textContent = tipo === 'Entrada' ? 'Registrar Entrada' : 'Registrar Saída';
+  document.getElementById('mcf-save').style.background = tipo === 'Entrada' ? 'var(--green)' : 'var(--red)';
+  document.getElementById('mcf-data').value = hoje();
+  document.getElementById('mcf-desc').value = '';
+  document.getElementById('mcf-valor').value = '';
+  document.getElementById('mcf-obs').value = '';
+  document.getElementById('modal-cofre').classList.add('open');
+}
+
+async function salvarMovCofre() {
+  const tipo = document.getElementById('mcf-tipo').value;
+  const data = document.getElementById('mcf-data').value;
+  const desc = document.getElementById('mcf-desc').value.trim();
+  const valorF = parseFloat(document.getElementById('mcf-valor').value);
+  const obs = document.getElementById('mcf-obs').value.trim() || null;
+  if(!data || !desc || !valorF || valorF <= 0){toast('Preencha os campos obrigatórios',true);return;}
+  const valor = Math.round(valorF * 100);
+  const {data:{user}} = await sb.auth.getUser();
+
+  // Buscar saldo anterior: última movimentação ANTES desta data
+  const {data:ant} = await sb.from('fin_livro_caixa_cofre')
+    .select('saldo_atual').lt('data',data).order('data',{ascending:false}).order('id',{ascending:false}).limit(1);
+  // Também verificar mesmo dia com id menor (mesmo se mesma data)
+  const saldoAnt = ant && ant.length ? ant[0].saldo_atual : 0;
+  const saldoNovo = tipo === 'Entrada' ? saldoAnt + valor : saldoAnt - valor;
+
+  const {error} = await sb.from('fin_livro_caixa_cofre').insert({
+    user_id: user.id, data, tipo, descricao: desc, valor,
+    saldo_anterior: saldoAnt, saldo_atual: saldoNovo,
+    origem: 'Manual', observacao: obs
+  });
+  if(error){toast('Erro ao registrar: '+error.message,true);return;}
+
+  // Recalcular movimentações posteriores
+  await recalcularSaldosCofre(data, saldoNovo);
+  closeModal('modal-cofre');
+  toast(tipo === 'Entrada' ? 'Entrada registrada!' : 'Saída registrada!');
+  loadCofre();
+}
+
+async function recalcularSaldosCofre(dataRef, saldoBase) {
+  // Buscar todas as movimentações APÓS a dataRef (exclusive a que acabamos de inserir)
+  const {data:rows} = await sb.from('fin_livro_caixa_cofre')
+    .select('id,tipo,valor,data').gt('data',dataRef)
+    .order('data',{ascending:true}).order('id',{ascending:true});
+  if(!rows || !rows.length) return;
+  let saldo = saldoBase;
+  for(const r of rows) {
+    const saldoAnterior = saldo;
+    saldo = r.tipo === 'Entrada' ? saldo + r.valor : saldo - r.valor;
+    await sb.from('fin_livro_caixa_cofre').update({saldo_anterior:saldoAnterior,saldo_atual:saldo}).eq('id',r.id);
+  }
+}
+
+async function deletarMovCofre(id, dataRef) {
+  if(!confirm('Excluir esta movimentação? Os saldos posteriores serão recalculados.')) return;
+  // Buscar saldo anterior da movimentação a deletar
+  const {data:mov} = await sb.from('fin_livro_caixa_cofre').select('saldo_anterior,data').eq('id',id).single();
+  const {error} = await sb.from('fin_livro_caixa_cofre').delete().eq('id',id);
+  if(error){toast('Erro ao excluir',true);return;}
+  // Recalcular posteriores partindo do saldo_anterior da movimentação deletada
+  if(mov) await recalcularSaldosCofre(mov.data, mov.saldo_anterior);
+  toast('Movimentação excluída!');
+  loadCofre();
+}
+
+// Entrada automática no Cofre quando conta a receber é paga em Dinheiro
+async function registrarEntradaAutomaticaCofre(conta, dataRecebimento) {
+  const {data:{user}} = await sb.auth.getUser();
+  const {data:ant} = await sb.from('fin_livro_caixa_cofre')
+    .select('saldo_atual').lt('data',dataRecebimento)
+    .order('data',{ascending:false}).order('id',{ascending:false}).limit(1);
+  const saldoAnt = ant && ant.length ? ant[0].saldo_atual : 0;
+  const saldoNovo = saldoAnt + conta.valor;
+  const {error} = await sb.from('fin_livro_caixa_cofre').insert({
+    user_id: user.id, data: dataRecebimento, tipo: 'Entrada',
+    descricao: `Recebimento - ${conta.cliente}`,
+    valor: conta.valor, saldo_anterior: saldoAnt, saldo_atual: saldoNovo,
+    conta_receber_ref: conta.id, origem: 'Automático',
+    observacao: conta.descricao || null
+  });
+  if(!error) await recalcularSaldosCofre(dataRecebimento, saldoNovo);
 }
 
 // Verificar callback Google no carregamento da página
