@@ -1672,19 +1672,23 @@ function downloadPDF(){
 // ─── Criar Conta a Pagar ──────────────────────────────────────
 async function criarContaPagar(){
   if(!_relatorio){toast('Gere o relatório primeiro.',true);return;}
-  const mes=_relatorio.mes;
-  const[ano,mm]=mes.split('-');
-  const nomeMes=new Date(parseInt(ano),parseInt(mm)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const mes=_relatorio.mes; // formato "jan/26"
+  const MESES={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11};
+  const partes=mes.toLowerCase().split('/');
+  const mmIdx=MESES[partes[0]]??0;
+  const anoNum=2000+parseInt(partes[1]);
+  const nomeMes=new Date(anoNum,mmIdx,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const{data:{user}}=await sb.auth.getUser();
   const nome=user.user_metadata?.name||user.email.split('@')[0];
-  const venc=`${mes}-${String(new Date(parseInt(ano),parseInt(mm),0).getDate()).padStart(2,'0')}`;
+  const mmStr=String(mmIdx+1).padStart(2,'0');
+  const diasMes=new Date(anoNum,mmIdx+1,0).getDate();
+  const venc=`${anoNum}-${mmStr}-${String(diasMes).padStart(2,'0')}`;
 
   const payload={
     categoria:'Reembolsos',
     fornecedor:`Reembolso ${nome} — ${nomeMes}`,
-    descricao:`${_relatorio.visitas.filter(v=>(v.valorFinal||0)>0).length} visitas técnicas`,
+    descricao:`${_relatorio.visitas.length} visitas técnicas — ${mes}`,
     valor:_relatorio.total,
-    dia_vencimento:parseInt(venc.slice(8)),
     data_vencimento:venc,
     recorrente:false,
   };
@@ -1883,11 +1887,8 @@ try{
     </div>
   `;
 
-  const modalEl=document.getElementById('modal-preview-rel');
-  console.log('[rel] modal element:',modalEl);
-  modalEl.classList.add('open');
-  console.log('[rel] modal opened, classes:',modalEl.className);
-}catch(e){console.error('[rel] erro:',e);toast('Erro ao abrir preview: '+e.message,true);}
+  document.getElementById('modal-preview-rel').classList.add('open');
+}catch(e){console.error('[rel]',e);toast('Erro ao abrir preview: '+e.message,true);}
 }
 
 function imprimirPreviewRel(){
