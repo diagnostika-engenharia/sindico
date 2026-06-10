@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Financeiro · Diagnóstika</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --teal:#155B67;--turq:#00B4AC;--lima:#8DB72A;
@@ -123,6 +124,24 @@ table.tbl{width:100%;border-collapse:collapse}
 .chk-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer}
 .chk-row label{font-size:13px;color:var(--text);cursor:pointer}
 
+/* ── REEMBOLSOS ── */
+.gcal-card{background:linear-gradient(135deg,#F0F8FF,#E8F5E9);border:1.5px solid #C8E6C9;border-radius:var(--r);padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:16px}
+.gcal-card.connected{background:linear-gradient(135deg,#F0FAF4,#E8F5E9);border-color:var(--green)}
+.gcal-icon{width:48px;height:48px;flex-shrink:0}
+.gcal-info{flex:1}
+.gcal-info h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.gcal-info p{font-size:12px;color:var(--text2)}
+.visit-row-pendente td{background:#FEF9F0}
+.badge-cidade{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.badge-cidade.auto{background:#E3F2FD;color:#1565C0}
+.badge-cidade.aprendido{background:#F3E5F5;color:#6A1B9A}
+.badge-cidade.pendente{background:#FFF3E0;color:#E65100}
+.badge-cidade.manual{background:#E8F5E9;color:#1B5E20}
+.relatorio-box{background:var(--gray);border-radius:var(--r);padding:16px;margin-top:12px}
+.relatorio-linha{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px}
+.relatorio-linha:last-child{border-bottom:none;font-weight:700;font-size:14px;color:var(--teal)}
+.mes-sel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:var(--white);padding:12px 16px;border-radius:var(--r);box-shadow:var(--shadow)}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:20px;right:20px;background:var(--teal);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;z-index:9999}
 #toast.err{background:var(--red)}
@@ -176,7 +195,7 @@ table.tbl{width:100%;border-collapse:collapse}
       </button>
 
       <div class="sn-section">EM BREVE</div>
-      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Reembolsos<span class="soon">em breve</span></button>
+      <button class="sn-btn" id="sn-reembolsos" onclick="nav('reembolsos')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Reembolsos</button>
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Conciliação<span class="soon">em breve</span></button>
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>DRE<span class="soon">em breve</span></button>
       <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Fluxo de Caixa<span class="soon">em breve</span></button>
@@ -267,6 +286,92 @@ table.tbl{width:100%;border-collapse:collapse}
           <div class="card-bd"><table class="tbl"><thead><tr>
             <th>Fornecedor</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th>
           </tr></thead><tbody id="tbl-pagar"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- REEMBOLSOS -->
+      <div class="page" id="page-reembolsos">
+        <div class="page-header">
+          <div><h2>Reembolsos de Visitas</h2><p>Importe do Google Calendar, confirme as cidades e gere o relatório</p></div>
+          <button class="btn btn-outline btn-sm" onclick="loadReembolsos()">↺ Atualizar</button>
+        </div>
+
+        <!-- Google Calendar Auth -->
+        <div class="gcal-card" id="gcal-auth-card">
+          <svg class="gcal-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <rect width="48" height="48" rx="8" fill="#fff" stroke="#ddd" stroke-width="1"/>
+            <path d="M33 15H15a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V17a2 2 0 00-2-2z" fill="#4285F4"/>
+            <rect x="13" y="21" width="22" height="2" fill="#fff"/>
+            <rect x="13" y="26" width="22" height="2" fill="#fff"/>
+            <rect x="18" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
+            <rect x="27" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
+          </svg>
+          <div class="gcal-info">
+            <h3 id="gcal-status-title">Conectar Google Calendar</h3>
+            <p id="gcal-status-desc">Autorize o acesso para importar visitas automaticamente do calendário.</p>
+          </div>
+          <button class="btn btn-primary" id="gcal-btn" onclick="iniciarGoogleAuth()">Conectar</button>
+        </div>
+
+        <!-- Seletor de Mês + Ações -->
+        <div class="mes-sel">
+          <label style="font-size:12px;font-weight:600;color:var(--text2)">Mês de referência:</label>
+          <input type="month" id="rem-mes" style="border:1.5px solid var(--gray2);border-radius:7px;padding:6px 10px;font-size:13px;outline:none">
+          <button class="btn btn-primary" onclick="importarCalendario()">📅 Importar do Calendário</button>
+          <button class="btn btn-outline" onclick="openModalVisitaManual()">+ Adicionar Manualmente</button>
+          <span id="rem-loading" style="font-size:12px;color:var(--text2);display:none">Importando…</span>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row">
+          <div class="kpi green"><label>Visitas Importadas</label><div class="val" id="kr-visitas">—</div></div>
+          <div class="kpi blue"><label>Total Calculado</label><div class="val" id="kr-total-rem">—</div></div>
+          <div class="kpi" style="border-color:var(--warn)"><label>Pendentes Confirmar</label><div class="val" id="kr-pend-cid">—</div></div>
+          <div class="kpi gray"><label>Já Reembolsado</label><div class="val" id="kr-reemb">—</div></div>
+        </div>
+
+        <!-- Tabela de Visitas -->
+        <div class="card">
+          <div class="card-hd">
+            <h3>Visitas do Mês</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="rem-pendente-aviso" style="font-size:12px;color:var(--warn);display:none">⚠ Confirme as cidades pendentes antes de gerar o relatório</span>
+              <button class="btn btn-green btn-sm" id="btn-gerar-rel" onclick="gerarRelatorio()" style="display:none">📄 Gerar Relatório</button>
+            </div>
+          </div>
+          <div class="card-bd">
+            <table class="tbl">
+              <thead><tr>
+                <th>Data</th><th>Descrição</th><th>Cidade</th><th>Fonte</th><th>Valor Base</th><th>Valor Final</th><th></th>
+              </tr></thead>
+              <tbody id="tbl-visitas"><tr><td colspan="7" class="empty">Selecione um mês e importe do calendário.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Relatório Gerado -->
+        <div class="card" id="card-relatorio-gerado" style="display:none">
+          <div class="card-hd">
+            <h3>📄 Relatório Gerado</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="downloadPDF()">⬇ Baixar PDF</button>
+              <button class="btn btn-primary btn-sm" onclick="criarContaPagar()">💳 Criar Conta a Pagar</button>
+            </div>
+          </div>
+          <div class="card-bd" style="padding:16px">
+            <div id="relatorio-resumo" class="relatorio-box"></div>
+          </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="card" style="margin-top:8px">
+          <div class="card-hd"><h3>Histórico de Reembolsos</h3></div>
+          <div class="card-bd">
+            <table class="tbl">
+              <thead><tr><th>Mês</th><th>Visitas</th><th>Total</th><th>Status</th><th></th></tr></thead>
+              <tbody id="tbl-hist-rem"><tr><td colspan="5" class="empty">Nenhum relatório gerado.</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -404,6 +509,74 @@ table.tbl{width:100%;border-collapse:collapse}
   </div>
 </div>
 
+<!-- MODAL: CONFIRMAR CIDADE -->
+<div class="modal-bg" id="modal-cidade">
+  <div class="modal">
+    <div class="modal-hd"><h3>Confirmar Cidade da Visita</h3><button onclick="closeModal('modal-cidade')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mc-idx">
+      <div class="form-row">
+        <label>Descrição do evento</label>
+        <div id="mc-desc" style="padding:9px 11px;background:var(--gray);border-radius:7px;font-size:13px;color:var(--text2)"></div>
+      </div>
+      <div class="form-row">
+        <label>Cidade *</label>
+        <select id="mc-cidade">
+          <option value="Campinas">Campinas — R$ 20</option>
+          <option value="Hortolândia">Hortolândia — R$ 50</option>
+          <option value="Paulínia">Paulínia — R$ 70</option>
+          <option value="Monte Mor">Monte Mor — R$ 50</option>
+          <option value="Sumaré">Sumaré — R$ 50</option>
+          <option value="Valinhos">Valinhos — R$ 50</option>
+          <option value="Indaiatuba">Indaiatuba — R$ 50</option>
+          <option value="Outra">Outra cidade — R$ 30</option>
+        </select>
+      </div>
+      <div class="chk-row">
+        <input type="checkbox" id="mc-aprender" checked>
+        <label for="mc-aprender">Lembrar esta associação para o futuro</label>
+      </div>
+      <div class="form-row" id="mc-palavra-row">
+        <label>Palavra-chave para aprendizado</label>
+        <input id="mc-palavra" placeholder="Ex: Santa Clara">
+        <div class="hint">Qual palavra do texto identifica esta cidade?</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-cidade')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCidade()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VISITA MANUAL -->
+<div class="modal-bg" id="modal-visita-manual">
+  <div class="modal">
+    <div class="modal-hd"><h3>Adicionar Visita Manualmente</h3><button onclick="closeModal('modal-visita-manual')">×</button></div>
+    <div class="modal-bd">
+      <div class="form-row"><label>Data *</label><input id="vm-data" type="date"></div>
+      <div class="form-row"><label>Descrição *</label><input id="vm-desc" placeholder="Ex: Visita Cond. Santa Clara"></div>
+      <div class="form-row">
+        <label>Cidade *</label>
+        <select id="vm-cidade">
+          <option value="Campinas">Campinas — R$ 20</option>
+          <option value="Hortolândia">Hortolândia — R$ 50</option>
+          <option value="Paulínia">Paulínia — R$ 50</option>
+          <option value="Monte Mor">Monte Mor — R$ 50</option>
+          <option value="Sumaré">Sumaré — R$ 50</option>
+          <option value="Valinhos">Valinhos — R$ 50</option>
+          <option value="Indaiatuba">Indaiatuba — R$ 50</option>
+          <option value="Outra">Outra cidade — R$ 30</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-visita-manual')">Cancelar</button>
+      <button class="btn btn-primary" onclick="adicionarVisitaManual()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -472,6 +645,7 @@ function nav(page){
   if(page==='dash')loadDash();
   if(page==='receber')loadReceber();
   if(page==='pagar')loadPagar();
+  if(page==='reembolsos')loadReembolsos();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
@@ -774,6 +948,523 @@ function toggleRecorrente(pfx){
 }
 document.querySelectorAll('.modal-bg').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+// ═══════════════════════════════════════════════════════════════
+// REEMBOLSOS
+// ═══════════════════════════════════════════════════════════════
+
+const GCAL_CLIENT_ID='199565310671-gire6ckfm03uifa0r4k2b86jpp5kqilo.apps.googleusercontent.com';
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.readonly';
+
+// Tabela de valores por cidade (centavos)
+const CIDADE_VALOR={
+  'Campinas':2000,'Hortolândia':5000,'Paulínia':7000,
+  'Monte Mor':5000,'Sumaré':5000,'Valinhos':5000,
+  'Indaiatuba':5000,'Outra':3000
+};
+
+// Padrões regex de detecção
+const CIDADE_PATTERNS=[
+  {cidade:'Paulínia',   re:/santa\s*clara|sta\.?\s*clara|paulin[ií]a/i},
+  {cidade:'Hortolândia',re:/primavera|malta|doni|lu[ií]s|hortoland/i},
+  {cidade:'Monte Mor',  re:/mont[e\s]*ville|monte\s*mor/i},
+  {cidade:'Campinas',   re:/menotti|campinas/i},
+  {cidade:'Sumaré',     re:/sumar[eé]/i},
+  {cidade:'Valinhos',   re:/valinhos/i},
+  {cidade:'Indaiatuba', re:/indaiatuba/i},
+];
+
+// Palavras que identificam visita
+const INCLUDE_RE=/visita|deslocamento|ir\s+(em|para|até)|pegar|buscar|retirar/i;
+const EXCLUDE_RE=/reuni[aã]o|enviar|liberar|ligar|e-?mail|whatsapp|mensagem|lembrete/i;
+
+let _remVisitas=[];       // visitas do mês atual
+let _remGoogleToken=null; // access token Google
+let _remAprendizado=[];   // cache fin_cidade_aprendizado
+let _relatorio=null;      // relatório gerado
+
+// ─── Google OAuth (implicit flow) ────────────────────────────
+function iniciarGoogleAuth(){
+  const redirect=encodeURIComponent(window.location.origin+window.location.pathname);
+  const scope=encodeURIComponent(GCAL_SCOPE);
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${GCAL_CLIENT_ID}&redirect_uri=${redirect}&response_type=token&scope=${scope}&prompt=consent`;
+  window.location.href=url;
+}
+
+function handleGoogleCallback(){
+  const hash=window.location.hash;
+  if(!hash.includes('access_token='))return;
+  const params=new URLSearchParams(hash.slice(1));
+  const token=params.get('access_token');
+  const expiresIn=parseInt(params.get('expires_in')||'3600');
+  if(!token)return;
+  _remGoogleToken=token;
+  const expiresAt=Date.now()+expiresIn*1000;
+  localStorage.setItem('gcal_token',JSON.stringify({token,expiresAt}));
+  history.replaceState(null,'',window.location.pathname);
+  atualizarStatusGcal(true);
+  toast('Google Calendar conectado!');
+}
+
+function carregarTokenGoogle(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('gcal_token')||'null');
+    if(saved&&saved.expiresAt>Date.now()+60000){
+      _remGoogleToken=saved.token;
+      return true;
+    }
+  }catch{}
+  return false;
+}
+
+function atualizarStatusGcal(conectado){
+  const card=document.getElementById('gcal-auth-card');
+  const title=document.getElementById('gcal-status-title');
+  const desc=document.getElementById('gcal-status-desc');
+  const btn=document.getElementById('gcal-btn');
+  if(conectado){
+    card.classList.add('connected');
+    title.textContent='✓ Google Calendar conectado';
+    desc.textContent='Calendário autorizado. Selecione o mês e importe as visitas.';
+    btn.textContent='Reconectar';
+    btn.className='btn btn-outline btn-sm';
+  }else{
+    card.classList.remove('connected');
+    title.textContent='Conectar Google Calendar';
+    desc.textContent='Autorize o acesso para importar visitas automaticamente do calendário.';
+    btn.textContent='Conectar';
+    btn.className='btn btn-primary';
+  }
+}
+
+// ─── Detecção de cidade ───────────────────────────────────────
+function detectarCidade(texto){
+  // Layer 1: regex fixo
+  for(const{cidade,re}of CIDADE_PATTERNS){
+    if(re.test(texto))return{cidade,fonte:'auto'};
+  }
+  // Layer 2: aprendizado salvo
+  const tl=texto.toLowerCase();
+  for(const a of _remAprendizado){
+    if(tl.includes(a.palavra_chave.toLowerCase()))
+      return{cidade:a.cidade_correta,fonte:'aprendido'};
+  }
+  // Layer 3: pendente
+  return{cidade:'PENDENTE_CIDADE',fonte:'pendente'};
+}
+
+function ehVisita(titulo,desc=''){
+  const texto=(titulo+' '+(desc||'')).toLowerCase();
+  if(EXCLUDE_RE.test(texto))return false;
+  return INCLUDE_RE.test(texto);
+}
+
+// ─── Agrupamento (mesmo dia + mesma cidade) ───────────────────
+function aplicarAgrupamento(visitas){
+  const grupos={};
+  for(const v of visitas){
+    const key=v.data+'|'+v.cidade;
+    if(!grupos[key])grupos[key]=[];
+    grupos[key].push(v);
+  }
+  for(const key of Object.keys(grupos)){
+    const g=grupos[key];
+    const n=g.length;
+    const base=CIDADE_VALOR[g[0].cidade]||3000;
+    if(n===1){
+      g[0].valorFinal=base;
+    }else if(n<=3){
+      g[0].valorFinal=base;
+      for(let i=1;i<n;i++)g[i].valorFinal=0;
+    }else if(n<=5){
+      g[0].valorFinal=Math.round(base*1.5);
+      for(let i=1;i<n;i++)g[i].valorFinal=0;
+    }else{
+      for(const v of g)v.valorFinal=base;
+    }
+  }
+}
+
+// ─── Importar do Google Calendar ─────────────────────────────
+async function importarCalendario(){
+  if(!_remGoogleToken){
+    toast('Conecte o Google Calendar primeiro.',true);return;
+  }
+  const mes=document.getElementById('rem-mes').value;
+  if(!mes){toast('Selecione um mês.',true);return;}
+  document.getElementById('rem-loading').style.display='inline';
+  document.getElementById('btn-gerar-rel').style.display='none';
+  document.getElementById('card-relatorio-gerado').style.display='none';
+
+  const[ano,mm]=mes.split('-');
+  const tMin=`${mes}-01T00:00:00Z`;
+  const ultimoDia=new Date(parseInt(ano),parseInt(mm),0).getDate();
+  const tMax=`${mes}-${String(ultimoDia).padStart(2,'0')}T23:59:59Z`;
+
+  // Carregar aprendizado do Supabase
+  const{data:aprendizado}=await sb.from('fin_cidade_aprendizado').select('*').eq('user_id',(await sb.auth.getUser()).data.user.id);
+  _remAprendizado=aprendizado||[];
+
+  const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(tMin)}&timeMax=${encodeURIComponent(tMax)}&singleEvents=true&orderBy=startTime&maxResults=500`;
+  let resp;
+  try{
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+_remGoogleToken}});
+    if(r.status===401){
+      localStorage.removeItem('gcal_token');_remGoogleToken=null;
+      atualizarStatusGcal(false);toast('Token expirado. Reconecte o Google Calendar.',true);
+      document.getElementById('rem-loading').style.display='none';return;
+    }
+    resp=await r.json();
+  }catch(e){
+    toast('Erro ao buscar calendário.',true);
+    document.getElementById('rem-loading').style.display='none';return;
+  }
+
+  const events=(resp.items||[]);
+  _remVisitas=[];
+  for(const ev of events){
+    const titulo=ev.summary||'';
+    const descEv=ev.description||'';
+    if(!ehVisita(titulo,descEv))continue;
+    const dateStr=ev.start?.date||ev.start?.dateTime?.slice(0,10);
+    if(!dateStr)continue;
+    const det=detectarCidade(titulo+' '+descEv);
+    _remVisitas.push({
+      id:'gcal_'+ev.id,
+      data:dateStr,
+      descricao:titulo,
+      cidade:det.cidade,
+      fonte:det.fonte,
+      valorBase:CIDADE_VALOR[det.cidade]||3000,
+      valorFinal:0,
+      google_event_id:ev.id,
+      source:'google',
+    });
+  }
+
+  // Ordena por data
+  _remVisitas.sort((a,b)=>a.data>b.data?1:-1);
+
+  // Aplica agrupamento (só cidades definidas)
+  const definitivas=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
+  aplicarAgrupamento(definitivas);
+  // Pendentes ficam com valorFinal=0 até confirmação
+
+  document.getElementById('rem-loading').style.display='none';
+  renderTabelaVisitas();
+  atualizarKPIsRem();
+  await carregarHistoricoRem();
+}
+
+// ─── Render tabela de visitas ─────────────────────────────────
+function renderTabelaVisitas(){
+  const tbody=document.getElementById('tbl-visitas');
+  if(!_remVisitas.length){
+    tbody.innerHTML='<tr><td colspan="7" class="empty">Nenhuma visita encontrada para este mês.</td></tr>';
+    document.getElementById('btn-gerar-rel').style.display='none';
+    document.getElementById('rem-pendente-aviso').style.display='none';
+    return;
+  }
+
+  const pendentes=_remVisitas.filter(v=>v.cidade==='PENDENTE_CIDADE');
+  document.getElementById('rem-pendente-aviso').style.display=pendentes.length?'inline':'none';
+  document.getElementById('btn-gerar-rel').style.display=pendentes.length?'none':'inline-flex';
+
+  tbody.innerHTML=_remVisitas.map((v,i)=>{
+    const cls=v.cidade==='PENDENTE_CIDADE'?'visit-row-pendente':'';
+    const cidadeBadge=v.cidade==='PENDENTE_CIDADE'
+      ?`<span class="badge-cidade pendente">⚠ Pendente</span>`
+      :`<span class="badge-cidade ${v.fonte}">${esc(v.cidade)}</span>`;
+    const vBase=v.valorBase?fmt(v.valorBase):'—';
+    const vFinal=v.valorFinal!=null?(v.valorFinal===0?'<span style="color:var(--text2);font-size:12px">Agrupado</span>':fmt(v.valorFinal)):'—';
+    const btns=v.cidade==='PENDENTE_CIDADE'
+      ?`<button class="btn btn-primary btn-sm" onclick="openConfirmarCidade(${i})">Confirmar Cidade</button>`
+      :`<button class="btn btn-outline btn-sm" onclick="openConfirmarCidade(${i})">✎ Cidade</button> <button class="btn btn-danger btn-sm" onclick="removerVisita(${i})">✕</button>`;
+    return`<tr class="${cls}">
+      <td>${formatData(v.data)}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v.descricao)}">${esc(v.descricao)}</td>
+      <td>${cidadeBadge}</td>
+      <td><span style="font-size:11px;color:var(--text2)">${v.fonte==='auto'?'Auto':v.fonte==='aprendido'?'Aprendido':v.fonte==='manual'?'Manual':'Pendente'}</span></td>
+      <td>${vBase}</td>
+      <td><strong>${vFinal}</strong></td>
+      <td style="white-space:nowrap">${btns}</td>
+    </tr>`;
+  }).join('');
+}
+
+function atualizarKPIsRem(){
+  const total=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE').reduce((s,v)=>s+(v.valorFinal||0),0);
+  const pend=_remVisitas.filter(v=>v.cidade==='PENDENTE_CIDADE').length;
+  document.getElementById('kr-visitas').textContent=_remVisitas.length;
+  document.getElementById('kr-total-rem').textContent=fmt(total);
+  document.getElementById('kr-pend-cid').textContent=pend;
+}
+
+function removerVisita(idx){
+  _remVisitas.splice(idx,1);
+  // Reagrupa
+  const def=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
+  def.forEach(v=>v.valorFinal=0);
+  aplicarAgrupamento(def);
+  renderTabelaVisitas();
+  atualizarKPIsRem();
+}
+
+// ─── Confirmar cidade ─────────────────────────────────────────
+function openConfirmarCidade(idx){
+  const v=_remVisitas[idx];
+  document.getElementById('mc-idx').value=idx;
+  document.getElementById('mc-desc').textContent=v.descricao;
+  document.getElementById('mc-cidade').value=v.cidade==='PENDENTE_CIDADE'?'Hortolândia':v.cidade;
+  // Sugere palavra-chave: primeira palavra de conteúdo relevante
+  const palavraSug=v.descricao.split(/\s+/).find(p=>p.length>4)||'';
+  document.getElementById('mc-palavra').value=palavraSug;
+  document.getElementById('modal-cidade').classList.add('open');
+}
+
+async function confirmarCidade(){
+  const idx=parseInt(document.getElementById('mc-idx').value);
+  const cidade=document.getElementById('mc-cidade').value;
+  const aprender=document.getElementById('mc-aprender').checked;
+  const palavra=document.getElementById('mc-palavra').value.trim();
+  const v=_remVisitas[idx];
+
+  v.cidade=cidade;
+  v.fonte='manual';
+  v.valorBase=CIDADE_VALOR[cidade]||3000;
+  v.valorFinal=v.valorBase;
+
+  // Salvar aprendizado
+  if(aprender&&palavra){
+    const{data:{user}}=await sb.auth.getUser();
+    await sb.from('fin_cidade_aprendizado').upsert({
+      user_id:user.id,
+      texto_original:v.descricao,
+      palavra_chave:palavra,
+      cidade_correta:cidade,
+      valor_reembolso:CIDADE_VALOR[cidade]||3000,
+      confianca:100,
+    },{onConflict:'user_id,palavra_chave'});
+    _remAprendizado=_remAprendizado.filter(a=>a.palavra_chave!==palavra);
+    _remAprendizado.push({palavra_chave:palavra,cidade_correta:cidade});
+  }
+
+  // Reagrupa tudo
+  const def=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
+  def.forEach(v=>v.valorFinal=0);
+  aplicarAgrupamento(def);
+
+  closeModal('modal-cidade');
+  renderTabelaVisitas();
+  atualizarKPIsRem();
+  toast('Cidade confirmada!');
+}
+
+// ─── Visita manual ────────────────────────────────────────────
+function openModalVisitaManual(){
+  document.getElementById('vm-data').value=hoje();
+  document.getElementById('vm-desc').value='';
+  document.getElementById('vm-cidade').value='Hortolândia';
+  document.getElementById('modal-visita-manual').classList.add('open');
+}
+
+function adicionarVisitaManual(){
+  const data=document.getElementById('vm-data').value;
+  const desc=document.getElementById('vm-desc').value.trim();
+  const cidade=document.getElementById('vm-cidade').value;
+  if(!data||!desc){toast('Preencha todos os campos',true);return;}
+  const nova={
+    id:'manual_'+Date.now(),
+    data,descricao:desc,cidade,fonte:'manual',
+    valorBase:CIDADE_VALOR[cidade]||3000,valorFinal:0,source:'manual'
+  };
+  _remVisitas.push(nova);
+  _remVisitas.sort((a,b)=>a.data>b.data?1:-1);
+  const def=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
+  def.forEach(v=>v.valorFinal=0);
+  aplicarAgrupamento(def);
+  closeModal('modal-visita-manual');
+  renderTabelaVisitas();
+  atualizarKPIsRem();
+  toast('Visita adicionada!');
+}
+
+// ─── Gerar Relatório ──────────────────────────────────────────
+async function gerarRelatorio(){
+  const mes=document.getElementById('rem-mes').value;
+  if(!mes){toast('Selecione o mês',true);return;}
+  const visitasFin=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
+  const total=visitasFin.reduce((s,v)=>s+(v.valorFinal||0),0);
+
+  // Resumo por cidade
+  const porCidade={};
+  for(const v of visitasFin){
+    if(!porCidade[v.cidade])porCidade[v.cidade]={qtd:0,valor:0};
+    porCidade[v.cidade].qtd++;
+    porCidade[v.cidade].valor+=v.valorFinal||0;
+  }
+
+  _relatorio={mes,visitas:visitasFin,total,porCidade};
+
+  // Exibir resumo
+  const linhas=Object.entries(porCidade).map(([c,d])=>
+    `<div class="relatorio-linha"><span>${c} (${d.qtd} visita${d.qtd>1?'s':''})</span><span>${fmt(d.valor)}</span></div>`
+  ).join('');
+  document.getElementById('relatorio-resumo').innerHTML=`
+    ${linhas}
+    <div class="relatorio-linha"><span>TOTAL DO MÊS (${mes.slice(5,7)}/${mes.slice(0,4)})</span><span>${fmt(total)}</span></div>
+  `;
+  document.getElementById('card-relatorio-gerado').style.display='block';
+
+  // Salvar no Supabase
+  const{data:{user}}=await sb.auth.getUser();
+  const[ano,mm]=mes.split('-');
+  const nomeMes=new Date(parseInt(ano),parseInt(mm)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('. ','/');
+
+  // Upsert em fin_reembolsos (uma linha por visita que tem valor > 0)
+  const remRows=visitasFin.filter(v=>(v.valorFinal||0)>0).map(v=>({
+    user_id:user.id,
+    data:v.data,
+    descricao:v.descricao,
+    cidade:v.cidade,
+    valor:v.valorFinal,
+    status:'Pendente',
+    mes:nomeMes,
+    google_event_id:v.google_event_id||null,
+  }));
+  if(remRows.length){
+    await sb.from('fin_reembolsos').upsert(remRows,{onConflict:'user_id,google_event_id',ignoreDuplicates:false});
+  }
+
+  toast('Relatório gerado!');
+  await carregarHistoricoRem();
+}
+
+// ─── Download PDF ─────────────────────────────────────────────
+function downloadPDF(){
+  if(!_relatorio){toast('Gere o relatório primeiro.',true);return;}
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const mes=_relatorio.mes;
+  const[ano,mm]=mes.split('-');
+  const nomeMes=new Date(parseInt(ano),parseInt(mm)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  doc.setFillColor(21,91,103);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);doc.setFont('helvetica','bold');
+  doc.text('Relatório de Reembolsos — Diagnóstika Engenharia',14,12);
+  doc.setFontSize(11);doc.setFont('helvetica','normal');
+  doc.text(`Período: ${nomeMes}`,14,20);
+
+  doc.setTextColor(30,30,30);
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('Detalhamento de Visitas',14,38);
+
+  // Tabela
+  let y=44;
+  doc.setFillColor(240,242,245);doc.rect(14,y-4,182,7,'F');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('Data',16,y);doc.text('Descrição',40,y);doc.text('Cidade',140,y);doc.text('Valor',185,y,'right');
+  y+=6;doc.setFont('helvetica','normal');
+
+  for(const v of _relatorio.visitas){
+    if(y>270){doc.addPage();y=20;}
+    const vStr=(v.valorFinal||0)===0?'(agrupado)':fmt(v.valorFinal);
+    doc.text(formatData(v.data),16,y);
+    doc.text(String(v.descricao||'').slice(0,40),40,y);
+    doc.text(v.cidade,140,y);
+    doc.text(vStr,185,y,'right');
+    y+=6;
+    doc.setDrawColor(220,220,220);doc.line(14,y-2,196,y-2);
+  }
+
+  y+=4;
+  // Resumo por cidade
+  doc.setFont('helvetica','bold');doc.text('Resumo por Cidade',14,y);y+=6;
+  doc.setFont('helvetica','normal');
+  for(const[c,d]of Object.entries(_relatorio.porCidade)){
+    doc.text(`${c}: ${d.qtd} visita(s)`,20,y);
+    doc.text(fmt(d.valor),185,y,'right');
+    y+=6;
+  }
+  y+=2;
+  doc.setDrawColor(21,91,103);doc.line(14,y,196,y);y+=6;
+  doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('TOTAL DO MÊS',14,y);
+  doc.text(fmt(_relatorio.total),185,y,'right');
+
+  doc.save(`reembolso_${mes}.pdf`);
+}
+
+// ─── Criar Conta a Pagar ──────────────────────────────────────
+async function criarContaPagar(){
+  if(!_relatorio){toast('Gere o relatório primeiro.',true);return;}
+  const mes=_relatorio.mes;
+  const[ano,mm]=mes.split('-');
+  const nomeMes=new Date(parseInt(ano),parseInt(mm)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const{data:{user}}=await sb.auth.getUser();
+  const nome=user.user_metadata?.name||user.email.split('@')[0];
+  const venc=`${mes}-${String(new Date(parseInt(ano),parseInt(mm),0).getDate()).padStart(2,'0')}`;
+
+  const payload={
+    categoria:'Reembolsos',
+    fornecedor:`Reembolso ${nome} — ${nomeMes}`,
+    descricao:`${_relatorio.visitas.filter(v=>(v.valorFinal||0)>0).length} visitas técnicas`,
+    valor:_relatorio.total,
+    dia_vencimento:parseInt(venc.slice(8)),
+    data_vencimento:venc,
+    recorrente:false,
+  };
+  const{error}=await sb.from('fin_contas_pagar').insert(payload);
+  if(error){toast('Erro ao criar conta a pagar: '+error.message,true);return;}
+  toast('Conta a pagar criada com sucesso!');
+  loadPagar();loadDash();
+}
+
+// ─── Histórico de Reembolsos ──────────────────────────────────
+async function carregarHistoricoRem(){
+  const{data:{user}}=await sb.auth.getUser();
+  const{data}=await sb.from('fin_reembolsos').select('mes,status,valor').eq('user_id',user.id);
+  if(!data||!data.length){
+    document.getElementById('tbl-hist-rem').innerHTML='<tr><td colspan="5" class="empty">Nenhum registro.</td></tr>';
+    document.getElementById('kr-reemb').textContent=fmt(0);
+    return;
+  }
+  // Agrupar por mês
+  const porMes={};
+  for(const r of data){
+    if(!porMes[r.mes])porMes[r.mes]={qtd:0,total:0,status:r.status};
+    porMes[r.mes].qtd++;
+    porMes[r.mes].total+=r.valor;
+    if(r.status==='Reembolsado')porMes[r.mes].status='Reembolsado';
+  }
+  const totalReemb=data.filter(r=>r.status==='Reembolsado').reduce((s,r)=>s+r.valor,0);
+  document.getElementById('kr-reemb').textContent=fmt(totalReemb);
+  document.getElementById('tbl-hist-rem').innerHTML=Object.entries(porMes).reverse().map(([mes,d])=>`
+    <tr>
+      <td>${mes}</td>
+      <td>${d.qtd}</td>
+      <td>${fmt(d.total)}</td>
+      <td><span class="badge ${d.status==='Reembolsado'?'ok':'pend'}">${d.status==='Reembolsado'?'✓ Reembolsado':'⏳ Pendente'}</span></td>
+      <td></td>
+    </tr>`).join('');
+}
+
+// ─── loadReembolsos (nav) ─────────────────────────────────────
+async function loadReembolsos(){
+  const tokOk=carregarTokenGoogle();
+  atualizarStatusGcal(tokOk);
+  // Mês padrão = mês atual
+  const agora=new Date();
+  document.getElementById('rem-mes').value=agora.toISOString().slice(0,7);
+  await carregarHistoricoRem();
+}
+
+// Verificar callback Google no carregamento da página
+window.addEventListener('DOMContentLoaded',()=>{
+  handleGoogleCallback();
 });
 </script>
 </body>

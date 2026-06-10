@@ -208,6 +208,40 @@ CREATE POLICY "fin_own"      ON fin_reembolsos          FOR ALL TO authenticated
 CREATE POLICY "fin_own"      ON fin_reembolsos_digitais FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "fin_own"      ON fin_salarios            FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
+-- ─── fin_google_tokens ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS fin_google_tokens (
+  id              SERIAL PRIMARY KEY,
+  user_id         UUID NOT NULL UNIQUE REFERENCES auth.users(id),
+  access_token    TEXT NOT NULL,
+  refresh_token   TEXT,
+  expires_at      TIMESTAMPTZ,
+  calendar_id     VARCHAR(255) DEFAULT 'primary',
+  sync_enabled    BOOLEAN NOT NULL DEFAULT true,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_google_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "fin_own" ON fin_google_tokens FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ─── fin_cidade_aprendizado ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS fin_cidade_aprendizado (
+  id              SERIAL PRIMARY KEY,
+  user_id         UUID NOT NULL REFERENCES auth.users(id),
+  texto_original  TEXT NOT NULL,
+  palavra_chave   VARCHAR(255) NOT NULL,
+  cidade_correta  VARCHAR(100) NOT NULL,
+  valor_reembolso INTEGER NOT NULL DEFAULT 0,
+  confianca       INTEGER NOT NULL DEFAULT 100,
+  vezes_usado     INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_cidade_aprendizado ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "fin_own" ON fin_cidade_aprendizado FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- coluna cidade adicionada na fin_reembolsos
+ALTER TABLE fin_reembolsos ADD COLUMN IF NOT EXISTS cidade VARCHAR(100);
+
 -- ─── Dados iniciais — contas bancárias ───────────────────────
 INSERT INTO fin_contas_bancarias (nome, banco, agencia, conta, saldo) VALUES
   ('Conta Principal', 'Bradesco', '', '', 0),
