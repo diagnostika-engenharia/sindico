@@ -203,9 +203,11 @@ CREATE POLICY "fin_auth_all" ON fin_transacoes_bancarias FOR ALL TO authenticate
 CREATE POLICY "fin_auth_all" ON fin_livro_caixa_cofre   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "fin_auth_all" ON fin_relatorios          FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- Tabelas por usuário (reembolsos, salários) — cada um vê só os seus
-CREATE POLICY "fin_own"      ON fin_reembolsos          FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
-CREATE POLICY "fin_own"      ON fin_reembolsos_digitais FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+-- Reembolsos = visão consolidada da empresa (Visita=Claudemir, Digital=Rogério);
+-- ambos os sócios precisam enxergar todo o histórico → fin_auth_all.
+CREATE POLICY "fin_auth_all" ON fin_reembolsos          FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "fin_auth_all" ON fin_reembolsos_digitais FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- Salários permanecem privados por usuário.
 CREATE POLICY "fin_own"      ON fin_salarios            FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- ─── fin_google_tokens ──────────────────────────────────────
