@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Financeiro · Diagnóstika</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --teal:#155B67;--turq:#00B4AC;--lima:#8DB72A;
+  --white:#fff;--gray:#F5F6F8;--gray2:#E8EAED;--gray3:#C9CDD4;--gray4:#8B8F96;
+  --text:#1A2E31;--text2:#4A6469;
+  --red:#C0392B;--red-lt:#FDF1F0;--green:#27AE60;--green-lt:#F0FAF4;
+  --warn:#E67E22;--warn-lt:#FEF9F0;
+  --r:10px;--shadow:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:var(--gray);color:var(--text);min-height:100vh}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--teal),var(--turq))}
+.login-box{background:var(--white);border-radius:16px;padding:40px 36px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo svg{width:52px;height:52px}
+.login-logo h1{font-size:20px;font-weight:800;color:var(--teal);margin-top:10px}
+.login-logo p{font-size:12px;color:var(--text2);margin-top:2px}
+.login-box label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;margin-top:14px}
+.login-box input{width:100%;border:1.5px solid var(--gray2);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;transition:border .15s}
+.login-box input:focus{border-color:var(--turq)}
+.btn-login{width:100%;margin-top:20px;padding:12px;background:var(--teal);color:var(--white);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-login:hover{background:var(--turq)}
+#login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+
+/* ── LAYOUT ── */
+#app{display:none;height:100vh;overflow:hidden}
+.app-shell{display:flex;height:100vh}
+
+/* ── SIDEBAR ── */
+nav.sn{width:220px;flex-shrink:0;background:var(--teal);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sn-brand{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sn-brand h2{color:var(--white);font-size:14px;font-weight:800}
+.sn-brand p{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.sn-section{padding:8px 0 2px;font-size:10px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.8px;padding-left:18px;padding-top:14px}
+.sn-btn{display:flex;align-items:center;gap:10px;padding:10px 18px;border:none;background:transparent;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;font-weight:500;text-align:left;width:100%;border-left:3px solid transparent;transition:all .15s}
+.sn-btn svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sn-btn:hover{background:rgba(255,255,255,.08);color:var(--white)}
+.sn-btn.active{background:rgba(255,255,255,.13);color:var(--white);border-left-color:var(--turq);font-weight:700}
+.sn-btn.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.soon{font-size:9px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:2px 5px;border-radius:4px;margin-left:auto}
+.sn-footer{margin-top:auto;padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}
+.sn-user{padding:10px 18px;font-size:12px;color:rgba(255,255,255,.6)}
+.sn-user strong{display:block;color:rgba(255,255,255,.9);font-size:13px}
+
+/* ── MAIN ── */
+main.main{flex:1;overflow-y:auto;padding:24px}
+.page{display:none}
+.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-header h2{font-size:18px;font-weight:800;color:var(--teal)}
+.page-header p{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--white);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border-left:4px solid transparent}
+.kpi.green{border-color:var(--green)}
+.kpi.red{border-color:var(--red)}
+.kpi.blue{border-color:var(--turq)}
+.kpi.gray{border-color:var(--gray3)}
+.kpi label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.kpi .val{font-size:22px;font-weight:800;margin-top:4px;color:var(--text)}
+.kpi.red .val{color:var(--red)}
+.kpi.green .val{color:var(--green)}
+
+/* ── CARDS / TABLES ── */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.card-hd{padding:14px 16px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between}
+.card-hd h3{font-size:14px;font-weight:700;color:var(--teal)}
+.card-bd{padding:0}
+table.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;padding:10px 14px;background:var(--gray);border-bottom:1px solid var(--gray2);text-align:left}
+.tbl td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--gray2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f9fbfc}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.pend{background:#FEF3E2;color:#B7600A}
+.badge.ok{background:var(--green-lt);color:#1E8449}
+.badge.venc{background:var(--red-lt);color:var(--red)}
+.empty{text-align:center;padding:40px;color:var(--text2);font-size:13px}
+
+/* ── BOTÕES ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--teal);color:var(--white)}
+.btn-primary:hover{background:var(--turq)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-outline{background:var(--white);border:1.5px solid var(--gray2);color:var(--text)}
+.btn-outline:hover{border-color:var(--turq);color:var(--turq)}
+.btn-danger{background:var(--white);border:1.5px solid var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red-lt)}
+.btn-green{background:var(--green);color:var(--white)}
+.btn-green:hover{opacity:.9}
+
+/* ── FILTROS ── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filters select,.filters input{border:1.5px solid var(--gray2);border-radius:7px;padding:7px 10px;font-size:13px;background:var(--white);outline:none;color:var(--text)}
+.filters select:focus,.filters input:focus{border-color:var(--turq)}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:14px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.22)}
+.modal-hd{padding:18px 20px 14px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between}
+.modal-hd h3{font-size:15px;font-weight:800;color:var(--teal)}
+.modal-hd button{background:none;border:none;cursor:pointer;font-size:20px;color:var(--gray4);line-height:1}
+.modal-bd{padding:18px 20px}
+.modal-ft{padding:14px 20px;border-top:1px solid var(--gray2);display:flex;justify-content:flex-end;gap:8px}
+.form-row{margin-bottom:14px}
+.form-row label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;border:1.5px solid var(--gray2);border-radius:7px;padding:9px 11px;font-size:13px;outline:none;transition:border .15s;background:var(--white)}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--turq)}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row .hint{font-size:11px;color:var(--text2);margin-top:3px}
+.chk-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.chk-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer}
+.chk-row label{font-size:13px;color:var(--text);cursor:pointer}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--teal);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;z-index:9999}
+#toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="52" height="52" rx="12" fill="#155B67"/>
+        <path d="M12 28l8-8 8 8 12-12" stroke="#00B4AC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="38" cy="38" r="8" fill="#8DB72A"/>
+        <path d="M35 38h6M38 35v6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h1>Financeiro</h1>
+      <p>Diagnóstika Engenharia</p>
+    </div>
+    <label>E-mail</label>
+    <input id="l-email" type="email" placeholder="rogerio@diagnostika-pmp.app" autocomplete="username">
+    <label>Senha</label>
+    <input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div id="login-err">E-mail ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="app-shell">
+    <!-- SIDEBAR -->
+    <nav class="sn">
+      <div class="sn-brand">
+        <h2>💰 Financeiro</h2>
+        <p>Diagnóstika Engenharia</p>
+      </div>
+
+      <div class="sn-section">VISÃO GERAL</div>
+      <button class="sn-btn active" id="sn-dash" onclick="nav('dash')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </button>
+
+      <div class="sn-section">CONTAS</div>
+      <button class="sn-btn" id="sn-receber" onclick="nav('receber')">
+        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>A Receber
+      </button>
+      <button class="sn-btn" id="sn-pagar" onclick="nav('pagar')">
+        <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>A Pagar
+      </button>
+
+      <div class="sn-section">EM BREVE</div>
+      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Reembolsos<span class="soon">em breve</span></button>
+      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Conciliação<span class="soon">em breve</span></button>
+      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>DRE<span class="soon">em breve</span></button>
+      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Fluxo de Caixa<span class="soon">em breve</span></button>
+      <button class="sn-btn disabled"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Cofre<span class="soon">em breve</span></button>
+
+      <div class="sn-footer">
+        <div class="sn-user">
+          <strong id="sn-nome">—</strong>
+          <span id="sn-email-disp">—</span>
+        </div>
+        <button class="sn-btn" onclick="doLogout()" style="color:#FFB4B4">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dash">
+        <div class="page-header">
+          <div><h2>Dashboard</h2><p id="dash-subtitle">Visão geral financeira</p></div>
+          <button class="btn btn-outline btn-sm" onclick="loadDash()">↺ Atualizar</button>
+        </div>
+        <div class="kpi-row" id="kpi-row">
+          <div class="kpi green"><label>Entradas Previstas</label><div class="val" id="kpi-entrada">—</div></div>
+          <div class="kpi red"><label>Saídas Previstas</label><div class="val" id="kpi-saida">—</div></div>
+          <div class="kpi blue"><label>Saldo Projetado</label><div class="val" id="kpi-saldo">—</div></div>
+          <div class="kpi gray"><label>Contas Bancárias</label><div class="val" id="kpi-banco">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Contas a Receber — Pendentes</h3><a onclick="nav('receber')" style="font-size:12px;color:var(--turq);cursor:pointer">Ver todas →</a></div>
+          <div class="card-bd"><table class="tbl"><thead><tr><th>Cliente</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dash-receber"></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h3>Contas a Pagar — Pendentes</h3><a onclick="nav('pagar')" style="font-size:12px;color:var(--turq);cursor:pointer">Ver todas →</a></div>
+          <div class="card-bd"><table class="tbl"><thead><tr><th>Fornecedor</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr></thead><tbody id="dash-pagar"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- CONTAS A RECEBER -->
+      <div class="page" id="page-receber">
+        <div class="page-header">
+          <div><h2>Contas a Receber</h2><p>Receitas e cobranças</p></div>
+          <button class="btn btn-primary" onclick="openModalReceber()">+ Nova Conta</button>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi green"><label>Total a Receber</label><div class="val" id="kr-total">—</div></div>
+          <div class="kpi gray"><label>Recebido no Mês</label><div class="val" id="kr-mes">—</div></div>
+        </div>
+        <div class="filters">
+          <select id="fr-status" onchange="loadReceber()"><option value="">Todos</option><option value="Pendente">Pendente</option><option value="Recebido">Recebido</option></select>
+          <select id="fr-cat" onchange="loadReceber()">
+            <option value="">Todas as categorias</option>
+            <option>ART</option><option>Vistoria</option><option>Projetos</option>
+            <option>Assessoria Condomínio</option><option>Laudos</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-bd"><table class="tbl"><thead><tr>
+            <th>Cliente</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>NF</th><th></th>
+          </tr></thead><tbody id="tbl-receber"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- CONTAS A PAGAR -->
+      <div class="page" id="page-pagar">
+        <div class="page-header">
+          <div><h2>Contas a Pagar</h2><p>Despesas e obrigações</p></div>
+          <button class="btn btn-primary" onclick="openModalPagar()">+ Nova Conta</button>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi red"><label>Total Vencido</label><div class="val" id="kp-venc">—</div></div>
+          <div class="kpi" style="border-color:var(--warn)"><label>A Vencer</label><div class="val" id="kp-avenc">—</div></div>
+          <div class="kpi gray"><label>Pago no Mês</label><div class="val" id="kp-mes">—</div></div>
+        </div>
+        <div class="filters">
+          <select id="fp-status" onchange="loadPagar()"><option value="">Todos</option><option value="Pendente">Pendente</option><option value="Pago">Pago</option></select>
+          <select id="fp-cat" onchange="loadPagar()">
+            <option value="">Todas as categorias</option>
+            <option>Aluguel</option><option>Energia</option><option>Internet</option>
+            <option>Telefone</option><option>Água</option><option>Fornecedor</option>
+            <option>Serviços</option><option>Impostos</option><option>Reembolsos</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-bd"><table class="tbl"><thead><tr>
+            <th>Fornecedor</th><th>Categoria</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th>
+          </tr></thead><tbody id="tbl-pagar"><tr><td colspan="6" class="empty">Carregando…</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: NOVA/EDITAR CONTA A RECEBER -->
+<div class="modal-bg" id="modal-receber">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="mr-title">Nova Conta a Receber</h3><button onclick="closeModal('modal-receber')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mr-id">
+      <div class="form-row"><label>Cliente *</label><input id="mr-cliente" placeholder="Nome do cliente"></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Categoria *</label>
+          <select id="mr-cat">
+            <option>ART</option><option>Vistoria</option><option>Projetos</option>
+            <option>Assessoria Condomínio</option><option>Laudos</option><option selected>Outros</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Valor (R$) *</label><input id="mr-valor" type="number" min="0" step="0.01" placeholder="0,00"></div>
+      </div>
+      <div class="form-row"><label>Descrição</label><input id="mr-desc" placeholder="Opcional"></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Data de Vencimento *</label><input id="mr-venc" type="date"></div>
+        <div class="form-row"><label>Dia do Vencimento</label><input id="mr-dia" type="number" min="1" max="31" value="15"></div>
+      </div>
+      <div class="chk-row"><input type="checkbox" id="mr-rec" onchange="toggleRecorrente('mr')"><label for="mr-rec">Recorrente mensal</label></div>
+      <div class="form-row" id="mr-fim-row" style="display:none"><label>Fim da recorrência (mês/ano)</label><input id="mr-fim" placeholder="dez/26"></div>
+      <div class="chk-row"><input type="checkbox" id="mr-nf"><label for="mr-nf">Lembrete de Nota Fiscal</label></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-receber')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveReceber()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MARCAR RECEBIDO -->
+<div class="modal-bg" id="modal-recebido">
+  <div class="modal">
+    <div class="modal-hd"><h3>Marcar como Recebido</h3><button onclick="closeModal('modal-recebido')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mrec-id">
+      <div class="form-row"><label>Forma de Pagamento *</label>
+        <select id="mrec-forma"><option>Dinheiro</option><option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cartão</option></select>
+      </div>
+      <div class="form-row"><label>Data de Recebimento *</label><input id="mrec-data" type="date"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-recebido')">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmarRecebido()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ESTORNAR RECEBIMENTO -->
+<div class="modal-bg" id="modal-estorno-r">
+  <div class="modal">
+    <div class="modal-hd"><h3>Estornar Recebimento</h3><button onclick="closeModal('modal-estorno-r')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mer-id">
+      <div class="form-row"><label>Motivo do estorno *</label><textarea id="mer-motivo" rows="3" placeholder="Descreva o motivo do estorno…"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-estorno-r')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarEstornoR()">Estornar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVA/EDITAR CONTA A PAGAR -->
+<div class="modal-bg" id="modal-pagar">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="mp-title">Nova Conta a Pagar</h3><button onclick="closeModal('modal-pagar')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mp-id">
+      <div class="form-2col">
+        <div class="form-row"><label>Categoria *</label>
+          <select id="mp-cat">
+            <option>Aluguel</option><option>Energia</option><option>Internet</option>
+            <option>Telefone</option><option>Água</option><option>Fornecedor</option>
+            <option>Serviços</option><option>Impostos</option><option>Reembolsos</option><option selected>Outros</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Valor (R$) *</label><input id="mp-valor" type="number" min="0" step="0.01" placeholder="0,00"></div>
+      </div>
+      <div class="form-row"><label>Fornecedor/Credor *</label><input id="mp-forn" placeholder="Nome do fornecedor"></div>
+      <div class="form-row"><label>Descrição</label><input id="mp-desc" placeholder="Opcional"></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Data de Vencimento *</label><input id="mp-venc" type="date"></div>
+        <div class="form-row"><label>Dia do Vencimento</label><input id="mp-dia" type="number" min="1" max="31" value="10"></div>
+      </div>
+      <div class="chk-row"><input type="checkbox" id="mp-rec" onchange="toggleRecorrente('mp')"><label for="mp-rec">Recorrente mensal</label></div>
+      <div class="form-row" id="mp-fim-row" style="display:none"><label>Fim da recorrência (mês/ano)</label><input id="mp-fim" placeholder="dez/26"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-pagar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePagar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MARCAR PAGO -->
+<div class="modal-bg" id="modal-pago">
+  <div class="modal">
+    <div class="modal-hd"><h3>Marcar como Pago</h3><button onclick="closeModal('modal-pago')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mpag-id">
+      <div class="form-row"><label>Data do Pagamento *</label><input id="mpag-data" type="date"></div>
+      <div class="form-row"><label>Conta Bancária (opcional)</label>
+        <select id="mpag-conta"><option value="">Sem vínculo</option></select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-pago')">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmarPago()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ESTORNAR PAGAMENTO -->
+<div class="modal-bg" id="modal-estorno-p">
+  <div class="modal">
+    <div class="modal-hd"><h3>Estornar Pagamento</h3><button onclick="closeModal('modal-estorno-p')">×</button></div>
+    <div class="modal-bd">
+      <input type="hidden" id="mep-id">
+      <div class="form-row"><label>Motivo do estorno *</label><textarea id="mep-motivo" rows="3" placeholder="Descreva o motivo…"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal('modal-estorno-p')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarEstornoP()">Estornar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+
+// ── Helpers ──────────────────────────────────────────────────
+const fmt=v=>'R$ '+(v/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const hoje=()=>new Date().toISOString().slice(0,10);
+function parseData(s){if(!s)return null;const[d,m,a]=s.split('/');return`${a}-${m}-${d}`;}
+function formatData(iso){if(!iso)return'—';const[a,m,d]=iso.split('-');return`${d}/${m}/${a}`;}
+function isVencido(dStr){if(!dStr)return false;return dStr<hoje();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function toast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=err?'err':'';t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+// ── Auth ─────────────────────────────────────────────────────
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){err.style.display='block';return;}
+  initApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// ── Init ─────────────────────────────────────────────────────
+async function initApp(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){return;}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const u=session.user;
+  document.getElementById('sn-nome').textContent=u.user_metadata?.name||u.email.split('@')[0];
+  document.getElementById('sn-email-disp').textContent=u.email;
+  loadDash();
+  loadContasBancarias();
+}
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)initApp();
+});
+
+// ── Navegação ─────────────────────────────────────────────────
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sn-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('sn-'+page).classList.add('active');
+  if(page==='dash')loadDash();
+  if(page==='receber')loadReceber();
+  if(page==='pagar')loadPagar();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+async function loadDash(){
+  const[{data:receber},{data:pagar},{data:bancos}]=await Promise.all([
+    sb.from('fin_contas_receber').select('valor,data_vencimento,status,estornado').eq('status','Pendente').eq('estornado',false),
+    sb.from('fin_contas_pagar').select('valor,data_vencimento,status,estornado').eq('status','Pendente').eq('estornado',false),
+    sb.from('fin_contas_bancarias').select('saldo,nome').eq('ativa',true),
+  ]);
+  const sumR=(receber||[]).reduce((s,r)=>s+r.valor,0);
+  const sumP=(pagar||[]).reduce((s,r)=>s+r.valor,0);
+  const sumB=(bancos||[]).reduce((s,r)=>s+r.saldo,0);
+  document.getElementById('kpi-entrada').textContent=fmt(sumR);
+  document.getElementById('kpi-saida').textContent=fmt(sumP);
+  document.getElementById('kpi-saldo').textContent=fmt(sumR-sumP);
+  document.getElementById('kpi-banco').textContent=fmt(sumB);
+
+  // mini tabelas
+  const r5=(receber||[]).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1).slice(0,5);
+  document.getElementById('dash-receber').innerHTML=r5.length?r5.map(r=>`<tr>
+    <td>—</td><td>—</td><td>${formatData(r.data_vencimento)}</td>
+    <td>${fmt(r.valor)}</td><td>${badgeSt(r.status,r.data_vencimento)}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Nenhuma conta pendente</td></tr>';
+
+  const p5=(pagar||[]).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1).slice(0,5);
+  document.getElementById('dash-pagar').innerHTML=p5.length?p5.map(r=>`<tr>
+    <td>—</td><td>—</td><td>${formatData(r.data_vencimento)}</td>
+    <td>${fmt(r.valor)}</td><td>${badgeSt(r.status,r.data_vencimento)}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Nenhuma conta pendente</td></tr>';
+
+  // dashboard completo precisa de cliente/fornecedor - recarrega com mais dados
+  loadDashFull();
+}
+
+async function loadDashFull(){
+  const[{data:receber},{data:pagar}]=await Promise.all([
+    sb.from('fin_contas_receber').select('cliente,categoria,valor,data_vencimento,status,estornado').eq('status','Pendente').eq('estornado',false).order('data_vencimento').limit(5),
+    sb.from('fin_contas_pagar').select('fornecedor,categoria,valor,data_vencimento,status,estornado').eq('status','Pendente').eq('estornado',false).order('data_vencimento').limit(5),
+  ]);
+  document.getElementById('dash-receber').innerHTML=(receber||[]).length?(receber).map(r=>`<tr>
+    <td>${esc(r.cliente)}</td><td>${esc(r.categoria)}</td><td>${formatData(r.data_vencimento)}</td>
+    <td>${fmt(r.valor)}</td><td>${badgeSt(r.status,r.data_vencimento)}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Nenhuma conta pendente</td></tr>';
+  document.getElementById('dash-pagar').innerHTML=(pagar||[]).length?(pagar).map(r=>`<tr>
+    <td>${esc(r.fornecedor)}</td><td>${esc(r.categoria)}</td><td>${formatData(r.data_vencimento)}</td>
+    <td>${fmt(r.valor)}</td><td>${badgeSt(r.status,r.data_vencimento)}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Nenhuma conta pendente</td></tr>';
+}
+
+function badgeSt(status,venc){
+  if(status==='Recebido'||status==='Pago')return`<span class="badge ok">✓ ${status}</span>`;
+  if(isVencido(venc))return`<span class="badge venc">⚠ Vencido</span>`;
+  return`<span class="badge pend">⏳ Pendente</span>`;
+}
+
+// ── Contas Bancárias ──────────────────────────────────────────
+let _bancos=[];
+async function loadContasBancarias(){
+  const{data}=await sb.from('fin_contas_bancarias').select('*').eq('ativa',true);
+  _bancos=data||[];
+  const sel=document.getElementById('mpag-conta');
+  sel.innerHTML='<option value="">Sem vínculo</option>'+_bancos.map(b=>`<option value="${b.id}">${esc(b.nome)} (${fmt(b.saldo)})</option>`).join('');
+}
+
+// ── Contas a Receber ──────────────────────────────────────────
+async function loadReceber(){
+  let q=sb.from('fin_contas_receber').select('*').order('data_vencimento');
+  const st=document.getElementById('fr-status').value;
+  const cat=document.getElementById('fr-cat').value;
+  if(st)q=q.eq('status',st);
+  if(cat)q=q.eq('categoria',cat);
+  const{data,error}=await q;
+  if(error){toast('Erro ao carregar',true);return;}
+  const rows=data||[];
+  // KPIs
+  const mesAtual=new Date().toISOString().slice(0,7);
+  const pend=rows.filter(r=>r.status==='Pendente'&&!r.estornado).reduce((s,r)=>s+r.valor,0);
+  const mes=rows.filter(r=>r.status==='Recebido'&&r.data_recebimento&&r.data_recebimento.startsWith(mesAtual)).reduce((s,r)=>s+r.valor,0);
+  document.getElementById('kr-total').textContent=fmt(pend);
+  document.getElementById('kr-mes').textContent=fmt(mes);
+  document.getElementById('tbl-receber').innerHTML=rows.length?rows.map(r=>`
+    <tr>
+      <td>${esc(r.cliente)}</td>
+      <td>${esc(r.categoria)}</td>
+      <td>${formatData(r.data_vencimento)}</td>
+      <td>${fmt(r.valor)}</td>
+      <td>${badgeSt(r.status,r.data_vencimento)}</td>
+      <td>${r.nota_fiscal_emitida?'<span style="color:var(--green);font-size:12px">✓ Emitida</span>':r.lembrete_nota_fiscal?'<span style="color:var(--warn);font-size:12px">⚠ Pendente</span>':'—'}</td>
+      <td style="white-space:nowrap">
+        ${r.status==='Pendente'&&!r.estornado?`<button class="btn btn-green btn-sm" onclick="openMarcarRecebido(${r.id})">Receber</button> `:''}
+        ${r.status==='Recebido'&&!r.estornado?`<button class="btn btn-danger btn-sm" onclick="openEstornoR(${r.id})">Estornar</button> `:''}
+        <button class="btn btn-outline btn-sm" onclick="editReceber(${r.id})">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="delReceber(${r.id})">✕</button>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum registro encontrado</td></tr>';
+}
+
+function openModalReceber(item=null){
+  document.getElementById('mr-title').textContent=item?'Editar Conta a Receber':'Nova Conta a Receber';
+  document.getElementById('mr-id').value=item?.id||'';
+  document.getElementById('mr-cliente').value=item?.cliente||'';
+  document.getElementById('mr-cat').value=item?.categoria||'Outros';
+  document.getElementById('mr-valor').value=item?item.valor/100:'';
+  document.getElementById('mr-desc').value=item?.descricao||'';
+  document.getElementById('mr-venc').value=item?.data_vencimento||hoje();
+  document.getElementById('mr-dia').value=item?.dia_vencimento||15;
+  document.getElementById('mr-rec').checked=item?.recorrente||false;
+  document.getElementById('mr-fim').value=item?.data_fim_recorrencia||'';
+  document.getElementById('mr-fim-row').style.display=(item?.recorrente)?'block':'none';
+  document.getElementById('mr-nf').checked=item?.lembrete_nota_fiscal||false;
+  document.getElementById('modal-receber').classList.add('open');
+}
+
+async function editReceber(id){
+  const{data}=await sb.from('fin_contas_receber').select('*').eq('id',id).single();
+  openModalReceber(data);
+}
+
+async function saveReceber(){
+  const id=document.getElementById('mr-id').value;
+  const payload={
+    cliente:document.getElementById('mr-cliente').value.trim(),
+    categoria:document.getElementById('mr-cat').value,
+    valor:Math.round(parseFloat(document.getElementById('mr-valor').value)*100),
+    descricao:document.getElementById('mr-desc').value.trim()||null,
+    data_vencimento:document.getElementById('mr-venc').value,
+    dia_vencimento:parseInt(document.getElementById('mr-dia').value)||15,
+    recorrente:document.getElementById('mr-rec').checked,
+    data_fim_recorrencia:document.getElementById('mr-fim').value||null,
+    lembrete_nota_fiscal:document.getElementById('mr-nf').checked,
+  };
+  if(!payload.cliente||!payload.valor||!payload.data_vencimento){toast('Preencha os campos obrigatórios',true);return;}
+  let error;
+  if(id){({error}=await sb.from('fin_contas_receber').update(payload).eq('id',id));}
+  else{({error}=await sb.from('fin_contas_receber').insert(payload));}
+  if(error){toast('Erro ao salvar: '+error.message,true);return;}
+  closeModal('modal-receber');toast(id?'Conta atualizada!':'Conta criada!');
+  loadReceber();loadDash();
+}
+
+async function delReceber(id){
+  if(!confirm('Excluir esta conta?'))return;
+  const{error}=await sb.from('fin_contas_receber').delete().eq('id',id);
+  if(error){toast('Erro ao excluir',true);return;}
+  toast('Conta excluída');loadReceber();loadDash();
+}
+
+function openMarcarRecebido(id){
+  document.getElementById('mrec-id').value=id;
+  document.getElementById('mrec-data').value=hoje();
+  document.getElementById('modal-recebido').classList.add('open');
+}
+
+async function confirmarRecebido(){
+  const id=document.getElementById('mrec-id').value;
+  const forma=document.getElementById('mrec-forma').value;
+  const data=document.getElementById('mrec-data').value;
+  if(!data){toast('Informe a data',true);return;}
+  const{error}=await sb.from('fin_contas_receber').update({status:'Recebido',forma_pagamento:forma,data_recebimento:data}).eq('id',id);
+  if(error){toast('Erro',true);return;}
+  closeModal('modal-recebido');toast('Marcado como recebido!');loadReceber();loadDash();
+}
+
+function openEstornoR(id){
+  document.getElementById('mer-id').value=id;
+  document.getElementById('mer-motivo').value='';
+  document.getElementById('modal-estorno-r').classList.add('open');
+}
+
+async function confirmarEstornoR(){
+  const id=document.getElementById('mer-id').value;
+  const motivo=document.getElementById('mer-motivo').value.trim();
+  if(!motivo){toast('Informe o motivo',true);return;}
+  const{error}=await sb.from('fin_contas_receber').update({status:'Pendente',estornado:true,data_estorno:hoje(),motivo_estorno:motivo,data_recebimento:null,forma_pagamento:null}).eq('id',id);
+  if(error){toast('Erro',true);return;}
+  closeModal('modal-estorno-r');toast('Estornado');loadReceber();loadDash();
+}
+
+// ── Contas a Pagar ────────────────────────────────────────────
+async function loadPagar(){
+  let q=sb.from('fin_contas_pagar').select('*').order('data_vencimento');
+  const st=document.getElementById('fp-status').value;
+  const cat=document.getElementById('fp-cat').value;
+  if(st)q=q.eq('status',st);
+  if(cat)q=q.eq('categoria',cat);
+  const{data,error}=await q;
+  if(error){toast('Erro ao carregar',true);return;}
+  const rows=data||[];
+  // KPIs
+  const mesAtual=new Date().toISOString().slice(0,7);
+  const hj=hoje();
+  const venc=rows.filter(r=>r.status==='Pendente'&&!r.estornado&&r.data_vencimento<hj).reduce((s,r)=>s+r.valor,0);
+  const avenc=rows.filter(r=>r.status==='Pendente'&&!r.estornado&&r.data_vencimento>=hj).reduce((s,r)=>s+r.valor,0);
+  const mes=rows.filter(r=>r.status==='Pago'&&r.data_pagamento&&r.data_pagamento.startsWith(mesAtual)).reduce((s,r)=>s+r.valor,0);
+  document.getElementById('kp-venc').textContent=fmt(venc);
+  document.getElementById('kp-avenc').textContent=fmt(avenc);
+  document.getElementById('kp-mes').textContent=fmt(mes);
+  document.getElementById('tbl-pagar').innerHTML=rows.length?rows.map(r=>`
+    <tr>
+      <td>${esc(r.fornecedor)}</td>
+      <td>${esc(r.categoria)}</td>
+      <td>${formatData(r.data_vencimento)}</td>
+      <td>${fmt(r.valor)}</td>
+      <td>${badgeSt(r.status,r.data_vencimento)}</td>
+      <td style="white-space:nowrap">
+        ${r.status==='Pendente'&&!r.estornado?`<button class="btn btn-green btn-sm" onclick="openMarcarPago(${r.id})">Pagar</button> `:''}
+        ${r.status==='Pago'&&!r.estornado?`<button class="btn btn-danger btn-sm" onclick="openEstornoP(${r.id})">Estornar</button> `:''}
+        <button class="btn btn-outline btn-sm" onclick="editPagar(${r.id})">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="delPagar(${r.id})">✕</button>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum registro encontrado</td></tr>';
+}
+
+function openModalPagar(item=null){
+  document.getElementById('mp-title').textContent=item?'Editar Conta a Pagar':'Nova Conta a Pagar';
+  document.getElementById('mp-id').value=item?.id||'';
+  document.getElementById('mp-cat').value=item?.categoria||'Outros';
+  document.getElementById('mp-forn').value=item?.fornecedor||'';
+  document.getElementById('mp-valor').value=item?item.valor/100:'';
+  document.getElementById('mp-desc').value=item?.descricao||'';
+  document.getElementById('mp-venc').value=item?.data_vencimento||hoje();
+  document.getElementById('mp-dia').value=item?.dia_vencimento||10;
+  document.getElementById('mp-rec').checked=item?.recorrente||false;
+  document.getElementById('mp-fim').value=item?.data_fim_recorrencia||'';
+  document.getElementById('mp-fim-row').style.display=(item?.recorrente)?'block':'none';
+  document.getElementById('modal-pagar').classList.add('open');
+}
+
+async function editPagar(id){
+  const{data}=await sb.from('fin_contas_pagar').select('*').eq('id',id).single();
+  openModalPagar(data);
+}
+
+async function savePagar(){
+  const id=document.getElementById('mp-id').value;
+  const payload={
+    categoria:document.getElementById('mp-cat').value,
+    fornecedor:document.getElementById('mp-forn').value.trim(),
+    valor:Math.round(parseFloat(document.getElementById('mp-valor').value)*100),
+    descricao:document.getElementById('mp-desc').value.trim()||null,
+    data_vencimento:document.getElementById('mp-venc').value,
+    dia_vencimento:parseInt(document.getElementById('mp-dia').value)||10,
+    recorrente:document.getElementById('mp-rec').checked,
+    data_fim_recorrencia:document.getElementById('mp-fim').value||null,
+  };
+  if(!payload.fornecedor||!payload.valor||!payload.data_vencimento){toast('Preencha os campos obrigatórios',true);return;}
+  let error;
+  if(id){({error}=await sb.from('fin_contas_pagar').update(payload).eq('id',id));}
+  else{({error}=await sb.from('fin_contas_pagar').insert(payload));}
+  if(error){toast('Erro ao salvar: '+error.message,true);return;}
+  closeModal('modal-pagar');toast(id?'Conta atualizada!':'Conta criada!');
+  loadPagar();loadDash();
+}
+
+async function delPagar(id){
+  if(!confirm('Excluir esta conta?'))return;
+  const{error}=await sb.from('fin_contas_pagar').delete().eq('id',id);
+  if(error){toast('Erro ao excluir',true);return;}
+  toast('Conta excluída');loadPagar();loadDash();
+}
+
+function openMarcarPago(id){
+  document.getElementById('mpag-id').value=id;
+  document.getElementById('mpag-data').value=hoje();
+  document.getElementById('modal-pago').classList.add('open');
+}
+
+async function confirmarPago(){
+  const id=document.getElementById('mpag-id').value;
+  const data=document.getElementById('mpag-data').value;
+  const contaId=document.getElementById('mpag-conta').value||null;
+  if(!data){toast('Informe a data',true);return;}
+  const upd={status:'Pago',data_pagamento:data};
+  if(contaId)upd.conta_bancaria_id=parseInt(contaId);
+  const{error}=await sb.from('fin_contas_pagar').update(upd).eq('id',id);
+  if(error){toast('Erro',true);return;}
+  closeModal('modal-pago');toast('Marcado como pago!');loadPagar();loadDash();
+}
+
+function openEstornoP(id){
+  document.getElementById('mep-id').value=id;
+  document.getElementById('mep-motivo').value='';
+  document.getElementById('modal-estorno-p').classList.add('open');
+}
+
+async function confirmarEstornoP(){
+  const id=document.getElementById('mep-id').value;
+  const motivo=document.getElementById('mep-motivo').value.trim();
+  if(!motivo){toast('Informe o motivo',true);return;}
+  const{error}=await sb.from('fin_contas_pagar').update({status:'Pendente',estornado:true,data_estorno:hoje(),motivo_estorno:motivo,data_pagamento:null,conta_bancaria_id:null}).eq('id',id);
+  if(error){toast('Erro',true);return;}
+  closeModal('modal-estorno-p');toast('Estornado');loadPagar();loadDash();
+}
+
+// ── Utilitários ───────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function toggleRecorrente(pfx){
+  const checked=document.getElementById(pfx+'-rec').checked;
+  document.getElementById(pfx+'-fim-row').style.display=checked?'block':'none';
+}
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+</script>
+</body>
+</html>
