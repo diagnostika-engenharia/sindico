@@ -141,6 +141,44 @@ table.tbl{width:100%;border-collapse:collapse}
 .relatorio-linha{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px}
 .relatorio-linha:last-child{border-bottom:none;font-weight:700;font-size:14px;color:var(--teal)}
 .mes-sel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:var(--white);padding:12px 16px;border-radius:var(--r);box-shadow:var(--shadow)}
+/* tabs reembolsos */
+.rem-tabs{display:flex;gap:6px;margin-bottom:16px}
+.rem-tab-btn{padding:8px 18px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--white);font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
+.rem-tab-btn.active{background:var(--teal);color:var(--white);border-color:var(--teal)}
+.rem-tab-btn:not(.active):hover{border-color:var(--turq);color:var(--teal)}
+/* gerador automático */
+.rel-gerador{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 24px;margin-bottom:16px;border-left:4px solid var(--lima)}
+.rel-gerador h3{font-size:14px;font-weight:700;color:var(--teal);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.rel-gerador p{font-size:12px;color:var(--text2);margin-bottom:16px}
+.rel-gerador-body{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.func-col{display:flex;flex-direction:column;gap:6px;min-width:160px}
+.func-col label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.func-col select{border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;background:var(--white);outline:none;color:var(--text);cursor:pointer}
+.func-col select:focus{border-color:var(--turq)}
+.mes-grid-col{flex:1;display:flex;flex-direction:column;gap:8px}
+.mes-grid-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.mes-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mes-btn{padding:7px 4px;border-radius:7px;border:1.5px solid var(--gray2);background:var(--white);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
+.mes-btn:hover{border-color:var(--turq);color:var(--teal)}
+.mes-btn.sel{background:var(--teal);color:var(--white);border-color:var(--teal)}
+.ano-select{border:1.5px solid var(--gray2);border-radius:7px;padding:7px 10px;font-size:13px;background:var(--white);outline:none;color:var(--text);width:90px}
+.ano-select:focus{border-color:var(--turq)}
+.btn-gerar-rel2{background:var(--lima);color:var(--white);border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;margin-top:auto}
+.btn-gerar-rel2:hover{opacity:.9}
+/* relatórios gerados */
+.badge-gerado{background:#E8F5E9;color:#1B5E20;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.badge-visitas{background:#E3F2FD;color:#1565C0;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.rel-num{font-weight:700;color:var(--teal);font-size:13px;font-family:monospace}
+.val-green{color:var(--green);font-weight:700}
+.btn-icon{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;font-size:15px;transition:background .15s}
+.btn-icon:hover{background:var(--gray2)}
+.btn-icon.del:hover{background:var(--red-lt);color:var(--red)}
+/* upload digital */
+.upload-area{border:2px dashed var(--gray3);border-radius:var(--r);padding:40px;text-align:center;color:var(--text2);cursor:pointer;transition:all .15s;background:var(--white)}
+.upload-area:hover{border-color:var(--turq);background:#F0FAFA}
+.upload-area svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
+.upload-area p{font-size:13px;margin-bottom:8px}
+.upload-area small{font-size:11px;color:var(--gray4)}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:20px;right:20px;background:var(--teal);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;z-index:9999}
@@ -292,87 +330,196 @@ table.tbl{width:100%;border-collapse:collapse}
       <!-- REEMBOLSOS -->
       <div class="page" id="page-reembolsos">
         <div class="page-header">
-          <div><h2>Reembolsos de Visitas</h2><p>Importe do Google Calendar, confirme as cidades e gere o relatório</p></div>
+          <div><h2>Meus Reembolsos</h2><p id="rem-subtitulo">Histórico completo de solicitações</p></div>
           <button class="btn btn-outline btn-sm" onclick="loadReembolsos()">↺ Atualizar</button>
         </div>
 
-        <!-- Google Calendar Auth -->
-        <div class="gcal-card" id="gcal-auth-card">
-          <svg class="gcal-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <rect width="48" height="48" rx="8" fill="#fff" stroke="#ddd" stroke-width="1"/>
-            <path d="M33 15H15a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V17a2 2 0 00-2-2z" fill="#4285F4"/>
-            <rect x="13" y="21" width="22" height="2" fill="#fff"/>
-            <rect x="13" y="26" width="22" height="2" fill="#fff"/>
-            <rect x="18" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
-            <rect x="27" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
-          </svg>
-          <div class="gcal-info">
-            <h3 id="gcal-status-title">Conectar Google Calendar</h3>
-            <p id="gcal-status-desc">Autorize o acesso para importar visitas automaticamente do calendário.</p>
+        <!-- Tabs -->
+        <div class="rem-tabs">
+          <button class="rem-tab-btn active" id="tab-btn-visita" onclick="remTab('visita')">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Reembolsos de Visita
+          </button>
+          <button class="rem-tab-btn" id="tab-btn-digital" onclick="remTab('digital')">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Reembolsos Digitais
+          </button>
+        </div>
+
+        <!-- ═══ ABA: REEMBOLSOS DE VISITA ═══ -->
+        <div id="rem-tab-visita">
+
+          <!-- Botões de ação -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <button class="btn btn-green" onclick="openModalVisitaManual()">+ Novo Reembolso</button>
+            <button class="btn btn-primary" id="gcal-btn" onclick="iniciarGoogleAuth()">
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="16" height="14" rx="2"/><line x1="2" y1="8" x2="18" y2="8"/><line x1="6" y1="2" x2="6" y2="5"/><line x1="14" y1="2" x2="14" y2="5"/></svg>
+              Importar Visitas do Google Calendar
+            </button>
+            <button class="btn" style="background:var(--teal);color:#fff" onclick="exportarExcelRem()">
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 16l4-4m0 0l4 4m-4-4V4"/><rect x="2" y="14" width="16" height="4" rx="1" fill="none"/></svg>
+              Exportar Excel
+            </button>
           </div>
-          <button class="btn btn-primary" id="gcal-btn" onclick="iniciarGoogleAuth()">Conectar</button>
-        </div>
 
-        <!-- Seletor de Mês + Ações -->
-        <div class="mes-sel">
-          <label style="font-size:12px;font-weight:600;color:var(--text2)">Mês de referência:</label>
-          <input type="month" id="rem-mes" style="border:1.5px solid var(--gray2);border-radius:7px;padding:6px 10px;font-size:13px;outline:none">
-          <button class="btn btn-primary" onclick="importarCalendario()">📅 Importar do Calendário</button>
-          <button class="btn btn-outline" onclick="openModalVisitaManual()">+ Adicionar Manualmente</button>
-          <span id="rem-loading" style="font-size:12px;color:var(--text2);display:none">Importando…</span>
-        </div>
+          <!-- Google Calendar status -->
+          <div class="gcal-card" id="gcal-auth-card">
+            <svg class="gcal-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" rx="8" fill="#fff" stroke="#ddd" stroke-width="1"/>
+              <path d="M33 15H15a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V17a2 2 0 00-2-2z" fill="#4285F4"/>
+              <rect x="13" y="21" width="22" height="2" fill="#fff"/>
+              <rect x="13" y="26" width="22" height="2" fill="#fff"/>
+              <rect x="18" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
+              <rect x="27" y="12" width="3" height="6" rx="1.5" fill="#EA4335"/>
+            </svg>
+            <div class="gcal-info">
+              <h3 id="gcal-status-title">Conectar Google Calendar</h3>
+              <p id="gcal-status-desc">Autorize o acesso para importar visitas automaticamente do calendário.</p>
+            </div>
+            <span id="rem-loading" style="font-size:12px;color:var(--text2);display:none;margin-right:8px">Importando…</span>
+          </div>
 
-        <!-- KPIs -->
-        <div class="kpi-row">
-          <div class="kpi green"><label>Visitas Importadas</label><div class="val" id="kr-visitas">—</div></div>
-          <div class="kpi blue"><label>Total Calculado</label><div class="val" id="kr-total-rem">—</div></div>
-          <div class="kpi" style="border-color:var(--warn)"><label>Pendentes Confirmar</label><div class="val" id="kr-pend-cid">—</div></div>
-          <div class="kpi gray"><label>Já Reembolsado</label><div class="val" id="kr-reemb">—</div></div>
-        </div>
-
-        <!-- Tabela de Visitas -->
-        <div class="card">
-          <div class="card-hd">
-            <h3>Visitas do Mês</h3>
-            <div style="display:flex;gap:8px;align-items:center">
+          <!-- Gerador Automático -->
+          <div class="rel-gerador">
+            <h3>
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h0a2 2 0 002-2M9 5a2 2 0 012-2h0a2 2 0 012 2"/></svg>
+              Gerar Relatório de Reembolso Automático
+            </h3>
+            <p>Identifica automaticamente deslocamentos do Google Calendar e calcula valores por cidade</p>
+            <div class="rel-gerador-body">
+              <div class="func-col">
+                <label>Funcionário</label>
+                <select id="rem-funcionario">
+                  <option value="">— carregando —</option>
+                </select>
+              </div>
+              <div class="mes-grid-col">
+                <div class="mes-grid-label">Mês</div>
+                <div class="mes-grid" id="mes-grid">
+                  <button class="mes-btn" onclick="selMes(1)">Jan</button>
+                  <button class="mes-btn" onclick="selMes(2)">Fev</button>
+                  <button class="mes-btn" onclick="selMes(3)">Mar</button>
+                  <button class="mes-btn" onclick="selMes(4)">Abr</button>
+                  <button class="mes-btn" onclick="selMes(5)">Mai</button>
+                  <button class="mes-btn" onclick="selMes(6)">Jun</button>
+                  <button class="mes-btn" onclick="selMes(7)">Jul</button>
+                  <button class="mes-btn" onclick="selMes(8)">Ago</button>
+                  <button class="mes-btn" onclick="selMes(9)">Set</button>
+                  <button class="mes-btn" onclick="selMes(10)">Out</button>
+                  <button class="mes-btn" onclick="selMes(11)">Nov</button>
+                  <button class="mes-btn" onclick="selMes(12)">Dez</button>
+                </div>
+              </div>
+              <div class="func-col" style="min-width:90px">
+                <label>Ano</label>
+                <select id="rem-ano" class="ano-select" onchange="atualizarMesGrid()"></select>
+              </div>
+              <button class="btn-gerar-rel2" onclick="gerarRelatorio()">
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>
+                Gerar Relatório
+              </button>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="importarCalendario()">📅 Importar do Calendário</button>
               <span id="rem-pendente-aviso" style="font-size:12px;color:var(--warn);display:none">⚠ Confirme as cidades pendentes antes de gerar o relatório</span>
-              <button class="btn btn-green btn-sm" id="btn-gerar-rel" onclick="gerarRelatorio()" style="display:none">📄 Gerar Relatório</button>
             </div>
           </div>
-          <div class="card-bd">
-            <table class="tbl">
-              <thead><tr>
-                <th>Data</th><th>Descrição</th><th>Cidade</th><th>Fonte</th><th>Valor Base</th><th>Valor Final</th><th></th>
-              </tr></thead>
-              <tbody id="tbl-visitas"><tr><td colspan="7" class="empty">Selecione um mês e importe do calendário.</td></tr></tbody>
-            </table>
-          </div>
-        </div>
 
-        <!-- Relatório Gerado -->
-        <div class="card" id="card-relatorio-gerado" style="display:none">
-          <div class="card-hd">
-            <h3>📄 Relatório Gerado</h3>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-outline btn-sm" onclick="downloadPDF()">⬇ Baixar PDF</button>
-              <button class="btn btn-primary btn-sm" onclick="criarContaPagar()">💳 Criar Conta a Pagar</button>
+          <!-- KPIs -->
+          <div class="kpi-row">
+            <div class="kpi green"><label>Visitas Importadas</label><div class="val" id="kr-visitas">—</div></div>
+            <div class="kpi blue"><label>Total Calculado</label><div class="val" id="kr-total-rem">—</div></div>
+            <div class="kpi" style="border-color:var(--warn)"><label>Pendentes Confirmar</label><div class="val" id="kr-pend-cid">—</div></div>
+            <div class="kpi gray"><label>Já Reembolsado</label><div class="val" id="kr-reemb">—</div></div>
+          </div>
+
+          <!-- Tabela de Visitas -->
+          <div class="card">
+            <div class="card-hd">
+              <h3>Visitas do Mês</h3>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn-green btn-sm" id="btn-gerar-rel" onclick="gerarRelatorio()" style="display:none">📄 Gerar Relatório</button>
+              </div>
+            </div>
+            <div class="card-bd">
+              <table class="tbl">
+                <thead><tr>
+                  <th>Data</th><th>Descrição</th><th>Cidade</th><th>Fonte</th><th>Valor Base</th><th>Valor Final</th><th></th>
+                </tr></thead>
+                <tbody id="tbl-visitas"><tr><td colspan="7" class="empty">Selecione um mês e importe do calendário.</td></tr></tbody>
+              </table>
             </div>
           </div>
-          <div class="card-bd" style="padding:16px">
-            <div id="relatorio-resumo" class="relatorio-box"></div>
-          </div>
-        </div>
 
-        <!-- Histórico -->
-        <div class="card" style="margin-top:8px">
-          <div class="card-hd"><h3>Histórico de Reembolsos</h3></div>
-          <div class="card-bd">
-            <table class="tbl">
-              <thead><tr><th>Mês</th><th>Visitas</th><th>Total</th><th>Status</th><th></th></tr></thead>
-              <tbody id="tbl-hist-rem"><tr><td colspan="5" class="empty">Nenhum relatório gerado.</td></tr></tbody>
-            </table>
+          <!-- Relatório Gerado (preview) -->
+          <div class="card" id="card-relatorio-gerado" style="display:none">
+            <div class="card-hd">
+              <h3>📄 Relatório Gerado</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" onclick="downloadPDF()">⬇ Baixar PDF</button>
+                <button class="btn btn-primary btn-sm" onclick="criarContaPagar()">💳 Criar Conta a Pagar</button>
+              </div>
+            </div>
+            <div class="card-bd" style="padding:16px">
+              <div id="relatorio-resumo" class="relatorio-box"></div>
+            </div>
           </div>
-        </div>
+
+          <!-- Relatórios Gerados -->
+          <div class="card" style="margin-top:8px">
+            <div class="card-hd"><h3>Relatórios Gerados</h3></div>
+            <div class="card-bd">
+              <table class="tbl">
+                <thead><tr>
+                  <th>Número de Controle</th>
+                  <th>Mês Referência</th>
+                  <th>Quantidade</th>
+                  <th>Valor Total</th>
+                  <th>Status</th>
+                  <th style="text-align:right">Ações</th>
+                </tr></thead>
+                <tbody id="tbl-hist-rem"><tr><td colspan="6" class="empty">Nenhum relatório gerado.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- /rem-tab-visita -->
+
+        <!-- ═══ ABA: REEMBOLSOS DIGITAIS ═══ -->
+        <div id="rem-tab-digital" style="display:none">
+
+          <!-- Upload fatura -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-hd"><h3>Importar Fatura do Cartão</h3></div>
+            <div class="card-bd" style="padding:16px">
+              <div class="upload-area" onclick="document.getElementById('rem-fatura-input').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <p>Arraste e solte sua fatura aqui<br>ou</p>
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();document.getElementById('rem-fatura-input').click()">Enviar Fatura</button>
+                <small style="display:block;margin-top:8px">Formatos aceitos: PDF, CSV, XLSX</small>
+              </div>
+              <input type="file" id="rem-fatura-input" accept=".pdf,.csv,.xlsx" style="display:none" onchange="processarFatura(this)">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-bottom:16px">
+            <button class="btn btn-green" onclick="openModalReembolsoDigital()">+ Novo Reembolso Digital</button>
+            <button class="btn btn-primary" onclick="toast('Em breve: geração de PDF de despesas digitais')">⬇ Gerar PDF</button>
+          </div>
+
+          <!-- Relatórios digitais -->
+          <div class="card">
+            <div class="card-hd"><h3>Relatórios Gerados</h3></div>
+            <div class="card-bd">
+              <table class="tbl">
+                <thead><tr>
+                  <th>Número de Controle</th><th>Mês Referência</th><th>Quantidade</th><th>Valor Total</th><th>Status</th><th style="text-align:right">Ações</th>
+                </tr></thead>
+                <tbody id="tbl-digital-rem"><tr><td colspan="6" class="empty">Nenhum reembolso digital registrado.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- /rem-tab-digital -->
+
       </div>
 
       <!-- COFRE -->
@@ -1149,7 +1296,7 @@ async function importarCalendario(){
   if(!_remGoogleToken){
     toast('Conecte o Google Calendar primeiro.',true);return;
   }
-  const mes=document.getElementById('rem-mes').value;
+  const mes=getMesISO();
   if(!mes){toast('Selecione um mês.',true);return;}
   document.getElementById('rem-loading').style.display='inline';
   document.getElementById('btn-gerar-rel').style.display='none';
@@ -1350,7 +1497,7 @@ function adicionarVisitaManual(){
 
 // ─── Gerar Relatório ──────────────────────────────────────────
 async function gerarRelatorio(){
-  const mes=document.getElementById('rem-mes').value;
+  const mes=getMesISO();
   if(!mes){toast('Selecione o mês',true);return;}
   const visitasFin=_remVisitas.filter(v=>v.cidade!=='PENDENTE_CIDADE');
   const total=visitasFin.reduce((s,v)=>s+(v.valorFinal||0),0);
@@ -1481,42 +1628,173 @@ async function criarContaPagar(){
   loadPagar();loadDash();
 }
 
-// ─── Histórico de Reembolsos ──────────────────────────────────
+// ─── Variáveis seletor de mês ─────────────────────────────────
+let _remMesN=new Date().getMonth()+1;   // 1–12
+let _remAnoN=new Date().getFullYear();
+
+function selMes(n){
+  _remMesN=n;
+  atualizarMesGrid();
+}
+function atualizarMesGrid(){
+  _remAnoN=parseInt(document.getElementById('rem-ano').value)||_remAnoN;
+  document.querySelectorAll('.mes-btn').forEach((btn,i)=>{
+    btn.classList.toggle('sel',i+1===_remMesN);
+  });
+  // Atualiza o hidden input legado
+  const mm=String(_remMesN).padStart(2,'0');
+  const legacy=document.getElementById('rem-mes');
+  if(legacy)legacy.value=`${_remAnoN}-${mm}`;
+}
+function getMesISO(){
+  return `${_remAnoN}-${String(_remMesN).padStart(2,'0')}`;
+}
+
+// ─── Histórico de Reembolsos → Relatórios Gerados ─────────────
 async function carregarHistoricoRem(){
   const{data:{user}}=await sb.auth.getUser();
-  const{data}=await sb.from('fin_reembolsos').select('mes,status,valor').eq('user_id',user.id);
+  const{data}=await sb.from('fin_reembolsos').select('mes,status,valor,created_at').eq('user_id',user.id).order('mes',{ascending:true});
   if(!data||!data.length){
-    document.getElementById('tbl-hist-rem').innerHTML='<tr><td colspan="5" class="empty">Nenhum registro.</td></tr>';
+    document.getElementById('tbl-hist-rem').innerHTML='<tr><td colspan="6" class="empty">Nenhum relatório gerado.</td></tr>';
     document.getElementById('kr-reemb').textContent=fmt(0);
     return;
   }
-  // Agrupar por mês
+  // Agrupar por mês → objeto ordenado cronologicamente
   const porMes={};
   for(const r of data){
-    if(!porMes[r.mes])porMes[r.mes]={qtd:0,total:0,status:r.status};
+    if(!porMes[r.mes])porMes[r.mes]={qtd:0,total:0,status:'Pendente'};
     porMes[r.mes].qtd++;
     porMes[r.mes].total+=r.valor;
     if(r.status==='Reembolsado')porMes[r.mes].status='Reembolsado';
   }
   const totalReemb=data.filter(r=>r.status==='Reembolsado').reduce((s,r)=>s+r.valor,0);
   document.getElementById('kr-reemb').textContent=fmt(totalReemb);
-  document.getElementById('tbl-hist-rem').innerHTML=Object.entries(porMes).reverse().map(([mes,d])=>`
-    <tr>
+
+  // Ordenar cronologicamente (mês mais antigo primeiro) e gerar REL-YYYY-NNN
+  const mesesOrdenados=Object.keys(porMes).sort((a,b)=>{
+    const toDate=m=>{const[mm,yy]=m.split('/');return parseInt(yy)*100+(parseInt(mm)||0);};
+    return toDate(a)-toDate(b);
+  });
+  // Contador por ano
+  const cntAno={};
+  const rows=mesesOrdenados.reverse().map(mes=>{
+    // Extrair ano do mes (formato "mmm/yy" ex: "jan/26")
+    const partes=mes.split('/');
+    const ano=partes.length>1?'20'+partes[1]:'2026';
+    if(!cntAno[ano])cntAno[ano]=0;
+    cntAno[ano]++;
+    const idx=cntAno[ano];
+    const numCtrl=`REL-${ano}-${String(idx).padStart(3,'0')}`;
+    const d=porMes[mes];
+    const isReemb=d.status==='Reembolsado';
+    return `<tr>
+      <td><span class="rel-num">${numCtrl}</span></td>
       <td>${mes}</td>
-      <td>${d.qtd}</td>
-      <td>${fmt(d.total)}</td>
-      <td><span class="badge ${d.status==='Reembolsado'?'ok':'pend'}">${d.status==='Reembolsado'?'✓ Reembolsado':'⏳ Pendente'}</span></td>
-      <td></td>
-    </tr>`).join('');
+      <td><span class="badge-visitas">${d.qtd} visit${d.qtd===1?'a':'as'}</span></td>
+      <td><span class="val-green">${fmt(d.total)}</span></td>
+      <td><span class="${isReemb?'badge ok':'badge-gerado'}">${isReemb?'✓ Reembolsado':'Gerado'}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn-icon" title="Visualizar" onclick="visualizarRelatorio('${mes}')">👁</button>
+        <button class="btn-icon" title="Baixar PDF" onclick="downloadPDFMes('${mes}')">⬇</button>
+        <button class="btn-icon del" title="Excluir" onclick="excluirRelatorio('${mes}')">🗑</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('tbl-hist-rem').innerHTML=rows.join('');
+}
+
+async function visualizarRelatorio(mes){
+  const{data:{user}}=await sb.auth.getUser();
+  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes);
+  if(!data||!data.length){toast('Sem dados para este mês',true);return;}
+  const total=data.reduce((s,r)=>s+r.valor,0);
+  const porCidade={};
+  for(const r of data){
+    if(!porCidade[r.cidade])porCidade[r.cidade]={qtd:0,valor:0};
+    porCidade[r.cidade].qtd++;
+    porCidade[r.cidade].valor+=r.valor;
+  }
+  const linhas=Object.entries(porCidade).map(([c,d])=>
+    `<div class="relatorio-linha"><span>${c} (${d.qtd} visita${d.qtd>1?'s':''})</span><span>${fmt(d.valor)}</span></div>`
+  ).join('');
+  document.getElementById('relatorio-resumo').innerHTML=`${linhas}<div class="relatorio-linha"><span>TOTAL (${mes})</span><span>${fmt(total)}</span></div>`;
+  document.getElementById('card-relatorio-gerado').style.display='block';
+  document.getElementById('card-relatorio-gerado').scrollIntoView({behavior:'smooth'});
+  _relatorio={mes,visitas:data,total,porCidade};
+}
+
+async function downloadPDFMes(mes){
+  const{data:{user}}=await sb.auth.getUser();
+  const{data}=await sb.from('fin_reembolsos').select('*').eq('user_id',user.id).eq('mes',mes);
+  if(!data||!data.length){toast('Sem dados para este mês',true);return;}
+  const total=data.reduce((s,r)=>s+r.valor,0);
+  const porCidade={};
+  for(const r of data){
+    if(!porCidade[r.cidade])porCidade[r.cidade]={qtd:0,valor:0};
+    porCidade[r.cidade].qtd++;
+    porCidade[r.cidade].valor+=r.valor;
+  }
+  _relatorio={mes,visitas:data,total,porCidade};
+  downloadPDF();
+}
+
+async function excluirRelatorio(mes){
+  if(!confirm(`Excluir todos os registros de reembolso de ${mes}?`))return;
+  const{data:{user}}=await sb.auth.getUser();
+  await sb.from('fin_reembolsos').delete().eq('user_id',user.id).eq('mes',mes);
+  toast('Relatório excluído');
+  await carregarHistoricoRem();
+}
+
+function exportarExcelRem(){toast('Em breve: exportação para Excel');}
+function processarFatura(input){toast('Em breve: importação de fatura de cartão');}
+function openModalReembolsoDigital(){toast('Em breve: novo reembolso digital');}
+
+// ─── Tab switcher ─────────────────────────────────────────────
+function remTab(tab){
+  document.getElementById('rem-tab-visita').style.display=tab==='visita'?'block':'none';
+  document.getElementById('rem-tab-digital').style.display=tab==='digital'?'block':'none';
+  document.getElementById('tab-btn-visita').classList.toggle('active',tab==='visita');
+  document.getElementById('tab-btn-digital').classList.toggle('active',tab==='digital');
 }
 
 // ─── loadReembolsos (nav) ─────────────────────────────────────
 async function loadReembolsos(){
   const tokOk=carregarTokenGoogle();
   atualizarStatusGcal(tokOk);
-  // Mês padrão = mês atual
-  const agora=new Date();
-  document.getElementById('rem-mes').value=agora.toISOString().slice(0,7);
+
+  // Popular dropdown de ano
+  const anoSel=document.getElementById('rem-ano');
+  const anoAtual=new Date().getFullYear();
+  anoSel.innerHTML='';
+  for(let a=anoAtual+1;a>=anoAtual-2;a--){
+    const opt=document.createElement('option');
+    opt.value=a;opt.textContent=a;
+    if(a===_remAnoN)opt.selected=true;
+    anoSel.appendChild(opt);
+  }
+
+  // Popular dropdown de funcionário
+  const funcSel=document.getElementById('rem-funcionario');
+  const{data:{user}}=await sb.auth.getUser();
+  const nomeUsuario=user.email.split('@')[0].replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  // Mapeamento conhecido
+  const FUNC_MAP={
+    'bc85944b-5b89-4710-886c-1717e8309e24':'Rogério Conceição',
+    'a71d23f8-0b1f-4dc5-ae44-829a5c1073a3':'Claudemir Scaranello',
+  };
+  funcSel.innerHTML='';
+  const nomeReal=FUNC_MAP[user.id]||nomeUsuario;
+  const opt=document.createElement('option');
+  opt.value=user.id;opt.textContent=nomeReal;opt.selected=true;
+  funcSel.appendChild(opt);
+
+  // Atualizar subtítulo
+  document.getElementById('rem-subtitulo').textContent=`Histórico completo de solicitações de ${nomeReal}`;
+
+  // Inicializar grade de meses
+  atualizarMesGrid();
+
   await carregarHistoricoRem();
 }
 
