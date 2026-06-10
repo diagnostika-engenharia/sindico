@@ -1689,6 +1689,7 @@ async function criarContaPagar(){
     fornecedor:`Reembolso ${nome} — ${nomeMes}`,
     descricao:`${_relatorio.visitas.length} visitas técnicas — ${mes}`,
     valor:_relatorio.total,
+    dia_vencimento:diasMes,
     data_vencimento:venc,
     recorrente:false,
   };
