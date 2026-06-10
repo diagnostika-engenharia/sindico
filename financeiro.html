@@ -6,6 +6,7 @@
 <title>Financeiro · Diagnóstika</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{
   --teal:#155B67;--turq:#00B4AC;--lima:#8DB72A;
@@ -108,6 +109,7 @@ table.tbl{width:100%;border-collapse:collapse}
 /* ── MODAL ── */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
+body.capturing .rel-acao{display:none!important}
 .modal{background:var(--white);border-radius:14px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.22)}
 .modal-hd{padding:18px 20px 14px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;justify-content:space-between}
 .modal-hd h3{font-size:15px;font-weight:800;color:var(--teal)}
@@ -812,14 +814,15 @@ table.tbl{width:100%;border-collapse:collapse}
 
 <!-- MODAL PREVIEW RELATÓRIO -->
 <div class="modal-bg" id="modal-preview-rel">
-  <div style="background:var(--white);border-radius:14px;width:760px;max-width:97vw;max-height:93vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column">
+  <div style="background:var(--white);border-radius:14px;width:900px;max-width:97vw;max-height:93vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column">
     <!-- Toolbar -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--gray2);position:sticky;top:0;background:var(--white);z-index:10">
       <div style="font-size:14px;font-weight:700;color:var(--teal)">Preview do Relatório de Reembolsos</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="adicionarVisitaNoPreview()">+ Adicionar Visita</button>
         <button class="btn btn-outline btn-sm" onclick="imprimirPreviewRel()">🖨 Imprimir</button>
-        <button class="btn btn-primary btn-sm" onclick="downloadPDFPreview()">⬇ PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="downloadPDFPreview()">⬇ PDF</button>
+        <button class="btn btn-sm" style="background:#25D366;color:#fff;border:none" onclick="compartilharRelatorio()">📲 Compartilhar</button>
         <button class="btn btn-green btn-sm" onclick="criarContaPagarPreview()">💳 Criar Conta a Pagar</button>
         <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray4);line-height:1;padding:0 4px" onclick="closeModal('modal-preview-rel')">×</button>
       </div>
@@ -827,6 +830,21 @@ table.tbl{width:100%;border-collapse:collapse}
     <!-- Corpo do relatório -->
     <div id="preview-rel-body" style="padding:28px 32px">
       <!-- preenchido via JS -->
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPARTILHAR -->
+<div class="modal-bg" id="modal-share">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd">
+      <h3>Compartilhar Relatório</h3>
+      <button class="modal-close" onclick="closeModal('modal-share')">×</button>
+    </div>
+    <div class="modal-bd" style="display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:13px;color:var(--text2);margin:0 0 4px">Gera uma imagem do relatório para enviar.</p>
+      <button class="btn btn-sm" style="background:#25D366;color:#fff;border:none;justify-content:center;padding:11px" onclick="shareWhatsAppImagem()">📲 Imagem no WhatsApp</button>
+      <button class="btn btn-outline btn-sm" style="justify-content:center;padding:11px" onclick="baixarImagemRel()">🖼 Baixar imagem (PNG)</button>
     </div>
   </div>
 </div>
@@ -1800,69 +1818,66 @@ try{
   const FUNC_MAP={'bc85944b-5b89-4710-886c-1717e8309e24':'Rogério Conceição','a71d23f8-0b1f-4dc5-ae44-829a5c1073a3':'Claudemir Scaranello'};
   const nomeFunc=FUNC_MAP[user.id]||user.email;
 
-  // Cards de cidade
+  // Cards de cidade (estilo Manus: borda verde sutil, compactos)
   const cidadeCards=Object.entries(porCidade).map(([c,d])=>`
-    <div style="background:#F0FAF4;border:1.5px solid #C8E6C9;border-radius:8px;padding:14px 20px;text-align:center;min-width:130px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${c}</div>
-      <div style="font-size:18px;font-weight:800;color:var(--green)">${fmt(d.valor)}</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">${d.qtd} visita${d.qtd!==1?'s':''}</div>
+    <div style="background:#F3FAF4;border:1px solid #CDE6D2;border-radius:8px;padding:12px 22px;text-align:center;min-width:120px">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px">${c}</div>
+      <div style="font-size:17px;font-weight:800;color:var(--green)">${fmt(d.valor)}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">${d.qtd} visita${d.qtd!==1?'s':''}</div>
     </div>`).join('');
 
-  // Linhas de visitas
-  const linhasVisitas=data.map(r=>`
-    <tr>
-      <td style="white-space:nowrap">${formatData(r.data)}</td>
-      <td>${esc(r.descricao||'')}</td>
-      <td>${esc(r.cidade||'')}</td>
-      <td style="text-align:right;font-weight:700;color:${r.valor>0?'var(--green)':'var(--text2)'}">${fmt(r.valor)}</td>
+  // Linhas de visitas (estilo Manus: bordas, padding, coluna Ações)
+  const linhasVisitas=data.map((r,i)=>`
+    <tr style="background:${i%2?'#F8FAFB':'#fff'}">
+      <td style="white-space:nowrap;padding:9px 12px;border:1px solid var(--gray2)">${formatData(r.data)}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.descricao||'')}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.cidade||'')}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2);text-align:right;font-weight:700;white-space:nowrap;color:${r.valor>0?'var(--green)':'var(--text2)'}">${fmt(r.valor)}</td>
+      <td class="rel-acao" style="padding:9px 8px;border:1px solid var(--gray2);text-align:center"><button title="Remover visita" onclick="excluirVisitaDoRelatorio('${r.id}','${mes}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#D14343;padding:2px 4px">🗑</button></td>
     </tr>`).join('');
 
   const mesLabel=`${partes[0].charAt(0).toUpperCase()+partes[0].slice(1)}/${partes[1]}`;
 
   document.getElementById('preview-rel-body').innerHTML=`
+   <div id="rel-capture" style="background:#fff">
     <!-- Cabeçalho -->
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <svg width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" rx="6" fill="#155B67"/><text x="18" y="24" text-anchor="middle" fill="#8DB72A" font-size="18" font-weight="bold">D</text></svg>
-        <div>
-          <div style="font-size:13px;font-weight:800;color:var(--teal)">DIAGNÓSTIKA</div>
-          <div style="font-size:10px;color:var(--text2)">Engenharia</div>
-        </div>
-      </div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;border-bottom:2px solid var(--gray2);padding-bottom:14px">
+      <img src="assets/logo.png" alt="Diagnóstika Engenharia" style="height:46px;width:auto" crossorigin="anonymous">
       <div style="text-align:right">
-        <div style="font-size:18px;font-weight:900;color:var(--teal);letter-spacing:.5px">RELATÓRIO DE REEMBOLSO</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">Período: ${mesLabel}</div>
+        <div style="font-size:19px;font-weight:900;color:var(--teal);letter-spacing:.5px">RELATÓRIO DE REEMBOLSO</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">Período: ${mesLabel}</div>
       </div>
     </div>
 
-    <!-- Info boxes -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div style="border:1px solid var(--gray2);border-radius:6px;padding:10px 14px">
+    <!-- Info boxes (estilo Manus: fundo azul-claro + borda lateral) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
         <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Funcionário</div>
-        <div style="font-size:14px;font-weight:700;color:var(--teal)">${nomeFunc}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--teal)">${nomeFunc}</div>
       </div>
-      <div style="border:1px solid var(--gray2);border-radius:6px;padding:10px 14px">
+      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
         <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Data Prevista de Pagamento</div>
-        <div style="font-size:14px;font-weight:700;color:var(--teal)">${dtPagStr}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--green)">${dtPagStr}</div>
       </div>
     </div>
 
     <!-- Resumo por Cidade -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Resumo por Cidade</div>
+    <div style="margin-bottom:22px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Resumo por Cidade</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">${cidadeCards}</div>
     </div>
 
     <!-- Detalhamento de Visitas -->
-    <div style="margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Detalhamento de Visitas</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <div style="margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Detalhamento de Visitas</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--gray2)">
         <thead>
           <tr style="background:var(--teal);color:#fff">
-            <th style="padding:9px 12px;text-align:left;font-weight:700">Data</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:700">Descrição</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:700">Cidade</th>
-            <th style="padding:9px 12px;text-align:right;font-weight:700">Valor</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Data</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Descrição</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Cidade</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:700;border:1px solid #2C6E79">Valor</th>
+            <th class="rel-acao" style="padding:10px 8px;text-align:center;font-weight:700;border:1px solid #2C6E79">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -1872,20 +1887,21 @@ try{
     </div>
 
     <!-- Total -->
-    <div style="background:var(--teal);color:#fff;display:flex;justify-content:space-between;padding:12px 16px;border-radius:6px;font-size:14px;font-weight:800;margin-bottom:14px">
+    <div style="background:var(--teal);color:#fff;display:flex;justify-content:space-between;padding:13px 18px;border-radius:6px;font-size:15px;font-weight:800;margin-bottom:16px">
       <span>TOTAL A REEMBOLSAR</span>
       <span>${fmt(total)}</span>
     </div>
 
     <!-- Observações -->
-    <div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:12px 14px;border-radius:4px;font-size:12px;color:#78350F;margin-bottom:14px">
+    <div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:12px 14px;border-radius:4px;font-size:12px;color:#78350F;margin-bottom:16px">
       <strong>Observações:</strong> Este relatório contém despesas de visitas técnicas e deslocamentos. Os valores incluem combustível e pedágios quando aplicável.
     </div>
 
     <!-- Rodapé -->
-    <div style="text-align:center;font-size:11px;color:var(--text2);border-top:1px solid var(--gray2);padding-top:10px">
+    <div style="text-align:center;font-size:11px;color:var(--text2);border-top:1px solid var(--gray2);padding-top:11px">
       Gerado em ${dtGer} | DIAGNÓSTIKA Engenharia
     </div>
+   </div>
   `;
 
   document.getElementById('modal-preview-rel').classList.add('open');
@@ -1903,6 +1919,68 @@ function imprimirPreviewRel(){
 }
 function downloadPDFPreview(){if(_relatorio)downloadPDF();else toast('Nenhum relatório carregado',true);}
 function criarContaPagarPreview(){if(_relatorio)criarContaPagar();else toast('Nenhum relatório carregado',true);}
+
+// ── Remover visita direto do preview (igual Manus) ──
+async function excluirVisitaDoRelatorio(id,mes){
+  if(!confirm('Remover esta visita do relatório?'))return;
+  const{error}=await sb.from('fin_reembolsos').delete().eq('id',id);
+  if(error){toast('Erro ao remover: '+error.message,true);return;}
+  toast('Visita removida');
+  await visualizarRelatorio(mes);
+  await carregarHistoricoRem();
+}
+
+// ── Compartilhamento por imagem ──
+function compartilharRelatorio(){
+  if(!_relatorio){toast('Nenhum relatório carregado',true);return;}
+  document.getElementById('modal-share').classList.add('open');
+}
+async function _gerarImagemRel(){
+  const el=document.getElementById('rel-capture');
+  if(!el)throw new Error('Relatório não encontrado');
+  document.body.classList.add('capturing'); // esconde coluna Ações
+  try{
+    const canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    return await new Promise(res=>canvas.toBlob(res,'image/png',0.95));
+  }finally{
+    document.body.classList.remove('capturing');
+  }
+}
+function _nomeArquivoRel(){
+  const m=(_relatorio?.mes||'relatorio').replace('/','-');
+  return `reembolso-${m}.png`;
+}
+async function shareWhatsAppImagem(){
+  try{
+    toast('Gerando imagem…');
+    const blob=await _gerarImagemRel();
+    const file=new File([blob],_nomeArquivoRel(),{type:'image/png'});
+    const txt=`Relatório de Reembolso — ${_relatorio.mes}\nTotal: ${fmt(_relatorio.total)}`;
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Relatório de Reembolso',text:txt});
+      closeModal('modal-share');
+    }else{
+      // Fallback desktop: baixa imagem e abre WhatsApp Web com o texto
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=_nomeArquivoRel();a.click();
+      URL.revokeObjectURL(url);
+      window.open('https://web.whatsapp.com/send?text='+encodeURIComponent(txt+'\n(anexe a imagem que acabou de ser baixada)'),'_blank');
+      closeModal('modal-share');
+      toast('Imagem baixada — anexe no WhatsApp');
+    }
+  }catch(e){console.error(e);toast('Erro ao gerar imagem: '+e.message,true);}
+}
+async function baixarImagemRel(){
+  try{
+    toast('Gerando imagem…');
+    const blob=await _gerarImagemRel();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=_nomeArquivoRel();a.click();
+    URL.revokeObjectURL(url);
+    closeModal('modal-share');
+    toast('Imagem salva!');
+  }catch(e){console.error(e);toast('Erro ao gerar imagem: '+e.message,true);}
+}
 
 async function downloadPDFMes(mes){
   const{data:{user}}=await sb.auth.getUser();
