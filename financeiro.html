@@ -884,13 +884,13 @@ body.capturing .rel-acao{display:none!important}
   <div style="background:var(--white);border-radius:14px;width:900px;max-width:97vw;max-height:93vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.28);display:flex;flex-direction:column">
     <!-- Toolbar -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--gray2);position:sticky;top:0;background:var(--white);z-index:10">
-      <div style="font-size:14px;font-weight:700;color:var(--teal)">Preview do Relatório de Reembolsos</div>
+      <div id="prev-rel-title" style="font-size:14px;font-weight:700;color:var(--teal)">Preview do Relatório de Reembolsos</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="adicionarVisitaNoPreview()">+ Adicionar Visita</button>
+        <button id="prev-btn-addvis" class="btn btn-outline btn-sm" onclick="adicionarVisitaNoPreview()">+ Adicionar Visita</button>
         <button class="btn btn-outline btn-sm" onclick="imprimirPreviewRel()">🖨 Imprimir</button>
         <button class="btn btn-outline btn-sm" onclick="downloadPDFPreview()">⬇ PDF</button>
         <button class="btn btn-sm" style="background:#25D366;color:#fff;border:none" onclick="compartilharRelatorio()">📲 Compartilhar</button>
-        <button class="btn btn-green btn-sm" onclick="criarContaPagarPreview()">💳 Criar Conta a Pagar</button>
+        <button id="prev-btn-cpagar" class="btn btn-green btn-sm" onclick="criarContaPagarPreview()">💳 Criar Conta a Pagar</button>
         <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray4);line-height:1;padding:0 4px" onclick="closeModal('modal-preview-rel')">×</button>
       </div>
     </div>
@@ -1356,6 +1356,8 @@ let _remVisitas=[];       // visitas do mês atual
 let _remGoogleToken=null; // access token Google
 let _remAprendizado=[];   // cache fin_cidade_aprendizado
 let _relatorio=null;      // relatório gerado
+let _relatorioDig=null;   // relatório digital gerado
+let _previewModo='visita';// modo do modal de preview: 'visita' | 'digital'
 
 // ─── Google OAuth (implicit flow) ────────────────────────────
 function iniciarGoogleAuth(){
@@ -2039,6 +2041,10 @@ try{
    </div>
   `;
 
+  _previewModo='visita';
+  document.getElementById('prev-rel-title').textContent='Preview do Relatório de Reembolsos';
+  document.getElementById('prev-btn-addvis').style.display='';
+  document.getElementById('prev-btn-cpagar').style.display='';
   document.getElementById('modal-preview-rel').classList.add('open');
 }catch(e){console.error('[rel]',e);toast('Erro ao abrir preview: '+e.message,true);}
 }
@@ -2052,7 +2058,10 @@ function imprimirPreviewRel(){
   w.document.close();
   w.print();
 }
-function downloadPDFPreview(){if(_relatorio)downloadPDF();else toast('Nenhum relatório carregado',true);}
+function downloadPDFPreview(){
+  if(_previewModo==='digital'){if(_relatorioDig)downloadPDFDigitalMes(_relatorioDig.mes);else toast('Nenhum relatório carregado',true);return;}
+  if(_relatorio)downloadPDF();else toast('Nenhum relatório carregado',true);
+}
 function criarContaPagarPreview(){if(_relatorio)criarContaPagar();else toast('Nenhum relatório carregado',true);}
 
 // ── Remover visita direto do preview (igual Manus) ──
@@ -2227,11 +2236,161 @@ async function carregarHistoricoDigital(){
       <td><span class="val-green">${fmt(d.total)}</span></td>
       <td><span class="${isReemb?'badge ok':'badge-gerado'}">${isReemb?'✓ Reembolsado':'Gerado'}</span></td>
       <td style="text-align:right;white-space:nowrap">
+        <button class="btn-icon" title="Visualizar" onclick="visualizarRelatorioDigital('${mes}')">👁</button>
+        <button class="btn-icon" title="Baixar PDF" onclick="downloadPDFDigitalMes('${mes}')">⬇</button>
         <button class="btn-icon del" title="Excluir mês" onclick="excluirRelatorioDigital('${mes}')">🗑</button>
       </td>
     </tr>`;
   }).join('');
 }
+// ── Preview do relatório digital (espelha visualizarRelatorio, adaptado p/ serviços) ──
+async function visualizarRelatorioDigital(mes){
+try{
+  const{data}=await sb.from('fin_reembolsos_digitais').select('*').eq('mes_referencia',mes).order('data',{ascending:true});
+  if(!data||!data.length){toast('Sem dados para este mês',true);return;}
+  const total=data.reduce((s,r)=>s+r.valor_total,0);
+  const porServico={};
+  for(const r of data){
+    const s=r.servico||'Outros';
+    if(!porServico[s])porServico[s]={qtd:0,valor:0};
+    porServico[s].qtd++;
+    porServico[s].valor+=r.valor_total;
+  }
+  _relatorioDig={mes,itens:data,total,porServico};
+
+  const isReemb=data.some(r=>r.status==='Reembolsado');
+  const dataReemb=(data.find(r=>r.data_reembolso)||{}).data_reembolso;
+  let pagLabel,pagVal;
+  if(isReemb&&dataReemb){
+    pagLabel='Data do Reembolso';
+    pagVal=new Date(dataReemb+'T00:00:00').toLocaleDateString('pt-BR');
+  }else{
+    const MESES={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11};
+    const p=mes.toLowerCase().split('/');
+    const dtPag=new Date(parseInt('20'+p[1]),(MESES[p[0]]??0)+1,15);
+    pagLabel='Data Prevista de Pagamento';
+    pagVal=dtPag.toLocaleDateString('pt-BR');
+  }
+  const dtGer=new Date().toLocaleString('pt-BR');
+  const partes=mes.split('/');
+  const mesLabel=`${partes[0].charAt(0).toUpperCase()+partes[0].slice(1)}/${partes[1]}`;
+
+  const servicoCards=Object.entries(porServico).map(([c,d])=>`
+    <div style="background:#F3FAF4;border:1px solid #CDE6D2;border-radius:8px;padding:12px 22px;text-align:center;min-width:120px">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px">${esc(c)}</div>
+      <div style="font-size:17px;font-weight:800;color:var(--green)">${fmt(d.valor)}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">${d.qtd} ${d.qtd!==1?'itens':'item'}</div>
+    </div>`).join('');
+
+  const linhas=data.map((r,i)=>`
+    <tr style="background:${i%2?'#F8FAFB':'#fff'}">
+      <td style="white-space:nowrap;padding:9px 12px;border:1px solid var(--gray2)">${formatData(r.data)}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.servico||'')}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.descricao||'')}</td>
+      <td style="padding:9px 12px;border:1px solid var(--gray2);text-align:right;font-weight:700;white-space:nowrap;color:var(--green)">${fmt(r.valor_total)}</td>
+    </tr>`).join('');
+
+  document.getElementById('preview-rel-body').innerHTML=`
+   <div id="rel-capture" style="background:#fff">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;border-bottom:2px solid var(--gray2);padding-bottom:14px">
+      <img src="assets/logo.png" alt="Diagnóstika Engenharia" style="height:46px;width:auto" crossorigin="anonymous">
+      <div style="text-align:right">
+        <div style="font-size:19px;font-weight:900;color:var(--teal);letter-spacing:.5px">RELATÓRIO DE REEMBOLSO DIGITAL</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">Período: ${mesLabel}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Funcionário</div>
+        <div style="font-size:15px;font-weight:700;color:var(--teal)">Rogério Conceição</div>
+      </div>
+      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
+        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">${pagLabel}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--green)">${pagVal}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:22px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Resumo por Serviço</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${servicoCards}</div>
+    </div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Detalhamento de Serviços Digitais</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--gray2)">
+        <thead>
+          <tr style="background:var(--teal);color:#fff">
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Data</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Serviço</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Descrição</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:700;border:1px solid #2C6E79">Valor</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>
+    <div style="background:var(--teal);color:#fff;display:flex;justify-content:space-between;padding:13px 18px;border-radius:6px;font-size:15px;font-weight:800;margin-bottom:16px">
+      <span>TOTAL A REEMBOLSAR</span>
+      <span>${fmt(total)}</span>
+    </div>
+    <div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:12px 14px;border-radius:4px;font-size:12px;color:#78350F;margin-bottom:16px">
+      <strong>Observações:</strong> Este relatório contém despesas com assinaturas e serviços digitais (IA, software e ferramentas) utilizados no trabalho remoto.
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text2);border-top:1px solid var(--gray2);padding-top:11px">
+      Gerado em ${dtGer} | DIAGNÓSTIKA Engenharia
+    </div>
+   </div>
+  `;
+  _previewModo='digital';
+  document.getElementById('prev-rel-title').textContent='Preview do Relatório Digital';
+  document.getElementById('prev-btn-addvis').style.display='none';
+  document.getElementById('prev-btn-cpagar').style.display='none';
+  document.getElementById('modal-preview-rel').classList.add('open');
+}catch(e){console.error('[rel-dig]',e);toast('Erro ao abrir preview: '+e.message,true);}
+}
+
+async function downloadPDFDigitalMes(mes){
+  const{data}=await sb.from('fin_reembolsos_digitais').select('*').eq('mes_referencia',mes).order('data',{ascending:true});
+  if(!data||!data.length){toast('Sem dados para este mês',true);return;}
+  const total=data.reduce((s,r)=>s+r.valor_total,0);
+  const porServico={};
+  for(const r of data){
+    const s=r.servico||'Outros';
+    if(!porServico[s])porServico[s]={qtd:0,valor:0};
+    porServico[s].qtd++;porServico[s].valor+=r.valor_total;
+  }
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFillColor(21,91,103);doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+  doc.text('Reembolso Digital — Diagnóstika Engenharia',14,12);
+  doc.setFontSize(11);doc.setFont('helvetica','normal');
+  doc.text(`Período: ${mes}`,14,20);
+  doc.setTextColor(30,30,30);doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('Detalhamento de Serviços Digitais',14,38);
+  let y=44;
+  doc.setFillColor(240,242,245);doc.rect(14,y-4,182,7,'F');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('Data',16,y);doc.text('Serviço',40,y);doc.text('Descrição',90,y);doc.text('Valor',185,y,'right');
+  y+=6;doc.setFont('helvetica','normal');
+  for(const v of data){
+    if(y>270){doc.addPage();y=20;}
+    doc.text(formatData(v.data),16,y);
+    doc.text(String(v.servico||'').slice(0,22),40,y);
+    doc.text(String(v.descricao||'').slice(0,40),90,y);
+    doc.text(fmt(v.valor_total),185,y,'right');
+    y+=6;doc.setDrawColor(220,220,220);doc.line(14,y-2,196,y-2);
+  }
+  y+=4;
+  doc.setFont('helvetica','bold');doc.text('Resumo por Serviço',14,y);y+=6;
+  doc.setFont('helvetica','normal');
+  for(const[c,d]of Object.entries(porServico)){
+    doc.text(`${c}: ${d.qtd} item(ns)`,20,y);doc.text(fmt(d.valor),185,y,'right');y+=6;
+  }
+  y+=2;doc.setDrawColor(21,91,103);doc.line(14,y,196,y);y+=6;
+  doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('TOTAL DO MÊS',14,y);doc.text(fmt(total),185,y,'right');
+  doc.save(`reembolso_digital_${mes.replace('/','-')}.pdf`);
+}
+
 async function excluirRelatorioDigital(mes){
   if(!confirm(`Excluir todos os reembolsos digitais de ${mes}?`))return;
   const{error}=await sb.from('fin_reembolsos_digitais').delete().eq('mes_referencia',mes);
