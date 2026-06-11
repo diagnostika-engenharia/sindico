@@ -2181,14 +2181,63 @@ async function salvarReembolsoDigital(){
   const mes=data.slice(0,7);
   const nomeMes=new Date(parseInt(mes.slice(0,4)),parseInt(mes.slice(5,7))-1,1)
     .toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('. ','/');
-  const{error}=await sb.from('fin_reembolsos').insert({
-    user_id:user.id, data, descricao:`[${cat}] ${desc}`,
-    cidade:'Digital', valor, status:'Pendente', mes:nomeMes,
+  const{error}=await sb.from('fin_reembolsos_digitais').insert({
+    user_id:user.id, data, servico:cat, descricao:desc,
+    valor, iof:0, valor_total:valor, status:'Pendente', mes_referencia:nomeMes,
   });
-  if(error){toast('Erro ao salvar',true);return;}
+  if(error){toast('Erro ao salvar: '+error.message,true);return;}
   closeModal('modal-rem-digital');
   toast('Reembolso digital adicionado!');
-  await carregarHistoricoRem();
+  await carregarHistoricoDigital();
+}
+
+// ─── Histórico Digital → Relatórios Gerados ───────────────────
+async function carregarHistoricoDigital(){
+  const tb=document.getElementById('tbl-digital-rem');
+  const{data,error}=await sb.from('fin_reembolsos_digitais')
+    .select('mes_referencia,status,valor_total').order('mes_referencia',{ascending:true});
+  if(error){tb.innerHTML='<tr><td colspan="6" class="empty">Erro ao carregar.</td></tr>';return;}
+  if(!data||!data.length){
+    tb.innerHTML='<tr><td colspan="6" class="empty">Nenhum reembolso digital registrado.</td></tr>';
+    return;
+  }
+  const porMes={};
+  for(const r of data){
+    const m=r.mes_referencia;
+    if(!porMes[m])porMes[m]={qtd:0,total:0,status:'Pendente'};
+    porMes[m].qtd++;
+    porMes[m].total+=r.valor_total;
+    if(r.status==='Reembolsado')porMes[m].status='Reembolsado';
+  }
+  const MES_N={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+  const ordem=m=>{const[mm,yy]=m.split('/');return (parseInt(yy)||0)*100+(MES_N[(mm||'').toLowerCase()]||0);};
+  const meses=Object.keys(porMes).sort((a,b)=>ordem(a)-ordem(b)).reverse();
+  const cntAno={};
+  tb.innerHTML=meses.map(mes=>{
+    const partes=mes.split('/');
+    const ano=partes.length>1?'20'+partes[1]:'2026';
+    cntAno[ano]=(cntAno[ano]||0)+1;
+    const numCtrl=`RD-${ano}-${String(cntAno[ano]).padStart(3,'0')}`;
+    const d=porMes[mes];
+    const isReemb=d.status==='Reembolsado';
+    return `<tr>
+      <td><span class="rel-num">${numCtrl}</span></td>
+      <td>${mes}</td>
+      <td><span class="badge-visitas">${d.qtd} ${d.qtd===1?'item':'itens'}</span></td>
+      <td><span class="val-green">${fmt(d.total)}</span></td>
+      <td><span class="${isReemb?'badge ok':'badge-gerado'}">${isReemb?'✓ Reembolsado':'Gerado'}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn-icon del" title="Excluir mês" onclick="excluirRelatorioDigital('${mes}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function excluirRelatorioDigital(mes){
+  if(!confirm(`Excluir todos os reembolsos digitais de ${mes}?`))return;
+  const{error}=await sb.from('fin_reembolsos_digitais').delete().eq('mes_referencia',mes);
+  if(error){toast('Erro ao excluir',true);return;}
+  toast('Reembolsos digitais excluídos');
+  carregarHistoricoDigital();
 }
 
 // ─── Tab switcher ─────────────────────────────────────────────
@@ -2197,6 +2246,7 @@ function remTab(tab){
   document.getElementById('rem-tab-digital').style.display=tab==='digital'?'block':'none';
   document.getElementById('tab-btn-visita').classList.toggle('active',tab==='visita');
   document.getElementById('tab-btn-digital').classList.toggle('active',tab==='digital');
+  if(tab==='digital')carregarHistoricoDigital();
 }
 
 // ─── loadReembolsos (nav) ─────────────────────────────────────
