@@ -2275,66 +2275,74 @@ try{
   const partes=mes.split('/');
   const mesLabel=`${partes[0].charAt(0).toUpperCase()+partes[0].slice(1)}/${partes[1]}`;
 
+  // Cor (pontinho) por serviço — estilo Manus
+  const DOT={'chatgpt':'#10A37F','manus ai':'#6C5CE7','manus':'#6C5CE7','anthropic':'#D97757','claude ai':'#D97757','claude':'#D97757','docusign':'#E8A33D'};
+  const dotCor=s=>DOT[(s||'').toLowerCase()]||'#3B82C4';
+
   const servicoCards=Object.entries(porServico).map(([c,d])=>`
-    <div style="background:#F3FAF4;border:1px solid #CDE6D2;border-radius:8px;padding:12px 22px;text-align:center;min-width:120px">
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px">${esc(c)}</div>
-      <div style="font-size:17px;font-weight:800;color:var(--green)">${fmt(d.valor)}</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:3px">${d.qtd} ${d.qtd!==1?'itens':'item'}</div>
+    <div style="background:#F6FAFC;border:1px solid #DCE7EE;border-radius:8px;padding:12px 22px;text-align:center;min-width:120px">
+      <div style="font-size:12px;font-weight:600;color:#2B3A42;margin-bottom:5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotCor(c)};margin-right:6px;vertical-align:middle"></span>${esc(c)}</div>
+      <div style="font-size:17px;font-weight:800;color:#16A34A">${fmt(d.valor)}</div>
+      <div style="font-size:11px;color:#6B7B83;margin-top:3px">${d.qtd} lançamento${d.qtd!==1?'s':''}</div>
     </div>`).join('');
 
   const linhas=data.map((r,i)=>`
-    <tr style="background:${i%2?'#F8FAFB':'#fff'}">
-      <td style="white-space:nowrap;padding:9px 12px;border:1px solid var(--gray2)">${formatData(r.data)}</td>
-      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.servico||'')}</td>
-      <td style="padding:9px 12px;border:1px solid var(--gray2)">${esc(r.descricao||'')}</td>
-      <td style="padding:9px 12px;border:1px solid var(--gray2);text-align:right;font-weight:700;white-space:nowrap;color:var(--green)">${fmt(r.valor_total)}</td>
+    <tr style="background:${i%2?'#F4F8FA':'#fff'}">
+      <td style="white-space:nowrap;padding:9px 12px;border:1px solid #E2EAEF">${formatData(r.data)}</td>
+      <td style="padding:9px 12px;border:1px solid #E2EAEF"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotCor(r.servico)};margin-right:7px;vertical-align:middle"></span>${esc(r.servico||'')}</td>
+      <td style="padding:9px 12px;border:1px solid #E2EAEF;color:#4A5A62">${esc(r.descricao||'')}</td>
+      <td style="padding:9px 12px;border:1px solid #E2EAEF;text-align:right;font-weight:700;white-space:nowrap;color:#16A34A">${fmt(r.valor_total)}</td>
     </tr>`).join('');
 
   document.getElementById('preview-rel-body').innerHTML=`
    <div id="rel-capture" style="background:#fff">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;border-bottom:2px solid var(--gray2);padding-bottom:14px">
-      <img src="assets/logo.png" alt="Diagnóstika Engenharia" style="height:46px;width:auto" crossorigin="anonymous">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;border-bottom:2px solid #E2EAEF;padding-bottom:14px">
+      <img src="assets/logo-vertical.png" alt="Diagnóstika Engenharia" style="height:74px;width:auto" crossorigin="anonymous">
       <div style="text-align:right">
-        <div style="font-size:19px;font-weight:900;color:var(--teal);letter-spacing:.5px">RELATÓRIO DE REEMBOLSO DIGITAL</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:3px">Período: ${mesLabel}</div>
+        <div style="font-size:21px;font-weight:900;color:#1F4E63;letter-spacing:.5px">RELATÓRIO DE REEMBOLSO</div>
+        <div style="font-size:12px;color:#6B7B83;margin-top:3px">Período: ${mesLabel}</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
-      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
-        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Funcionário</div>
-        <div style="font-size:15px;font-weight:700;color:var(--teal)">Rogério Conceição</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px">
+      <div style="background:#EAF2F6;border-radius:6px;padding:11px 16px">
+        <div style="font-size:10px;font-weight:600;color:#6B7B83;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Funcionário</div>
+        <div style="font-size:15px;font-weight:700;color:#1F3A42">Rogério Conceição</div>
       </div>
-      <div style="background:#EFF6F8;border-left:4px solid var(--teal);border-radius:5px;padding:11px 16px">
-        <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">${pagLabel}</div>
-        <div style="font-size:15px;font-weight:700;color:var(--green)">${pagVal}</div>
+      <div style="background:#EAF2F6;border-radius:6px;padding:11px 16px">
+        <div style="font-size:10px;font-weight:600;color:#6B7B83;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Tipo de Reembolso</div>
+        <div style="font-size:15px;font-weight:700;color:#1F3A42">Serviços Digitais</div>
+      </div>
+      <div style="background:#EAF2F6;border-radius:6px;padding:11px 16px">
+        <div style="font-size:10px;font-weight:600;color:#6B7B83;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">${pagLabel}</div>
+        <div style="font-size:15px;font-weight:700;color:#16A34A">${pagVal}</div>
       </div>
     </div>
     <div style="margin-bottom:22px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Resumo por Serviço</div>
+      <div style="font-size:13px;font-weight:700;color:#2B3A42;margin-bottom:11px">📄 Resumo por Serviço</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">${servicoCards}</div>
     </div>
     <div style="margin-bottom:18px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:11px">Detalhamento de Serviços Digitais</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--gray2)">
+      <div style="font-size:13px;font-weight:700;color:#2B3A42;margin-bottom:11px">Detalhamento de Reembolsos Digitais</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #E2EAEF">
         <thead>
-          <tr style="background:var(--teal);color:#fff">
-            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Data</th>
-            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Serviço</th>
-            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #2C6E79">Descrição</th>
-            <th style="padding:10px 12px;text-align:right;font-weight:700;border:1px solid #2C6E79">Valor</th>
+          <tr style="background:#2D5E72;color:#fff">
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #244B5B">Data</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #244B5B">Serviço</th>
+            <th style="padding:10px 12px;text-align:left;font-weight:700;border:1px solid #244B5B">Descrição</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:700;border:1px solid #244B5B">Valor</th>
           </tr>
         </thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>
-    <div style="background:var(--teal);color:#fff;display:flex;justify-content:space-between;padding:13px 18px;border-radius:6px;font-size:15px;font-weight:800;margin-bottom:16px">
+    <div style="background:#2D5E72;color:#fff;display:flex;justify-content:space-between;padding:13px 18px;border-radius:6px;font-size:15px;font-weight:800;margin-bottom:16px">
       <span>TOTAL A REEMBOLSAR</span>
       <span>${fmt(total)}</span>
     </div>
     <div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:12px 14px;border-radius:4px;font-size:12px;color:#78350F;margin-bottom:16px">
-      <strong>Observações:</strong> Este relatório contém despesas com assinaturas e serviços digitais (IA, software e ferramentas) utilizados no trabalho remoto.
+      <strong>Observações:</strong> Este relatório contém despesas de serviços digitais e assinaturas. Os valores incluem IOF quando aplicável.
     </div>
-    <div style="text-align:center;font-size:11px;color:var(--text2);border-top:1px solid var(--gray2);padding-top:11px">
+    <div style="text-align:center;font-size:11px;color:#6B7B83;border-top:1px solid #E2EAEF;padding-top:11px">
       Gerado em ${dtGer} | DIAGNÓSTIKA Engenharia
     </div>
    </div>
@@ -2359,7 +2367,7 @@ async function downloadPDFDigitalMes(mes){
   }
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
-  doc.setFillColor(21,91,103);doc.rect(0,0,210,28,'F');
+  doc.setFillColor(45,94,114);doc.rect(0,0,210,28,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text('Reembolso Digital — Diagnóstika Engenharia',14,12);
   doc.setFontSize(11);doc.setFont('helvetica','normal');
