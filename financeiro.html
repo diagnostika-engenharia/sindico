@@ -185,6 +185,46 @@ body.capturing .rel-acao{display:none!important}
 /* ── TOAST ── */
 #toast{position:fixed;bottom:20px;right:20px;background:var(--teal);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;z-index:9999}
 #toast.err{background:var(--red)}
+
+/* ── MOBILE (drawer + adaptação) ── */
+.mobile-bar{display:none}
+.mobile-backdrop{display:none}
+@media(max-width:820px){
+  body{overflow-x:hidden}
+  #app{height:auto;overflow:visible}
+  .app-shell{display:block;height:auto}
+  /* barra superior fixa com hambúrguer */
+  .mobile-bar{display:flex;align-items:center;gap:12px;position:fixed;top:0;left:0;right:0;height:54px;background:var(--teal);z-index:800;padding:0 14px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .mb-burger{background:none;border:none;color:#fff;font-size:25px;line-height:1;cursor:pointer;padding:4px 8px}
+  .mb-title{color:#fff;font-size:16px;font-weight:800}
+  /* sidebar vira drawer deslizante */
+  nav.sn{position:fixed;top:0;left:0;height:100vh;width:268px;max-width:84vw;z-index:1000;transform:translateX(-100%);transition:transform .25s ease;box-shadow:2px 0 18px rgba(0,0,0,.3)}
+  nav.sn.open{transform:translateX(0)}
+  .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:950;opacity:0;pointer-events:none;transition:opacity .25s}
+  .mobile-backdrop.open{opacity:1;pointer-events:auto}
+  /* conteúdo ocupa a largura toda, abaixo da barra */
+  main.main{height:auto;overflow:visible;padding:68px 14px 32px}
+  .page-header{flex-direction:column;align-items:flex-start;gap:10px}
+  .page-header h2{font-size:17px}
+  /* KPIs em 2 colunas estilo app */
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:13px}
+  .kpi .val{font-size:19px}
+  /* tabelas com rolagem horizontal dentro do card (não estoura a tela) */
+  .card-bd{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.tbl{min-width:560px}
+  .tbl th,.tbl td{padding:9px 10px;font-size:12px}
+  /* formulários em coluna única */
+  .form-2col{grid-template-columns:1fr}
+  /* gerador de reembolsos empilha */
+  .rel-gerador-body{flex-direction:column;align-items:stretch}
+  .func-col{min-width:0}
+  .btn-gerar-rel2{width:100%;justify-content:center}
+  .rem-tabs{flex-wrap:wrap}
+  .mes-grid{grid-template-columns:repeat(6,1fr)}
+  /* login responsivo */
+  .login-box{width:88vw;max-width:360px;padding:32px 24px}
+}
 </style>
 </head>
 <body>
@@ -213,9 +253,14 @@ body.capturing .rel-acao{display:none!important}
 
 <!-- APP -->
 <div id="app">
+  <header class="mobile-bar">
+    <button class="mb-burger" onclick="toggleNav()" aria-label="Menu">☰</button>
+    <span class="mb-title">💰 Financeiro</span>
+  </header>
+  <div class="mobile-backdrop" id="navBackdrop" onclick="toggleNav(false)"></div>
   <div class="app-shell">
     <!-- SIDEBAR -->
-    <nav class="sn">
+    <nav class="sn" id="sidebar">
       <div class="sn-brand" onclick="window.open('https://diagnostika-engenharia.github.io/','_blank')" title="Voltar ao portal Diagnóstika" style="cursor:pointer;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
         <h2>💰 Financeiro</h2>
         <p style="display:flex;align-items:center;gap:4px">Diagnóstika Engenharia <span style="font-size:10px;opacity:.6">↗</span></p>
@@ -916,7 +961,15 @@ window.addEventListener('DOMContentLoaded',async()=>{
 });
 
 // ── Navegação ─────────────────────────────────────────────────
+function toggleNav(force){
+  const sb=document.getElementById('sidebar'), bd=document.getElementById('navBackdrop');
+  if(!sb)return;
+  const open = force===undefined ? !sb.classList.contains('open') : force;
+  sb.classList.toggle('open', open);
+  if(bd) bd.classList.toggle('open', open);
+}
 function nav(page){
+  toggleNav(false);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sn-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
