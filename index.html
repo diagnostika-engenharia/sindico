@@ -17,6 +17,11 @@
   --white:#FFFFFF;--text:#1A2E31;--text2:#4A6568;
   --shadow:0 2px 12px rgba(21,91,103,.12);
 }
+[data-theme="dark"]{
+  --white:#1E2A2C;--gray:#151E20;--gray2:#253235;--gray3:#2E3E42;--gray4:#5A7478;
+  --text:#E8F0F1;--text2:#8AACB0;--red-lt:#2A1A1A;--green-lt:#162415;
+  --shadow:0 2px 12px rgba(0,0,0,.35);
+}
 html,body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--gray);color:var(--text);font-size:14px;min-height:100vh;line-height:1.5}
 a{color:var(--teal);text-decoration:none}
 
@@ -780,9 +785,32 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
   <footer>
     <strong style="color:#fff">Diagnóstika Engenharia LTDA</strong> · CNPJ 54.027.948/0001-60
+    <div style="margin-top:8px"><span onclick="toggleDkTheme()" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.55);font-size:11px;font-weight:600;user-select:none"><span id="dk-track" style="width:32px;height:18px;border-radius:9px;background:rgba(255,255,255,.2);position:relative;display:inline-block;vertical-align:middle;transition:.2s"><span id="dk-knob" style="position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:.2s;display:block"></span></span><span id="dk-label">Tema escuro</span></span></div>
   </footer>
 </div>
 
+<script>
+function toggleDkTheme(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const next=dark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  const knob=document.getElementById('dk-knob'),track=document.getElementById('dk-track'),lbl=document.getElementById('dk-label');
+  if(knob) knob.style.left=next==='dark'?'17px':'3px';
+  if(track) track.style.background=next==='dark'?'#00B4AC':'rgba(255,255,255,.2)';
+  if(lbl) lbl.textContent=next==='dark'?'Tema claro':'Tema escuro';
+  localStorage.setItem('dk-theme',next);
+}
+(function(){
+  const t=localStorage.getItem('dk-theme');
+  if(t==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    const knob=document.getElementById('dk-knob'),track=document.getElementById('dk-track'),lbl=document.getElementById('dk-label');
+    if(knob) knob.style.left='17px';
+    if(track) track.style.background='#00B4AC';
+    if(lbl) lbl.textContent='Tema claro';
+  }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
