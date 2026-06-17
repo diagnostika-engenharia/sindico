@@ -1127,7 +1127,8 @@ async function fazerLogin(){
     _user=data.user;
     await mostrarApp();
   }catch(e){
-    err.textContent='❌ '+(e.message==='Invalid login credentials'?'E-mail ou senha incorretos':e.message);
+    console.error('Falha no login:', e);
+    err.textContent='❌ '+(e.message==='Invalid login credentials'?'E-mail ou senha incorretos.':'Não foi possível entrar. Verifique sua conexão e tente novamente.');
     err.classList.add('show');
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
@@ -1149,7 +1150,7 @@ async function esqueciSenha(){
     const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
     if(error) throw error;
     alert('✓ Enviamos um e-mail com instruções para redefinir sua senha. Verifique sua caixa de entrada (e a pasta de spam).');
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao enviar e-mail de redefinição:', e); alert('Não foi possível enviar o e-mail de redefinição. Confira o endereço e tente novamente.'); }
 }
 
 async function alterarSenha(){
@@ -1160,7 +1161,7 @@ async function alterarSenha(){
     if(error) throw error;
     alert('✓ Senha alterada com sucesso!');
     document.getElementById('user-menu').classList.remove('show');
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao alterar senha:', e); alert('Não foi possível alterar a senha. Tente novamente em instantes.'); }
 }
 
 function toggleUserMenu(ev){
@@ -1185,7 +1186,7 @@ async function mostrarApp(){
 
   // 1. Tenta carregar APENAS os condomínios deste usuário
   const {data:vincsProp,error}=await sb.from('user_condos').select('*').eq('user_id',_user.id);
-  if(error){ alert('Erro ao carregar condomínios: '+error.message); return; }
+  if(error){ console.error('Falha ao carregar condomínios:', error); alert('Não foi possível carregar seus condomínios. Verifique sua conexão e tente novamente.'); return; }
 
   // Modo demo (?demo=1) — interage com todos condomínios sem read-only
   const _demoSindico = new URLSearchParams(location.search).get('demo')==='1';
@@ -1263,7 +1264,7 @@ async function carregarTudo(){
 // ═══════════════════════════════════════════════════════════════════════════
 async function carregarVisitas(){
   const {data,error}=await sb.from('visitas').select('*').eq('condo_id',_condoAtivo).order('data',{ascending:false}).limit(100);
-  if(error){ document.getElementById('visitas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
+  if(error){ console.error('Falha ao carregar visitas:', error); document.getElementById('visitas-list').innerHTML='<div class="empty" style="color:var(--red)">Não foi possível carregar as visitas. Verifique sua conexão e tente novamente.</div>'; return; }
   _visitas=data||[];
   renderVisitas();
   renderAgenda();
@@ -1765,7 +1766,7 @@ function renderTimelineHistorico(eventos, demanda){
 
 async function carregarDemandas(){
   const {data,error}=await sb.from('demandas').select('*').eq('condo_id',_condoAtivo).is('deletada_em',null).order('created_at',{ascending:false});
-  if(error){ document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return; }
+  if(error){ console.error('Falha ao carregar demandas:', error); document.getElementById('demandas-list').innerHTML='<div class="empty" style="color:var(--red)">Não foi possível carregar as demandas. Verifique sua conexão e tente novamente.</div>'; return; }
   const todas=data||[];
   _demandas = todas.filter(d=>(d.origem||'sindico')!=='morador');
   _moradores = todas.filter(d=>d.origem==='morador');
@@ -2443,7 +2444,8 @@ async function abrirWebcam(modo){
     _webcamStream=await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject=_webcamStream;
   }catch(e){
-    alert('Não consegui acessar a câmera: '+e.message+'\n\nVerifique se permitiu o acesso no navegador.');
+    console.error('Falha ao acessar câmera:', e);
+    alert('Não foi possível acessar a câmera.\n\nVerifique se você permitiu o acesso à câmera nas configurações do navegador e tente novamente.');
     fecharWebcam();
     return;
   }
@@ -2525,7 +2527,7 @@ async function processarAnexos(inp){
         const item=await lerVideo(f);
         _anexosDem.push(item);
       }
-    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+    }catch(e){ console.error('Falha ao processar anexo '+f.name+':', e); alert('Não foi possível anexar o arquivo "'+f.name+'". Verifique o formato e tente novamente.'); }
   }
   inp.value=''; // libera o input para nova captura
   renderPreviewAnexos();
@@ -2670,7 +2672,7 @@ async function processarAnexosEdit(inp){
         if(f.size>10*1024*1024){ alert(f.name+' tem mais de 10MB'); continue; }
         _anexosEdit.push({tipo:'doc',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
       }
-    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+    }catch(e){ console.error('Falha ao processar anexo '+f.name+':', e); alert('Não foi possível anexar o arquivo "'+f.name+'". Verifique o formato e tente novamente.'); }
   }
   inp.value='';
   renderNovosAnexosEdit();
@@ -2724,7 +2726,8 @@ async function salvarEdicaoDemanda(id){
     alert('✓ Demanda atualizada!');
     carregarDemandas();
   }catch(e){
-    alert('Erro ao salvar: '+e.message);
+    console.error('Falha ao salvar demanda:', e);
+    alert('Não foi possível salvar as alterações da demanda. Verifique sua conexão e tente novamente.');
     btn.disabled=false; btn.textContent='💾 Salvar alterações';
   }
 }
@@ -2748,7 +2751,8 @@ async function excluirDemandaSindico(id){
     alert('✓ Demanda excluída.\nRegistro mantido no histórico para auditoria.');
     carregarDemandas();
   }catch(e){
-    alert('Erro ao excluir: '+e.message);
+    console.error('Falha ao excluir demanda:', e);
+    alert('Não foi possível excluir a demanda. Verifique sua conexão e tente novamente.');
   }
 }
 
@@ -2771,7 +2775,7 @@ async function criarDemanda(){
     const proto=novo?.protocolo||'gerado automaticamente';
     alert('✓ Demanda enviada!\n\n📋 PROTOCOLO: '+proto+'\n\nA equipe Diagnóstika foi notificada. Use este protocolo para acompanhar.');
     carregarDemandas();
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao enviar demanda:', e); alert('Não foi possível enviar a demanda. Verifique sua conexão e tente novamente.'); }
   finally{ btn.disabled=false; btn.innerHTML='📤 Enviar Demanda'; }
 }
 
@@ -2838,7 +2842,7 @@ async function processarAnexosMnt(inp){
         const fr=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
         _anexosMnt.push({tipo:'doc',origem:'sindico',url:fr,nome:f.name,tamanho:Math.round(f.size/1024)+'KB'});
       }
-    }catch(e){ alert('Erro com '+f.name+': '+e.message); }
+    }catch(e){ console.error('Falha ao processar anexo '+f.name+':', e); alert('Não foi possível anexar o arquivo "'+f.name+'". Verifique o formato e tente novamente.'); }
   }
   inp.value='';
   renderAnexosMntPreview();
@@ -2922,7 +2926,7 @@ async function salvarManutencao(){
       ? '✓ Manutenção atualizada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'—')
       : '✓ Manutenção registrada!\n\n📋 PROTOCOLO: '+(data?.protocolo||'gerado')+'\n\nDocumento adicionado ao Livro de Manutenção Predial do condomínio.');
     carregarManutencoes();
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao registrar manutenção:', e); alert('Não foi possível registrar a manutenção. Verifique sua conexão e tente novamente.'); }
   finally{ btn.disabled=false; btn.textContent=_editandoMntId?'💾 Salvar alterações':'💾 Registrar Manutenção'; }
 }
 
@@ -2970,10 +2974,10 @@ async function carregarManutencoes(){
     // Fallback: se a coluna deletada_em ainda não foi migrada, refaz sem o filtro
     if(/deletada_em/i.test(error.message)){
       const r2=await sb.from('manutencoes').select('*').eq('condo_id',_condoAtivo).order('data_execucao',{ascending:false});
-      if(r2.error){ document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+r2.error.message+'</div>'; return; }
+      if(r2.error){ console.error('Falha ao carregar manutenções:', r2.error); document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Não foi possível carregar as manutenções. Verifique sua conexão e tente novamente.</div>'; return; }
       _manutencoes=r2.data||[];
     } else {
-      document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Erro: '+error.message+'</div>'; return;
+      console.error('Falha ao carregar manutenções:', error); document.getElementById('mnt-list').innerHTML='<div class="empty" style="color:var(--red)">Não foi possível carregar as manutenções. Verifique sua conexão e tente novamente.</div>'; return;
     }
   } else {
     _manutencoes=data||[];
@@ -3071,10 +3075,11 @@ async function excluirManutencao(id){
   }).eq('id',id);
   if(error){
     // Fallback: se as colunas deletada_* não existem ainda no banco, alerta o operador
+    console.error('Falha ao excluir manutenção:', error);
     if(/column|deletada/i.test(error.message)){
-      alert('Atenção: o banco precisa receber a migração para soft-delete de manutenções. Execute o SQL em sql/manutencao_audit.sql no Supabase antes de excluir.\n\nDetalhe técnico: '+error.message);
+      alert('Não foi possível excluir esta manutenção agora. O sistema ainda está sendo atualizado para esta função — fale com a equipe Diagnóstika.');
     } else {
-      alert('Erro: '+error.message);
+      alert('Não foi possível excluir a manutenção. Verifique sua conexão e tente novamente.');
     }
     return;
   }
@@ -3245,7 +3250,7 @@ async function salvarPreferenciasNotif(){
   const status=document.getElementById('mnt-email-status');
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ status.textContent='❌ E-mail inválido'; status.style.color='var(--red)'; return; }
   const {error}=await sb.from('user_condos').update({email_notificacao:email||null, notificar_vencimento:notif}).eq('user_id',_user.id).eq('condo_id',_condoAtivo);
-  if(error){ status.textContent='Erro: '+error.message; status.style.color='var(--red)'; return; }
+  if(error){ console.error('Falha ao salvar preferências de notificação:', error); status.textContent='Não foi possível salvar. Tente novamente.'; status.style.color='var(--red)'; return; }
   status.textContent='✓ Preferências salvas! '+(email?'Notificações enviadas para '+email:'(sem e-mail definido)');
   status.style.color='var(--green)';
 }
@@ -3300,7 +3305,8 @@ async function carregarEquipe(){
     renderEquipe();
     atualizarBadgeEquipe();
   }catch(e){
-    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:13px">⚠ ${e.message||'Erro ao carregar equipe'}</div>`;
+    console.error('Falha ao carregar equipe:', e);
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:13px">⚠ Não foi possível carregar a equipe. Verifique sua conexão e tente novamente.</div>`;
   }
 }
 
@@ -3419,8 +3425,9 @@ async function salvarEquipe(){
     fecharFormEquipe();
     await carregarEquipe();
   }catch(e){
+    console.error('Falha ao salvar funcionário:', e);
     btn.disabled = false; btn.textContent = '💾 Salvar';
-    erro.textContent = e.message || 'Erro ao salvar';
+    erro.textContent = 'Não foi possível salvar. Verifique os dados e tente novamente.';
     erro.style.display = 'block';
   }
 }
@@ -3434,7 +3441,7 @@ async function toggleEquipe(id, novoAtivo){
     const { error } = await sb.from('equipe_condo').update({ativo: novoAtivo, atualizado_em: new Date().toISOString()}).eq('id', id);
     if(error) throw error;
     await carregarEquipe();
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao atualizar funcionário:', e); alert('Não foi possível atualizar o funcionário. Tente novamente.'); }
 }
 
 async function excluirEquipe(id){
@@ -3444,7 +3451,7 @@ async function excluirEquipe(id){
     const { error } = await sb.from('equipe_condo').delete().eq('id', id);
     if(error) throw error;
     await carregarEquipe();
-  }catch(e){ alert('Erro: '+e.message); }
+  }catch(e){ console.error('Falha ao excluir funcionário:', e); alert('Não foi possível excluir o funcionário. Tente novamente.'); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3492,8 +3499,9 @@ async function salvarPerfil(){
     if(typeof atualizarHeaderUsuario === 'function') atualizarHeaderUsuario();
     setTimeout(()=>{ok.style.display='none';}, 4000);
   }catch(e){
+    console.error('Falha ao salvar perfil:', e);
     btn.disabled = false; btn.textContent = '💾 Salvar perfil';
-    erro.textContent = e.message || 'Erro ao salvar';
+    erro.textContent = 'Não foi possível salvar o perfil. Verifique sua conexão e tente novamente.';
     erro.style.display = 'block';
   }
 }
@@ -3526,7 +3534,7 @@ async function carregarPortaria(){
     atualizarBadgePortariaSindico();
   }catch(e){
     console.warn('Erro portaria:', e);
-    document.getElementById('portaria-list').innerHTML = `<div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Não foi possível carregar eventos da portaria.<br><small style="opacity:.7">${e.message||e}</small></div>`;
+    document.getElementById('portaria-list').innerHTML = `<div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Não foi possível carregar os eventos da portaria.<br><small style="opacity:.7">Verifique sua conexão e tente novamente.</small></div>`;
   }
 }
 

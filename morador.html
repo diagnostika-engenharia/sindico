@@ -593,7 +593,7 @@ async function adicionarDocs(filesList){
       renderDocs();
     }catch(err){
       console.error('Erro upload:', err);
-      alert('Não foi possível enviar "'+f.name+'": '+(err.message||err));
+      alert('Não foi possível enviar a foto "'+f.name+'". Verifique sua conexão e tente novamente.');
       _docs.splice(draftIdx, 1);
       renderDocs();
     }
@@ -854,8 +854,7 @@ async function enviarSolicitacao(){
   }
   catch(e){
     console.error('[diag] ERRO:', e);
-    var msgErro = (e && (e.message || e.toString())) || 'Erro desconhecido';
-    setMsg('err', '<b>Falha ao enviar:</b> ' + msgErro + '<br><small style="display:block;margin-top:4px">Tire um print desta tela e fale com a Diagnóstika pelo WhatsApp do(a) síndico(a) se persistir.</small>');
+    setMsg('err', '<b>Não foi possível enviar sua solicitação.</b><br><small style="display:block;margin-top:4px">Verifique sua conexão e tente novamente. Se o problema continuar, fale com a Diagnóstika pelo WhatsApp do(a) síndico(a).</small>');
     $('btn-send').disabled = false;
     $('btn-spinner').classList.remove('show');
     $('btn-txt').textContent = '📤 Enviar solicitação';
