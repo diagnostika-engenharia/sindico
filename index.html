@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fimmjgdwhifsrrbreche.supabase.co https://84.46.248.23.sslip.io; img-src 'self' data: blob: https://fimmjgdwhifsrrbreche.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self';">
 <script>(function(){if(localStorage.getItem('dk-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');})()</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#155B67">
@@ -391,7 +392,8 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
     <!-- Tabs -->
     <div class="tabs" id="tabs-bar" style="display:none">
-      <button class="tab active" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
+      <button class="tab active" data-tab="painel" onclick="trocarTab('painel')"><span class="ic">📊</span>Painel</button>
+      <button class="tab" data-tab="visitas" onclick="trocarTab('visitas')"><span class="ic">📋</span>Visitas</button>
       <button class="tab" data-tab="agenda" onclick="trocarTab('agenda')"><span class="ic">📅</span>Agenda</button>
       <button class="tab" data-tab="demandas" onclick="trocarTab('demandas')"><span class="ic">💬</span>Demandas <span class="badge-num" id="dem-count" style="display:none">0</span></button>
       <button class="tab" data-tab="portaria" onclick="trocarTab('portaria')"><span class="ic">🛡️</span>Portaria <span class="badge-num" id="port-count" style="display:none">0</span></button>
@@ -403,7 +405,17 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
     </div>
 
     <!-- Conteúdo das tabs -->
-    <div class="tab-content active" data-tab="visitas">
+    <div class="tab-content active" data-tab="painel">
+      <div class="section">
+        <h2>📊 Indicadores do condomínio</h2>
+        <div id="painelKpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+          <div class="loading">Carregando…</div>
+        </div>
+        <div id="painelAlertas" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" data-tab="visitas">
       <div class="section">
         <h2>📋 Últimas Vistorias Realizadas</h2>
         <div id="visitas-list"><div class="loading">Carregando…</div></div>
@@ -807,11 +819,54 @@ footer{background:var(--teal-dk);color:rgba(255,255,255,.7);text-align:center;pa
 
     <div class="tab-content" data-tab="docs">
       <div class="section">
-        <h2>📄 Documentos</h2>
-        <div class="empty">
-          <div style="font-size:36px;margin-bottom:10px">📂</div>
-          <div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:14px">Em breve</div>
-          <div style="font-size:12px;line-height:1.5">Aqui você acessará: plantas, manual do proprietário, ATAs, contratos, laudos técnicos e regulamento interno.<br><br>Por enquanto, solicite na aba <b>Demandas</b>.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <h2 style="margin:0">📄 Documentos legais</h2>
+          <button onclick="abrirDocLegalForm()" style="background:var(--brand);color:#fff;border:0;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">+ Novo documento</button>
+        </div>
+        <div id="docsLegaisKpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px"></div>
+        <div id="docsLegaisLista"></div>
+        <div id="docsLegaisFormBox" style="display:none;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--card2,#f8f9fa)">
+          <h3 style="margin:0 0 12px;font-size:14px">Cadastrar documento</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+            <label style="font-size:11px;font-weight:600">Tipo
+              <select id="dlTipo" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+                <option value="AVCB">AVCB (Bombeiros)</option>
+                <option value="ART">ART (Anotação Resp. Técnica)</option>
+                <option value="SEGURO_PREDIAL">Seguro Predial</option>
+                <option value="SEGURO_PORTARIA">Seguro da Portaria</option>
+                <option value="SEGURO_ELEVADOR">Seguro de Elevador</option>
+                <option value="ALVARA_FUNCIONAMENTO">Alvará de Funcionamento</option>
+                <option value="HABITE_SE">Habite-se</option>
+                <option value="LAUDO_SPDA">Laudo SPDA</option>
+                <option value="LAUDO_ESTRUTURAL">Laudo Estrutural</option>
+                <option value="LAUDO_INSPECAO_PREDIAL">Laudo de Inspeção Predial</option>
+                <option value="CONTRATO_MANUTENCAO">Contrato de Manutenção</option>
+                <option value="OUTRO">Outro</option>
+              </select>
+            </label>
+            <label style="font-size:11px;font-weight:600">Identificação
+              <input id="dlIdent" type="text" placeholder="nº ART, apólice, processo…" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+            </label>
+            <label style="font-size:11px;font-weight:600">Emissão
+              <input id="dlEmissao" type="date" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+            </label>
+            <label style="font-size:11px;font-weight:600">Vencimento *
+              <input id="dlVenc" type="date" required style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+            </label>
+            <label style="font-size:11px;font-weight:600">Responsável
+              <input id="dlResp" type="text" placeholder="empresa, profissional, seguradora" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+            </label>
+            <label style="font-size:11px;font-weight:600">Valor (R$)
+              <input id="dlValor" type="number" step="0.01" placeholder="opcional" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px">
+            </label>
+          </div>
+          <label style="font-size:11px;font-weight:600;display:block;margin-top:10px">Observação
+            <textarea id="dlObs" rows="2" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:3px;font-family:inherit"></textarea>
+          </label>
+          <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+            <button onclick="fecharDocLegalForm()" style="background:transparent;color:var(--mut);border:1px solid var(--line);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px">Cancelar</button>
+            <button id="dlSalvarBtn" onclick="salvarDocLegal()" style="background:var(--brand);color:#fff;border:0;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">Salvar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -847,7 +902,7 @@ function toggleDkTheme(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://fimmjgdwhifsrrbreche.supabase.co';
-const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpbW1qZ2R3aGlmc3JyYnJlY2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzU2NDIsImV4cCI6MjA5NTE1MTY0Mn0.eAmMS95M8BkfX3NCcOtHnhKWXy0jkvXwSGEoqv_Q21Q';
+const SUPABASE_ANON='sb_publishable_h2ZDZ4oBUEXN9W5Mzp4uJA_O3AR0VcA';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 
 // Data a partir da qual o sistema começou a operar — só conta como "pendente"
@@ -870,7 +925,7 @@ const CONDOS={
   'menotti-del-picchia':{nome:'Menotti del Picchia',nomeCompleto:'Condomínio Edifício Menotti del Picchia',cls:'mp',cor:'#9C5B2E',endereco:'Rua José Guatemosin Nogueira, 58 — Cambuí',cidade:'Campinas/SP',cep:'13.025-120',cnpj:'68.009.018/0001-98',sindicoNome:'Mirella Leme Franco Geraldini Sirol',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#9C5B2E"/><rect x="16" y="14" width="32" height="40" fill="#fff"/><rect x="20" y="20" width="6" height="6" fill="#9C5B2E"/><rect x="29" y="20" width="6" height="6" fill="#9C5B2E"/><rect x="38" y="20" width="6" height="6" fill="#9C5B2E"/><rect x="20" y="30" width="6" height="6" fill="#9C5B2E"/><rect x="29" y="30" width="6" height="6" fill="#9C5B2E"/><rect x="38" y="30" width="6" height="6" fill="#9C5B2E"/><rect x="20" y="40" width="6" height="6" fill="#9C5B2E"/><rect x="29" y="40" width="6" height="6" fill="#9C5B2E"/><rect x="38" y="40" width="6" height="6" fill="#9C5B2E"/><rect x="28" y="50" width="8" height="4" fill="#9C5B2E"/></svg>'},
   'montville-residence':{nome:'MontVille',nomeCompleto:'Residencial MontVille',cls:'mv',cor:'#1F5F8B',endereco:'Monte Mor/SP',cidade:'Monte Mor/SP',construtora:'Petrus Empreendimentos Imobiliários Ltda.',sindicoNome:'Vanderlei Amorim da Silva',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#1F5F8B"/><path d="M10 50 L22 28 L32 40 L42 22 L54 50 Z" fill="#fff"/><path d="M10 50 L54 50" stroke="#fff" stroke-width="2"/><circle cx="48" cy="18" r="3.5" fill="#FBC02D"/></svg>'},
   'condominio-teste':{nome:'TESTE (sandbox)',nomeCompleto:'Condomínio TESTE — Sandbox',cls:'tt',cor:'#5A7A7E',endereco:'Ambiente de testes',cidade:'—',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#5A7A7E"/><text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff">TESTE</text><circle cx="32" cy="20" r="4" fill="#FBC02D"/></svg>'},
-  'vilagio-vista-real':{nome:'Vilagio Vista Real',nomeCompleto:'Condomínio Residencial Horizontal Vilagio Vista Real',cls:'vv',cor:'#1A7A6E',endereco:'Paulínia/SP',cidade:'Paulínia/SP',sindicoNome:'—',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#1A7A6E"/><path d="M10 44 L18 32 L26 40 L34 24 L44 36 L54 44 Z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 44 L54 44" stroke="#fff" stroke-width="2"/><circle cx="34" cy="18" r="3" fill="#A8C932"/><path d="M34 10 L34 15" stroke="#A8C932" stroke-width="1.5"/><path d="M29 13 L32 16" stroke="#A8C932" stroke-width="1.5"/><path d="M39 13 L36 16" stroke="#A8C932" stroke-width="1.5"/></svg>'}
+  'vilagio-vista-real':{nome:'Vilagio Vista Real',nomeCompleto:'Condomínio Residencial Horizontal Vilagio Vista Real',cls:'vv',cor:'#1A7A6E',endereco:'Paulínia/SP',cidade:'Paulínia/SP',sindicoNome:'—',emblema:'<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="6" fill="#1A7A6E"/><path d="M10 44 L18 32 L26 40 L34 24 L44 36 L54 44 Z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 44 L54 44" stroke="#fff" stroke-width="2"/><circle cx="34" cy="18" r="3" fill="#A8E10C"/><path d="M34 10 L34 15" stroke="#A8E10C" stroke-width="1.5"/><path d="M29 13 L32 16" stroke="#A8E10C" stroke-width="1.5"/><path d="M39 13 L36 16" stroke="#A8E10C" stroke-width="1.5"/></svg>'}
 };
 
 let _user=null, _meusCondos=[], _condoAtivo=null, _visitas=[], _demandas=[], _eventos={};
@@ -1251,6 +1306,7 @@ async function abrirCondo(condoId){
   }
   document.getElementById('tabs-bar').style.display='flex';
   await carregarTudo();
+  carregarPainel();
 }
 
 function voltarCondos(){ _condoAtivo=null; renderCondoCards(); document.getElementById('tabs-bar').style.display='none'; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); }
@@ -2201,23 +2257,23 @@ function _renderDemandasLegacySindico(lista){ return; /*
       ${d.programado_em?'<div class="ts">Confirmado em '+new Date(d.programado_em).toLocaleString('pt-BR')+(d.programado_por?' por '+d.programado_por:'')+'</div>':''}
     </div>`:'';
     const respostaHtml=(d.resposta||diagIdxs.length)?`<div class="dem-resposta truncavel">
-      <b class="label">💬 Resposta Diagnóstika</b>${d.resposta||''}${gridDiag}
-      ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+d.respondido_por:'')+'</div>':''}
+      <b class="label">💬 Resposta Diagnóstika</b>${esc(d.resposta||'')}${gridDiag}
+      ${d.respondido_em?'<div style="font-size:10px;color:var(--text2);margin-top:5px">em '+new Date(d.respondido_em).toLocaleString('pt-BR')+(d.respondido_por?' por '+esc(d.respondido_por):'')+'</div>':''}
       <span class="ver-mais"></span>
     </div>`:'';
     const temSide=bannerHtml||respostaHtml;
-    return `<div class="dem" data-dem-id="${d.id}">
+    return `<div class="dem" data-dem-id="${esc(d.id)}">
       <div class="dem-row1">
         <div class="dem-row1-left">
-          <div class="dem-titulo">${d.titulo}</div>
-          <div class="dem-protocolo" onclick="copiarProtocolo('${proto}')" title="Clique para copiar">📋 PROTOCOLO ${proto}</div>
+          <div class="dem-titulo">${esc(d.titulo)}</div>
+          <div class="dem-protocolo" onclick="copiarProtocolo('${esc(proto)}')" title="Clique para copiar">📋 PROTOCOLO ${esc(proto)}</div>
         </div>
-        <span class="dem-status s-${d.status}">${status[d.status]||d.status}</span>
+        <span class="dem-status s-${esc(d.status)}">${esc(status[d.status]||d.status)}</span>
       </div>
-      <div class="dem-meta">${cats[d.categoria]||d.categoria} · ${urgs[d.urgencia]||d.urgencia} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
+      <div class="dem-meta">${esc(cats[d.categoria]||d.categoria)} · ${esc(urgs[d.urgencia]||d.urgencia)} · ${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${sindIdxs.length?' · 📎 '+sindIdxs.length+' anexo(s)':''}</div>
       <div class="dem-content"${!temSide?' style="grid-template-columns:1fr"':''}>
         <div class="dem-content-main">
-          ${d.descricao?'<div class="dem-desc truncavel">'+d.descricao+'<span class="ver-mais"></span></div>':''}
+          ${d.descricao?'<div class="dem-desc truncavel">'+esc(d.descricao)+'<span class="ver-mais"></span></div>':''}
           ${sindIdxs.length?`<div class="dem-anexos-grid">${gridSind}</div>`:''}
         </div>
         ${temSide?`<div class="dem-content-side">
@@ -3265,6 +3321,135 @@ function trocarTab(nome){
   if(nome==='portaria'){ carregarPortaria(); }
   if(nome==='equipe'){ carregarEquipe(); }
   if(nome==='perfil'){ carregarPerfil(); }
+  if(nome==='docs'){ carregarDocsLegais(); }
+  if(nome==='painel'){ carregarPainel(); }
+}
+
+async function carregarPainel(){
+  if(!_condoAtivo || !sb) return;
+  const kpi = document.getElementById('painelKpi');
+  const alertas = document.getElementById('painelAlertas');
+  if(kpi) kpi.innerHTML = '<div class="loading">Carregando…</div>';
+  const [vis, dem, port, docs, mnt] = await Promise.all([
+    sb.from('visitas').select('id,data_visita', {count:'exact'}).eq('condo_id', _condoAtivo),
+    sb.from('demandas').select('id,status,categoria', {count:'exact'}).eq('condo_id', _condoAtivo),
+    sb.from('portaria_eventos').select('id,criado_em', {count:'exact'}).eq('condo_id', _condoAtivo).gte('criado_em', new Date(Date.now()-30*86400000).toISOString()),
+    sb.from('docs_legais').select('id,vencimento,tipo,identificacao').eq('condo_id', _condoAtivo).eq('arquivado', false),
+    sb.from('manutencoes').select('id,status,proxima_data').eq('condo_id', _condoAtivo)
+  ]);
+  const demRows = dem.data||[];
+  const demAbertas = demRows.filter(d=>d.status!=='resolvida'&&d.status!=='fechada').length;
+  const docsRows = docs.data||[];
+  const docsVenc30 = docsRows.filter(d=>{const x=diasParaVenc(d.vencimento);return x!==null&&x<=30;}).length;
+  const docsVencidos = docsRows.filter(d=>{const x=diasParaVenc(d.vencimento);return x!==null&&x<0;}).length;
+  const mntRows = mnt.data||[];
+  const mntVencidas = mntRows.filter(m=>m.proxima_data && new Date(m.proxima_data)<new Date()).length;
+  if(kpi) kpi.innerHTML =
+    kpiCard('📋', vis.count||0, 'Vistorias', '#155B67')+
+    kpiCard('💬', demAbertas, 'Demandas abertas', demAbertas>0?'#a06000':'#155B67')+
+    kpiCard('🛡️', port.count||0, 'Portaria (30d)', '#155B67')+
+    kpiCard('📄', docsVencidos+docsVenc30, 'Docs críticos', (docsVencidos+docsVenc30)>0?'#b00020':'#1b5e20')+
+    kpiCard('🔧', mntVencidas, 'Manut. atrasadas', mntVencidas>0?'#b00020':'#1b5e20');
+  const al = [];
+  if(docsVencidos) al.push({c:'#b00020', bg:'#fee', t:'⚠️ '+docsVencidos+' documento(s) VENCIDO(S) — vá em Documentos'});
+  if(docsVenc30) al.push({c:'#a06000', bg:'#fff7e0', t:'⏰ '+docsVenc30+' documento(s) vencem em até 30 dias'});
+  if(demAbertas>5) al.push({c:'#a06000', bg:'#fff7e0', t:'💬 '+demAbertas+' demandas em aberto'});
+  if(mntVencidas) al.push({c:'#b00020', bg:'#fee', t:'🔧 '+mntVencidas+' manutenção(ões) com data vencida'});
+  if(!al.length) al.push({c:'#1b5e20', bg:'#e8f5e9', t:'✅ Tudo sob controle. Nenhum alerta crítico.'});
+  if(alertas) alertas.innerHTML = al.map(a=>`<div style="padding:12px 14px;background:${a.bg};color:${a.c};border-left:4px solid ${a.c};border-radius:6px;font-size:13px;font-weight:600">${a.t}</div>`).join('');
+}
+function kpiCard(icon,n,label,color){
+  return `<div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px">${icon}</div><div style="font-size:24px;font-weight:800;color:${color};line-height:1.1">${n}</div><div style="font-size:11px;color:#666;margin-top:2px">${label}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOCUMENTOS LEGAIS — AVCB, ART, Seguros, Alvarás (com vencimento)
+// ═══════════════════════════════════════════════════════════════════════════
+const DOC_TIPO_LABEL = {
+  AVCB:'AVCB', ART:'ART', SEGURO_PREDIAL:'Seguro Predial',
+  SEGURO_PORTARIA:'Seguro Portaria', SEGURO_ELEVADOR:'Seguro Elevador',
+  ALVARA_FUNCIONAMENTO:'Alvará de Funcionamento', HABITE_SE:'Habite-se',
+  LAUDO_SPDA:'Laudo SPDA', LAUDO_ESTRUTURAL:'Laudo Estrutural',
+  LAUDO_INSPECAO_PREDIAL:'Laudo Inspeção Predial',
+  CONTRATO_MANUTENCAO:'Contrato de Manutenção', OUTRO:'Outro'
+};
+function diasParaVenc(d){
+  if(!d) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const venc = new Date(d+'T00:00:00');
+  return Math.round((venc - hoje)/86400000);
+}
+function corVencimento(dias){
+  if(dias===null) return {bg:'#eee', fg:'#555', txt:'—'};
+  if(dias < 0)    return {bg:'#fee', fg:'#b00020', txt:'Vencido há '+Math.abs(dias)+'d'};
+  if(dias <= 30)  return {bg:'#fee', fg:'#b00020', txt:'Vence em '+dias+'d'};
+  if(dias <= 90)  return {bg:'#fff7e0', fg:'#a06000', txt:'Vence em '+dias+'d'};
+  return {bg:'#e8f5e9', fg:'#1b5e20', txt:'Vence em '+dias+'d'};
+}
+async function carregarDocsLegais(){
+  if(!_condoAtivo || !sb) return;
+  const lista = document.getElementById('docsLegaisLista');
+  const kpi = document.getElementById('docsLegaisKpi');
+  if(lista) lista.innerHTML = '<div style="padding:16px;color:#888">Carregando…</div>';
+  const { data, error } = await sb.from('docs_legais').select('*')
+    .eq('condo_id', _condoAtivo).eq('arquivado', false)
+    .order('vencimento', {ascending:true});
+  if(error){ if(lista) lista.innerHTML = '<div style="padding:16px;color:#b00020">Erro: '+error.message+'</div>'; return; }
+  const rows = data || [];
+  let vencidos=0, c30=0, c90=0, ok=0;
+  rows.forEach(r=>{ const d=diasParaVenc(r.vencimento); if(d===null) return; if(d<0) vencidos++; else if(d<=30) c30++; else if(d<=90) c90++; else ok++; });
+  if(kpi) kpi.innerHTML =
+    '<div style="background:#fee;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#b00020">'+vencidos+'</div><div style="font-size:11px;color:#666">Vencidos</div></div>'+
+    '<div style="background:#fee;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#b00020">'+c30+'</div><div style="font-size:11px;color:#666">≤ 30 dias</div></div>'+
+    '<div style="background:#fff7e0;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#a06000">'+c90+'</div><div style="font-size:11px;color:#666">31–90 dias</div></div>'+
+    '<div style="background:#e8f5e9;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#1b5e20">'+ok+'</div><div style="font-size:11px;color:#666">Em dia</div></div>';
+  if(!rows.length){ if(lista) lista.innerHTML = '<div style="padding:24px;text-align:center;color:#888">Nenhum documento cadastrado. Clique em "+ Novo documento".</div>'; return; }
+  if(lista) lista.innerHTML = rows.map(r=>{
+    const d = diasParaVenc(r.vencimento); const c = corVencimento(d);
+    return '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">'
+        +'<div style="flex:1"><div style="font-weight:700;color:#155B67">'+(DOC_TIPO_LABEL[r.tipo]||r.tipo)+'</div>'
+        +(r.identificacao?'<div style="font-size:12px;color:#666">'+r.identificacao+'</div>':'')
+        +(r.responsavel?'<div style="font-size:12px;color:#666">'+r.responsavel+'</div>':'')
+        +'<div style="font-size:12px;color:#888;margin-top:4px">Venc.: '+new Date(r.vencimento+'T00:00:00').toLocaleDateString('pt-BR')+'</div>'
+        +'</div>'
+        +'<span style="background:'+c.bg+';color:'+c.fg+';padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap">'+c.txt+'</span>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-sm" onclick="excluirDocLegal(\''+r.id+'\')" style="background:#fee;color:#b00020;border:none;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer">Excluir</button></div>'
+    +'</div>';
+  }).join('');
+}
+function abrirDocLegalForm(){
+  const f = document.getElementById('docsLegaisFormBox'); if(f) f.style.display='block';
+  ['dlTipo','dlIdent','dlEmissao','dlVenc','dlResp','dlValor','dlObs'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+}
+function fecharDocLegalForm(){
+  const f = document.getElementById('docsLegaisFormBox'); if(f) f.style.display='none';
+}
+async function salvarDocLegal(){
+  const tipo = document.getElementById('dlTipo').value;
+  const venc = document.getElementById('dlVenc').value;
+  if(!tipo){ alert('Selecione o tipo do documento.'); return; }
+  if(!venc){ alert('Informe a data de vencimento.'); return; }
+  const payload = {
+    condo_id: _condoAtivo, tipo,
+    identificacao: document.getElementById('dlIdent').value.trim() || null,
+    emissao: document.getElementById('dlEmissao').value || null,
+    vencimento: venc,
+    responsavel: document.getElementById('dlResp').value.trim() || null,
+    valor: parseFloat(document.getElementById('dlValor').value) || null,
+    obs: document.getElementById('dlObs').value.trim() || null,
+    created_by: _user?.id || null
+  };
+  const { error } = await sb.from('docs_legais').insert(payload);
+  if(error){ alert('Erro ao salvar: '+error.message); return; }
+  fecharDocLegalForm(); carregarDocsLegais();
+}
+async function excluirDocLegal(id){
+  if(!confirm('Arquivar este documento?')) return;
+  const { error } = await sb.from('docs_legais').update({arquivado:true}).eq('id', id);
+  if(error){ alert('Erro: '+error.message); return; }
+  carregarDocsLegais();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
